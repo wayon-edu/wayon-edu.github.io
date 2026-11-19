@@ -168,7 +168,8 @@
     body.wayon-workbench[data-mode=quiz] #list .quiz>.head{padding:2px 4px 10px;margin:0;border:0;align-items:baseline}
     body.wayon-workbench[data-mode=quiz] #list .quiz>.head h2{font-size:17px;letter-spacing:-.01em}
     body.wayon-workbench[data-mode=quiz] #list .quiz>.head .meta{font-size:12px;color:var(--muted,#8a8a8e)}
-    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup{background:var(--card,#fff);border:1px solid var(--line,#e5e5ea)!important;border-radius:16px!important;padding:16px 20px!important;margin:0 0 12px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){background:var(--card,#fff);border:1px solid var(--line,#e5e5ea)!important;border-radius:16px!important;padding:16px 20px!important;margin:0 0 12px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup.vq-collapsed{padding:9px 14px!important;margin:0 0 10px!important}
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup .qhead{font-size:18px;font-weight:600;letter-spacing:-.01em}
     @media(prefers-color-scheme:dark){.ux-chip[data-kind=ok],.ux-aircon[data-copied] b:after,.ux-st-row em[data-kind=ok]{color:#4ac26b}.ux-chip[data-kind=todo],.ux-st-row em[data-kind=todo]{color:#f0883e}.ux-chip[data-kind=wait],.ux-st-row em[data-kind=wait]{color:#d4a72c}}
   `;
@@ -956,7 +957,7 @@
       box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 18px 44px -10px var(--apple-glass-shadow),0 0 0 .5px var(--apple-glass-hairline)!important;
     }
     body.wayon-workbench #list .item:not(.folded),
-    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed),
     body.wayon-workbench .ux-aircon,
     body.wayon-workbench #aircon-panel .aircon-card:not(.folded),
     body.wayon-workbench #aircon-panel .aircon-empty,
@@ -970,18 +971,20 @@
     }
     @media(hover:hover) and (prefers-reduced-motion:no-preference){
       body.wayon-workbench #list .item:not(.folded):hover,
-      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:hover{
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed):hover{
         transform:translateY(-2px);
         box-shadow:inset 0 1px 0 var(--apple-card-rim),0 14px 32px -10px var(--apple-card-hover-1),0 2px 6px var(--apple-card-hover-2),0 0 0 .5px var(--apple-card-ring)!important;
       }
     }
     body.wayon-workbench #list .item.folded,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup.vq-collapsed,
     body.wayon-workbench #aircon-panel .aircon-card.folded{
       border:0!important;
       border-radius:16px!important;
       background:var(--apple-folded-bg)!important;
       box-shadow:0 0 0 .5px var(--apple-card-ring)!important;
     }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup.vq-collapsed{padding:9px 14px!important}
     body.wayon-workbench .head>.name{
       font-size:20px!important;
       font-weight:600!important;

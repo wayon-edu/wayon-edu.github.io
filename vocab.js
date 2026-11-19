@@ -6,7 +6,8 @@
   if (globalThis.wayonVocab || typeof document === 'undefined') return;
   const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const btn = (cls, text, onclick, label) => { const b = make('button', cls, text); b.type = 'button'; if (onclick) b.onclick = onclick; if (label) b.setAttribute('aria-label', label); return b; };
-  const today = () => new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Shanghai'});
+  const bjDay = (d = new Date()) => d.toLocaleDateString('en-CA', {timeZone: 'Asia/Shanghai'});
+  const today = () => bjDay();
   const addDays = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
   const md = d => d ? Number(d.slice(5, 7)) + '/' + Number(d.slice(8, 10)) : '日期未知';
   const uuid = () => globalThis.crypto?.randomUUID ? crypto.randomUUID()
@@ -21,12 +22,59 @@
     const left = [...y];
     return x.every(p => { const i = left.findIndex(q => samePerson(p, q)); if (i < 0) return false; left.splice(i, 1); return true; });
   };
+  const COURSE_ACRONYM = /^(?:sat|act|map|ap|ib|gre|gmat|toefl|ielts|esl|ket|pet|fce|cet|vip|tpo|cam)$/i;
+  function stripCourseSuffix(raw) {
+    let t = plainName(raw).replace(/[()（）]/g, '').trim();
+    for (;;) {
+      const next = t
+        .replace(/(?:[-\s]*(?:雅思|托福|新托福|SAT|ACT|MAP|AP|IB|GRE|校内英语|校内|能力提升|强化|基础|冲刺|听说|听力|阅读|写作|口语|读写|语法|数学|词汇)?\s*(?:1\s*v\s*1|一对一|1对1|班课|课程|自习|暂停))+$/i, '')
+        .replace(/(?:[-\s]+(?:雅思|托福|新托福|SAT|ACT|MAP)(?:基础|强化|冲刺)?|(?:雅思|托福|新托福|SAT|ACT|MAP)(?:基础|强化|冲刺)?)$/i, '')
+        .trim();
+      if (next === t) break;
+      t = next;
+    }
+    return t;
+  }
+  const displayStudent = s => {
+    const shown = globalThis.wayonDisplayName?.(s);
+    return plainName(stripCourseSuffix(shown || s) || shown || s);
+  };
+  const MAX_QUIZ_ITEMS = 300;
+  const capWord = w => {
+    const t = String(w || '').trim();
+    if (t.length <= 200) return t;
+    const cut = t.slice(0, 199), sp = cut.lastIndexOf(' ');
+    return ((sp >= 150 ? cut.slice(0, sp) : cut).trimEnd() + '…').slice(0, 200);
+  };
+  const normCopyCmp = s => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const isDuplicatePgError = e => String(e?.code || '') === '23505' || /duplicate|unique/i.test(String(e?.message || ''));
+  const isPermanentPgError = e => {
+    const code = String(e?.code || '');
+    if (/^(?:22|23)/.test(code)) return true;
+    return /check constraint|violates.*constraint|invalid input syntax|wayon_vocab_sessions_final/i.test(String(e?.message || ''));
+  };
   const SUBJECTS = [['听力', /听力|listening|听说/i], ['阅读', /阅读|reading/i], ['写作', /写作|writing/i], ['口语', /口语|speaking/i], ['读写', /读写/], ['托福', /托福|toefl/i], ['SAT', /sat/i], ['语法', /语法|grammar/i], ['校内', /校内|高考|中考/]];
   const subjectOf = v => { const s = String(v || ''); const hit = SUBJECTS.find(([, re]) => re.test(s)); return hit ? hit[0] : (s.trim() || '其他'); };
+  const LESSON_NO = /(?:L|Lesson|反馈|第)\s*(\d{1,3})(?!\d)|(?:听说|听力|阅读|写作|口语|读写|托福阅读|能力提升)[^\d]{0,6}?(\d{1,3})\s*$/gi;
+  // Titles: 学生名_课程_日期 on the feedback page; quiz titles add the teacher's lesson number, e.g. "陈书进_阅读L3_11/7".
+  const lessonLabel = (learner, course, no, day) => String(learner || '').replace(/\//g, '、') + '_' + (course || '课程') + (no ? 'L' + no : '') + '_' + md(day);
+  const lessonNo = title => { let n = null; for (const m of String(title || '').matchAll(LESSON_NO)) n = Number(m[1] || m[2]); return n && n <= 150 ? n : null; };
+  const normSpan = v => { const m = /^(\d{1,2}):(\d{2})\s*[-–—~～至]\s*(\d{1,2}):(\d{2})/.exec(String(v || '').trim()); return m ? m[1].padStart(2, '0') + ':' + m[2] + '-' + m[3].padStart(2, '0') + ':' + m[4] : ''; };
   const INTERVALS = [1, 3, 7, 14, 30];
   // Part-of-speech choices for the word editor; teachers' shorthand (j = adj, ad = adv) is shown as the full form.
   const POS_OPTIONS = ['n', 'v', 'vt', 'vi', 'adj', 'adv', 'prep', 'conj', 'pron', 'num', 'art', 'int', 'aux', 'phr', 'abbr', 'n/v', 'adj/adv', 'v/n'];
   const normPos = p => { const x = String(p || '').trim().replace(/\.$/, '').replace(/\s+/g, '').replace(/\./g, ''); return ({j: 'adj', a: 'adj', ad: 'adv', pp: 'phr'})[x] || x; };
+  function mergePos(a, b) {
+    if (!a) return b || '';
+    if (!b) return a;
+    const list = a.split('/').filter(Boolean);
+    const seen = new Set(list.map(normPos));
+    for (const p of b.split('/').filter(Boolean)) {
+      const np = normPos(p);
+      if (!seen.has(np)) { list.push(p); seen.add(np); }
+    }
+    return list.join('/');
+  }
 
   // ---------- Feedback parser (keep in step with Manager/vocab_import.py) ----------
   const IPA_CHARS = 'əˈˌɪʃʊʌæɑɒɔɜːθðŋʒɡɛɾ';
@@ -45,7 +93,7 @@
   const POS_CORE = '(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron|phr|num|int|aux|art|abbr)(?:\\.?\\s*/\\s*(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron))*\\.?';
   const POS = '(?:\\(\\s*' + POS_CORE + '\\s*\\)|（\\s*' + POS_CORE + '\\s*）|(?<![A-Za-z])' + POS_CORE + ')';
   const GRAMMAR_TAG = '(?:\\s*(?:[\\[【(（](?:U|C|T|I|pl|sing|cn|un|C/U|U/C|可数|不可数)[\\]】)）]))*';
-  const WORD_LINE = new RegExp('^\\s*(?:[-–•·*]\\s*|\\d{1,3}[.、)）]\\s*|[‘\'’]\\s*)?(?<word>[A-Za-z][A-Za-z\'‘’\\-/().=,…&?!\\s^]{0,95}?)\\s*(?<pos>' + POS +
+  const WORD_LINE = new RegExp('^\\s*(?:[-–•·*]\\s*|\\d{1,3}[.、)）]\\s*|[‘\'’]\\s*)?(?<word>[A-Za-z][A-Za-z\'‘’\\-/().=,…&?!+＋\\s^]{0,95}?)\\s*(?<pos>' + POS +
     '(?=[\\s\\u4e00-\\u9fff,，;；(（\\[【《〈「『]|$))?' + GRAMMAR_TAG + '\\s*[,，:：]?\\s*(?<meaning>(?:[\\[【](?:U|C|T|I|pl|sing|cn|un|C/U|U/C|可数|不可数)[\\]】]\\s*)?[\\u4e00-\\u9fff（(“"…《〈「『].*)$');
   const SUB_LINE = /^\s*[-–•·]\s+/, NUMBERED = /^\s*(?:\d{1,3}[.、)）]|[一二三四五六七八九十百]+[、.．])\s*/;
   const WRONG = /❌\s*(拼写?|意思|发音|音)?/g;
@@ -63,16 +111,36 @@
   const PROSE_EVAL_HINT = /^(?:同学|在发言|表现不?俗|词汇量(?:较|不足|不够|不错|好)|优势没|容易没|写作框架|核心解题|不是并列|无被动|部分我们|非学术背景|学术背景|专项训练)|课堂状态|模仿能力|注意力没集中|短板|评分标准|解题思路|框架回顾|写作练习|过去进行时|现在完成时|一般过去时|背景\s*[（(]\d+\s*sec/;
   const cleanPos = p => String(p || '').replace(/[\s.()（）]+/g, '');
   const TRAILING_POS = /^(.*?[A-Za-z].*?)\s+([\(（]?(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron|phr|ad)\.?[\)）]?)(?:\s+(.*))?$/;
+  const POS_TOKEN = '[\\(（]?(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron|phr|ad)\\.?(?:\\s*\\/\\s*(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron))*\\.?[\\)）]?';
+  const MULTI_POS_FORM = new RegExp('[A-Za-z]\\s+' + POS_TOKEN + '\\s*[/=＝;；]\\s*(?=[A-Za-z])');
+  const HAS_SECOND_POS_IN_WORD = new RegExp('[/=＝;；]\\s*[A-Za-z][^/=＝;；]*?\\s+' + POS_TOKEN + '(?:\\s*$|\\s*[/=＝;；])');
+  const PAIRED_MEANING_POS = new RegExp('^(' + POS_TOKEN + '(?:\\s*[/=＝;；]\\s*[A-Za-z][A-Za-z\'‘’\\-]*\\s+' + POS_TOKEN + ')+)\\s+(.+)$');
   const DANGLING_POS = /^(.*?[A-Za-z].*?\s(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron|phr|ad))\.?\s*\/$/;   // "repair v/" — a slash with nothing after it
   const PLUS_TAIL = /^([\u4e00-\u9fff]{1,6})(?:\s+(?![\/／])(.*))?$/;   // "it's a shame that+" + "句子 ...很可惜": 句子 belongs to the pattern
+  const SECOND_POS = /^((?=.*?[\u4e00-\u9fff]).*?[\u4e00-\u9fff）)】」』》〉"”’…])[\s；;，,]*(n|v|vt|vi|adj|j|adv|prep)\.\s*(\S.*)$/;
   function splitPos(word, pos, meaning) {   // same rule as split_pos in Manager/vocab_import.py
+    const rawPos = String(pos || '').trim();
     word = word.replace(DANGLING_POS, '$1');
     const plus = /[+＋]$/.test(word) && PLUS_TAIL.exec(meaning || '');
     if (plus) { word += plus[1]; meaning = plus[2] || ''; }
-    const m = TRAILING_POS.exec(word); if (!m) return {word, pos: cleanPos(pos), meaning, extra: ''};
-    const rest = (m[3] || '').trim(); pos = cleanPos(pos) || cleanPos(m[2]);
-    if ('/=(（'.includes(rest[0] || 'x')) return {word: m[1].trim(), pos, meaning, extra: rest};
-    return {word: m[1].trim(), pos, meaning: (rest ? rest + ' ' : '') + meaning, extra: ''};
+    if (!rawPos && meaning) {
+      const pm = meaning.match(PAIRED_MEANING_POS);
+      if (pm) return {word: (word + ' ' + pm[1]).trim(), pos: '', meaning: pm[2].trim(), extra: ''};
+    }
+    if (MULTI_POS_FORM.test(word) && (cleanPos(rawPos) || HAS_SECOND_POS_IN_WORD.test(word))) {
+      const fullWord = (word + (rawPos ? ' ' + rawPos : '')).trim();
+      return {word: fullWord, pos: '', meaning, extra: ''};
+    }
+    const m = TRAILING_POS.exec(word); if (!m) return {word, pos: cleanPos(rawPos), meaning, extra: ''};
+    const head = m[1].trim().replace(/\s+[-–—]+$/, '');
+    const rest = (m[3] || '').trim();
+    if (rest) {
+      const restFull = (rest + (rawPos ? ' ' + rawPos : '')).trim();
+      const posOut = cleanPos(m[2]);
+      if ('/=(（'.includes(restFull[0] || 'x')) return {word: head, pos: posOut, meaning, extra: restFull};
+      return {word: head, pos: posOut, meaning: meaning ? restFull + ' ' + meaning : restFull, extra: ''};
+    }
+    return {word: head, pos: cleanPos(rawPos) || cleanPos(m[2]), meaning, extra: ''};
   }
   function feedbackHeading(line) {
     return line.trim().replace(/^[^\w\u4e00-\u9fff【\[]+/u, '')
@@ -90,6 +158,7 @@
       if (!((bracketHeading || (plainHeading && !inGrammar)) && PHRASE_SECTION.test(label))) return '';
       if (inGrammar && NUMBERED.test(line) && !bracketHeading) return '';
     }
+    if (/^(?:句子背诵|背诵句子|句型背诵)$/.test(label)) return '句子背诵';
     if (PHRASE_SECTION.test(label) && !/词汇|生词|单词|Vocabulary|Words/i.test(label)) return '搭配';   // every English line is an item, with or without a Chinese meaning
     if (/词汇|生词|单词|重点词|Vocabulary|Words/i.test(label)) return '词汇';
     if (/同[义意]|近义/.test(label)) return '同义替换';
@@ -109,36 +178,228 @@
   }
   const entrySection = w => entryMeta(w)?.section || '';
   const entryHeading = w => { const m = entryMeta(w); return m?.section === '句子背诵' ? '句子背诵' : m?.heading || ''; };
-  const entryNotes = w => entryMeta(w)?.notes || (w.extra ? [w.extra] : []);
+  const entryNotes = w => {
+    const m = entryMeta(w);
+    if (m) return m.notes;
+    const ex = String(w?.extra || '');
+    if (!ex || ex.startsWith(META_PREFIX)) return [];
+    return [ex];
+  };
+  function copyNotes(w, line) {
+    const notes = entryNotes(w);
+    if (!notes.length) return [];
+    const base = normCopyCmp(line), baseNoSpace = base.replace(/\s+/g, '');
+    const seen = new Set(), out = [];
+    for (const n of notes) {
+      const trimmed = String(n || '').trim();
+      if (!trimmed) continue;
+      const cmp = normCopyCmp(trimmed);
+      if (seen.has(cmp)) continue;
+      seen.add(cmp);
+      const cmpNoSpace = cmp.replace(/\s+/g, '');
+      if ((cmp.length >= 3 || /^[/=(（]/.test(trimmed)) && (base.includes(cmp) || (cmpNoSpace.length >= 3 && baseNoSpace.includes(cmpNoSpace)))) continue;
+      out.push(n);
+    }
+    return out;
+  }
   function appendEntryNote(w, note) { const m = entryMeta(w); if (m) { m.notes.push(note); w.extra = META_PREFIX + JSON.stringify(m); } else w.extra = [w.extra, note].filter(Boolean).join('\n'); }
-  function quizCopyText(student, course, no, day, items, marks) {
-    const name = student.replace(/^([A-Za-z][A-Za-z0-9 .’'-]*?)[\u4e00-\u9fff]+$/, '$1').trim();
-    const lines = [name + '_' + course + (no ? 'L' + no : '') + '_' + day.slice(5).replace('-', '') + '抽背情况👇', ''];
+  function orderLessons(lessons) {
+    const bySubj = new Map();
+    lessons.forEach((l, i) => {
+      const subj = subjectOf(l.subject || '');
+      const item = {lesson_id: l.lesson_id, subject: subj, no: l.no ?? null, lesson_date: l.lesson_date || null, count: l.count || 0, _first: i};
+      if (!bySubj.has(subj)) bySubj.set(subj, {subject: subj, earliest: '', first: i, list: []});
+      const g = bySubj.get(subj);
+      if (item.lesson_date && (!g.earliest || item.lesson_date < g.earliest)) g.earliest = item.lesson_date;
+      g.list.push(item);
+    });
+    const groups = [...bySubj.values()].sort((a, b) => {
+      if (a.earliest && b.earliest && a.earliest !== b.earliest) return a.earliest.localeCompare(b.earliest);
+      if (a.earliest !== b.earliest) return a.earliest ? -1 : 1;
+      return a.first - b.first;
+    });
+    const out = [];
+    for (const g of groups) {
+      g.list.sort((a, b) => {
+        const na = a.no ?? Infinity, nb = b.no ?? Infinity;
+        if (na !== nb) return na - nb;
+        const da = a.lesson_date || '', db = b.lesson_date || '';
+        if (da !== db) return da ? (db ? da.localeCompare(db) : -1) : 1;
+        return a._first - b._first;
+      });
+      g.list.forEach(({_first, ...clean}) => out.push(clean));
+    }
+    return out;
+  }
+  function resolveLessons(items, opts = {}) {
+    if (Array.isArray(opts?.lessons) && opts.lessons.length) return orderLessons(opts.lessons);
+    if (opts?.phase === '补充') return [];
+    const fallbackById = new Map((Array.isArray(opts?.fallbackLessons) ? opts.fallbackLessons : []).filter(x => x?.lesson_id).map(x => [x.lesson_id, x]));
+    const counts = new Map();
+    for (const it of (items || [])) {
+      if (!it?.lesson_id) continue;
+      const cur = counts.get(it.lesson_id);
+      if (cur) cur.count++;
+      else counts.set(it.lesson_id, {lesson_id: it.lesson_id, count: 1, item: it});
+    }
+    const raw = [];
+    for (const [id, info] of counts.entries()) {
+      const l = (index || []).find(x => x.id === id);
+      const fb = fallbackById.get(id);
+      if (l) raw.push({lesson_id: id, subject: subjectOf(l.subject), no: lessonNo(l.title), lesson_date: l.lesson_date || null, count: info.count});
+      else if (fb) raw.push({lesson_id: id, subject: subjectOf(fb.subject), no: fb.no ?? null, lesson_date: fb.lesson_date || null, count: info.count});
+      else if (info.item.subject || info.item.lesson_date) raw.push({lesson_id: id, subject: subjectOf(info.item.subject || ''), no: null, lesson_date: info.item.lesson_date || null, count: info.count});
+    }
+    return orderLessons(raw);
+  }
+  function formatLessonsTitle(lessons) {
+    const ordered = orderLessons(lessons || []);
+    if (!ordered.length) return '';
+    const bySubj = new Map();
+    for (const l of ordered) {
+      const s = subjectOf(l.subject || '');
+      if (!bySubj.has(s)) bySubj.set(s, []);
+      bySubj.get(s).push(l);
+    }
+    const partsOut = [];
+    for (const [subj, list] of bySubj.entries()) {
+      const nums = [...new Set(list.map(l => l.no).filter(n => Number.isFinite(n)))].sort((a, b) => a - b);
+      const tokens = [];
+      let i = 0;
+      while (i < nums.length) {
+        let j = i;
+        while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
+        const runLen = j - i + 1;
+        if (runLen >= 3) tokens.push('L' + nums[i] + '-L' + nums[j]);
+        else { for (let k = i; k <= j; k++) tokens.push('L' + nums[k]); }
+        i = j + 1;
+      }
+      const unnumberedDates = [];
+      let hasUndated = false;
+      for (const l of list) {
+        if (Number.isFinite(l.no)) continue;
+        if (l.lesson_date) { const d = '(' + md(l.lesson_date) + ')'; if (!unnumberedDates.includes(d)) unnumberedDates.push(d); }
+        else hasUndated = true;
+      }
+      tokens.push(...unnumberedDates);
+      if (tokens.length) partsOut.push(subj + tokens.join('+'));
+      else if (hasUndated || subj) partsOut.push(subj);
+    }
+    return partsOut.join('+');
+  }
+  function lessonTag(l) {
+    const subj = subjectOf(l?.subject || '');
+    if (Number.isFinite(l?.no)) return (subj || '课程') + 'L' + l.no;
+    if (l?.lesson_date) return (subj || '课程') + ' ' + md(l.lesson_date);
+    return subj || '其他';
+  }
+  function formatItemLine(it) {
+    const meta = entryMeta(it);
+    const original = meta && meta.word === it.word && meta.pos === (it.pos || '') && meta.meaning === (it.meaning || '');
+    if (original) return meta.line;
+    const np = normPos(it.pos);
+    return it.word + (np ? ' ' + np + '.' : '') + (it.meaning ? (np ? '' : ' ') + it.meaning : '');
+  }
+  function quizCopyText(student, course, no, day, items, marks, opts = {}) {
+    const name = displayStudent(student).replace(/^([A-Za-z][A-Za-z0-9 .’'-]*?)[\u4e00-\u9fff]+$/, '$1').trim();
+    const short = {拼写: '拼', 意思: '意', 发音: '音'};
+    const dateTail = day.slice(5).replace('-', '') + '抽背情况👇';
+    const lessons = resolveLessons(items, opts);
+    if (lessons.length >= 2) {
+      const total = items.length;
+      let right = 0, wrong = 0;
+      marks.forEach(m => { if (m?.result === 'right') right++; else if (m?.result === 'wrong') wrong++; });
+      const unmarked = Math.max(0, total - right - wrong);
+      const summary = marks.size === 0
+        ? '共 ' + total + ' 项'
+        : unmarked === 0
+          ? '共 ' + total + ' 项：✅' + right + ' · ❌' + wrong
+          : '共 ' + total + ' 项：✅' + right + ' · ❌' + wrong + ' · 未标' + unmarked;
+      const lines = [[name, formatLessonsTitle(lessons), dateTail].filter(Boolean).join('_'), summary, ''];
+      const buckets = new Map(lessons.map(l => [l.lesson_id, {lesson: l, entries: []}]));
+      const other = [];
+      items.forEach((it, origIdx) => {
+        const b = it?.lesson_id && buckets.get(it.lesson_id);
+        if (b) b.entries.push({it, origIdx}); else other.push({it, origIdx});
+      });
+      const groups = [...buckets.values()].filter(g => g.entries.length);
+      if (other.length) groups.push({lesson: null, entries: other});
+      for (const group of groups) {
+        if (lines[lines.length - 1] !== '') lines.push('');
+        const grpHead = '【' + (group.lesson ? lessonTag(group.lesson) : '其他') + '】';
+        lines.push(grpHead);
+        let previous = '';
+        for (const {it, origIdx} of group.entries) {
+          const heading = entryHeading(it);
+          if (heading && heading !== previous) {
+            if (lines[lines.length - 1] !== '' && lines[lines.length - 1] !== grpHead) lines.push('');
+            lines.push(heading);
+          }
+          previous = heading;
+          const line = formatItemLine(it);
+          const mark = marks.get(origIdx);
+          lines.push(line + (mark?.result === 'wrong' ? '❌' + (short[mark.reason] || '') : mark?.result === 'right' ? '✅' : ''), ...copyNotes(it, line));
+        }
+      }
+      return lines.join('\n').trim();
+    }
+    const titlePart = course ? course + (no ? 'L' + no : '') : (no ? 'L' + no : (opts?.phase || ''));
+    const lines = [[name, titlePart, dateTail].filter(Boolean).join('_'), ''];
     let previous = '';
     items.forEach((it, i) => {
-      const heading = entryHeading(it), meta = entryMeta(it);
+      const heading = entryHeading(it);
       if (heading && heading !== previous) { if (lines[lines.length - 1] !== '') lines.push(''); lines.push(heading); }
       previous = heading;
-      const original = meta && meta.word === it.word && meta.pos === (it.pos || '') && meta.meaning === (it.meaning || '');
-      const line = original ? meta.line : it.word + (it.pos ? ' ' + it.pos + '.' : '') + (it.meaning ? (it.pos ? '' : ' ') + it.meaning : '');
-      const mark = marks.get(i), short = {拼写: '拼', 意思: '意', 发音: '音'};
-      lines.push(line + (mark?.result === 'wrong' ? '❌' + (short[mark.reason] || '') : mark?.result === 'right' ? '✅' : ''), ...entryNotes(it));
+      const line = formatItemLine(it);
+      const mark = marks.get(i);
+      lines.push(line + (mark?.result === 'wrong' ? '❌' + (short[mark.reason] || '') : mark?.result === 'right' ? '✅' : ''), ...copyNotes(it, line));
     });
     return lines.join('\n').trim();
   }
   // A saved result is re-rendered from its items and marks, so results saved in an older copy format copy in the current one.
   function resultText(p) {
     if (!p || !Array.isArray(p.items) || !Array.isArray(p.marks) || !p.student || !p.day) return p?.text || '';
-    try { return quizCopyText(p.student, p.course || '', p.course_no, p.day, p.items, new Map(p.marks.map(m => [m.index, {result: m.result, reason: m.reason || ''}]))); } catch { return p.text || ''; }
+    try {
+      const opts = {phase: p.phase, ...(Array.isArray(p.course_lessons) && p.course_lessons.length ? {lessons: p.course_lessons} : {})};
+      return quizCopyText(p.student, p.course || p.phase || '', p.course_no, p.day, p.items, new Map(p.marks.map(m => [m.index, {result: m.result, reason: m.reason || ''}])), opts);
+    } catch { return p.text || ''; }
   }
   // "听力L4", a blank line, then the headings and one word per line (the teacher's original line when the word is unchanged).
-  function wordsCopyText(title, ws) {
+  function wordsCopyText(title, ws, opts = {}) {
     const line = w => { const m = entryMeta(w); return m && m.word === w.word && m.pos === (w.pos || '') && m.meaning === (w.meaning || '') ? m.line : [w.word, (w.pos ? normPos(w.pos) + '.' : '') + (w.meaning || '')].filter(Boolean).join(' '); };
-    const lines = [title, '']; let previous = '';
+    const lines = [title, ''];
+    const lessons = opts?.groupByLesson === false ? [] : resolveLessons(ws, opts);
+    if (lessons.length >= 2) {
+      const buckets = new Map(lessons.map(l => [l.lesson_id, {lesson: l, entries: []}]));
+      const other = [];
+      ws.forEach(w => { const b = w?.lesson_id && buckets.get(w.lesson_id); if (b) b.entries.push(w); else other.push(w); });
+      const groups = [...buckets.values()].filter(g => g.entries.length);
+      if (other.length) groups.push({lesson: null, entries: other});
+      for (const group of groups) {
+        if (lines[lines.length - 1] !== '') lines.push('');
+        const grpHead = '【' + (group.lesson ? lessonTag(group.lesson) : '其他') + '】';
+        lines.push(grpHead);
+        let previous = '';
+        for (const w of group.entries) {
+          const heading = entryHeading(w);
+          if (heading && heading !== previous) {
+            if (lines[lines.length - 1] !== '' && lines[lines.length - 1] !== grpHead) lines.push('');
+            lines.push(heading);
+          }
+          previous = heading;
+          const outLine = line(w);
+          lines.push(outLine, ...copyNotes(w, outLine));
+        }
+      }
+      return lines.join('\n').trim();
+    }
+    let previous = '';
     ws.forEach(w => {   // the teacher's headings (🖊词汇句子补充, 【一词多义】…) stay, with a blank line before each
       const heading = entryHeading(w);
       if (heading && heading !== previous) { if (lines[lines.length - 1] !== '') lines.push(''); lines.push(heading); }
-      previous = heading; lines.push(line(w), ...entryNotes(w));
+      previous = heading;
+      const outLine = line(w);
+      lines.push(outLine, ...copyNotes(w, outLine));
     });
     return lines.join('\n').trim();
   }
@@ -147,18 +408,23 @@
   // English-only lines outside any section, introduced as words or 6+ lines long, is read as a 词汇 section
   // (same rule as mark_bare_lists in Manager/vocab_import.py).
   const BARE_LINE = /^\s*(?:[-–•·*]\s*|\d{1,3}[.、)）]\s*)?[A-Za-z][A-Za-z0-9'‘’\-\s,./()&?!]*$/;
+  const BARE_END = '\x00WAYON_BARE_END\x00';
   function markBareLists(lines) {
-    const out = []; let inside = false, i = 0;
+    const firstNonEmpty = lines.find(l => l.trim())?.trim() || '';
+    let strict = DOC_META_TITLE.test(firstNonEmpty), inside = strict, i = 0;
+    const out = [];
     const isBare = x => x.trim() && BARE_LINE.test(x) && x.split(/\s+/).filter(Boolean).length <= 8 && !x.includes('http') && !/^\s*(?:[A-Z]\d+|C\d+T\d+)/.test(x);
     while (i < lines.length) {
       const line = lines[i], text = line.trim(), title = feedbackHeading(line);
-      if (feedbackSection(line) || (/词汇|生词|单词/.test(line) && !NOT_VOCAB_HEAD.test(line) && (line.replace(/[^\w\u4e00-\u9fff]/g, '').length <= 12 || /比如|例如|以下|如下|[:：]\s*$/.test(line)) && !WORD_LINE.test(stripIpa(line)))) inside = true;
-      else if (/^\s*[【\[][^】\]]+[】\]]\s*[:：]?\s*$/.test(line)) inside = true;
-      else if (SECTION_END.test(line) || STRICT_META_SECTION.test(title) || (text && /^课后(?:作业|练习|任务)\s*[:：]?$/.test(title))) inside = false;
+      if (feedbackSection(line) || (/词汇|生词|单词/.test(line) && !NOT_VOCAB_HEAD.test(line) && (line.replace(/[^\w\u4e00-\u9fff]/g, '').length <= 12 || /比如|例如|以下|如下|[:：]\s*$/.test(line)) && !WORD_LINE.test(stripIpa(line)))) { inside = true; strict = false; }
+      else if (/^\s*[【\[][^】\]]+[】\]]\s*[:：]?\s*$/.test(line)) { inside = true; strict = /发音|听写|纠错|结课|作业|语法/.test(line); }
+      else if (STRICT_META_SECTION.test(title) || (text && /^课后(?:作业|练习|任务)\s*[:：]?$/.test(title))) { inside = true; strict = true; }
+      else if (SOFT_META_SECTION.test(title)) { inside = false; strict = false; }
+      else if (SECTION_END.test(line) && !strict) inside = false;
       let j = i; while (j < lines.length && isBare(lines[j])) j++;
       const before = lines.slice(Math.max(0, i - 3), i).reverse().find(x => x.trim()) || '';
-      if (!inside && j - i >= 3 && (i === 0 || !lines[i - 1].trim() || !BARE_LINE.test(lines[i - 1])) && (j - i >= 6 || /词|生字|vocab|words/i.test(before))) {
-        out.push('词汇', ...lines.slice(i, j), ''); i = j; continue;
+      if (!inside && !strict && j - i >= 3 && (i === 0 || !lines[i - 1].trim() || !BARE_LINE.test(lines[i - 1])) && (j - i >= 6 || /词|生字|vocab|words/i.test(before))) {
+        out.push('词汇', ...lines.slice(i, j), BARE_END); i = j; continue;
       }
       out.push(line); i++;
     }
@@ -182,7 +448,7 @@
     if (parts.length < 2) return [line];
     const isPair = seg => {
       const s = stripIpa(seg);
-      if (/^\s*(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron)\.?\s*(?:[\u4e00-\u9fff]|$)/.test(s)) return false;
+      if (/^\s*(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron)\.?\s*(?:[\u4e00-\u9fff(（\[【]|$)/.test(s)) return false;
       if (/^\s*[A-Za-z\-]+\s*（(?:单数|复数|过去式|过去分词|现在分词|比较级|最高级|简称|abbr\.?)）\s*$/.test(s)) return false;
       const m = WORD_LINE.exec(s);
       if (m) {
@@ -213,11 +479,14 @@
     const firstNonEmpty = cleanText.split('\n').find(l => l.trim())?.trim() || '';
     if (DOC_META_TITLE.test(firstNonEmpty)) strictMeta = true;
     const add = (item, raw) => {
+      item.word = capWord(item.word);
+      if (!item.word) return null;
       if (section) item.extra = META_PREFIX + JSON.stringify({section, heading, line: raw.trim().replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').trimEnd(), word: item.word, pos: item.pos || '', meaning: item.meaning || '', notes: item.extra ? [item.extra] : []});
       words.push(item); return item;
     };
     const itemPrefix = /^\s*(?:(?:\d\uFE0F?\u20E3|\d+[.、)）])\s*|[-–•·*]\s*)/u;
     for (const raw of markBareLists(cleanText.split('\n'))) {
+      if (raw === BARE_END) { section = ''; heading = ''; parent = null; inVocab = false; continue; }
       let line = raw.replace(/\s+$/, '');
       if (!line.trim()) continue;
       const title = feedbackHeading(line), header = feedbackSection(line, inGrammar);
@@ -238,6 +507,7 @@
       for (const rawPiece of pieces) {
         const piece = section ? rawPiece.replace(itemPrefix, '').trim() : rawPiece.trim();
         const pieceRaw = multi ? rawPiece : raw;
+        if (/https?:\/\//i.test(piece) || piece.includes('http')) { parent = null; continue; }
         const labelled = (section === '搭配' || section === '词汇') && (LABELLED_COLON.exec(piece) || LABELLED_HYPHEN.exec(piece));
         if (labelled && !NON_WORD_ZH_LABEL.test(labelled.groups.zh.trim())) {
           const en = labelled.groups.en.trim().replace(/[\s.…；;]+$/, '') || labelled.groups.en.trim();
@@ -249,10 +519,10 @@
             const clean = piece.replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').replace(/\s+/g, ' ').trim();
             if (section === '句子背诵' && clean.split(' ').filter(Boolean).length < 2 && !/[.?!…\u4e00-\u9fff]/.test(clean)) continue;
             const cut = clean.search(/[（(《〈「『【]*[\u4e00-\u9fff]/);
-            let word = cut >= 0 ? clean.slice(0, cut).trim() : clean, meaning = cut >= 0 ? clean.slice(cut) : '', pos = '';
+            let word = cut >= 0 ? clean.slice(0, cut).trim() : clean, meaning = cut >= 0 ? clean.slice(cut) : '', pos = '', extra = '';
             if (section === '搭配' && /^(?:或者?|和|及|\+)\s*[A-Za-z+]/.test(meaning)) { word = clean; meaning = ''; }   // "inform sb. of sth.或者that + 句子" is one pattern
-            if (section !== '句子背诵') { word = word.replace(/[\s.…:：]+$/, ''); const sp = splitPos(word, '', meaning); word = sp.word; pos = sp.pos || ''; meaning = sp.meaning; }   // whole sentences keep their full stop
-            parent = add({word, pos, meaning, extra: '', wrong: /❌/.test(piece)}, pieceRaw);
+            if (section !== '句子背诵') { word = word.replace(/[\s.…:：]+$/, ''); const sp = splitPos(word, '', meaning); word = sp.word; pos = sp.pos || ''; meaning = sp.meaning; extra = sp.extra || ''; }   // whole sentences keep their full stop
+            parent = add({word, pos, meaning, extra, wrong: /❌/.test(piece)}, pieceRaw);
             continue;
           }
         }
@@ -277,9 +547,13 @@
         const meaning = m.groups.meaning.replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').replace(/\s+/g, ' ').replace(/^[\s;；,，]+|[\s;；,，]+$/g, '');
         if (!meaning || !/[\u4e00-\u9fff]/.test(meaning)) continue;
         const wrong = [...piece.matchAll(WRONG)].length > 0;
-        const split = splitPos(word, cleanPos(m.groups.pos), meaning);
-        const second = split.pos && /^(.*?[\u4e00-\u9fff].*?)[\s；;，,]*(?<![A-Za-z])(n|v|vt|vi|adj|j|adv|prep)\.\s*(\S.*)$/.exec(split.meaning || '');   // "特点 v.以…为特点"
-        if (second) { const p2 = second[2] === 'j' ? 'adj' : second[2]; split.pos = split.pos + '/' + p2; split.meaning = second[1].trim() + '；' + p2 + '. ' + second[3].trim(); }
+        const split = splitPos(word, m.groups.pos || '', meaning);
+        const second = split.pos && SECOND_POS.exec(split.meaning || '');   // "特点 v.以…为特点"
+        if (second) {
+          const p2 = second[2] === 'j' ? 'adj' : second[2];
+          if (!split.pos.split('/').map(normPos).includes(normPos(p2))) split.pos = split.pos + '/' + p2;
+          split.meaning = second[1].trim() + '；' + p2 + '. ' + second[3].trim();
+        }
         if (PROSE_EVAL_HINT.test(split.meaning)) continue;
         if (!section && !inVocab && !split.pos) {
           if (strictMeta) continue;
@@ -296,16 +570,36 @@
       const key = item.word.trim().toLowerCase(), old = unique.get(key);
       if (!old) { unique.set(key, item); return; }
       if (item.meaning && !old.meaning.includes(item.meaning)) old.meaning = [old.meaning, item.meaning].filter(Boolean).join('；');
-      if (item.extra && item.extra !== old.extra) { const next = entryMeta(item); appendEntryNote(old, next ? next.heading + '\n' + next.line : item.extra); }
-      old.pos = old.pos || item.pos; old.wrong = old.wrong || item.wrong;
+      old.pos = mergePos(old.pos, item.pos);
+      const oldMeta = entryMeta(old), nextMeta = entryMeta(item);
+      const candidates = [];
+      if (nextMeta) {
+        const sameOrig = !!(oldMeta && nextMeta.heading === oldMeta.heading && normCopyCmp(nextMeta.line) === normCopyCmp(oldMeta.line));
+        if (!sameOrig) candidates.push((nextMeta.heading ? nextMeta.heading + '\n' + nextMeta.line : nextMeta.line).trim());
+        candidates.push(...(nextMeta.notes || []));
+      } else if (item.extra) candidates.push(item.extra);
+      if (oldMeta) {
+        oldMeta.meaning = old.meaning || '';
+        oldMeta.pos = old.pos || '';
+        const seenNotes = new Set(oldMeta.notes.map(normCopyCmp));
+        seenNotes.add(normCopyCmp((oldMeta.heading ? oldMeta.heading + '\n' + oldMeta.line : oldMeta.line).trim()));
+        seenNotes.add(normCopyCmp(oldMeta.line));
+        for (const cn of candidates) {
+          const nc = normCopyCmp(cn);
+          if (nc && !seenNotes.has(nc)) { oldMeta.notes.push(cn); seenNotes.add(nc); }
+        }
+        old.extra = META_PREFIX + JSON.stringify(oldMeta);
+      } else {
+        let existingExtra = normCopyCmp(old.extra);
+        for (const cn of candidates) {
+          const nc = normCopyCmp(cn);
+          if (nc && !existingExtra.includes(nc)) { appendEntryNote(old, cn); existingExtra = normCopyCmp(old.extra); }
+        }
+      }
+      old.wrong = old.wrong || item.wrong;
     });
     return [...unique.values()];
   }
-  const LESSON_NO = /(?:L|Lesson|反馈|第)\s*(\d{1,3})(?!\d)|(?:听说|听力|阅读|写作|口语|读写|托福阅读|能力提升)[^\d]{0,6}?(\d{1,3})\s*$/gi;
-  // Titles: 学生名_课程_日期 on the feedback page; quiz titles add the teacher's lesson number, e.g. "陈书进_阅读L3_11/7".
-  const lessonLabel = (learner, course, no, day) => String(learner || '').replace(/\//g, '、') + '_' + (course || '课程') + (no ? 'L' + no : '') + '_' + md(day);
-  const lessonNo = title => { let n = null; for (const m of String(title || '').matchAll(LESSON_NO)) n = Number(m[1] || m[2]); return n && n <= 150 ? n : null; };
-  const normSpan = v => { const m = /^(\d{1,2}):(\d{2})\s*[-–—~～至]\s*(\d{1,2}):(\d{2})/.exec(String(v || '').trim()); return m ? m[1].padStart(2, '0') + ':' + m[2] + '-' + m[3].padStart(2, '0') + ':' + m[4] : ''; };
 
   // ---------- Store: owner cloud tables, or local preview data on this computer only ----------
   const client = () => globalThis.wayonSupabaseClient?.client || null;
@@ -346,11 +640,14 @@
   }
   // A lesson's words: the list you edited by hand if there is one, otherwise what the parser finds in its text.
   const customWords = new Map();
-  async function lessonWords(id) {
-    const body = await lessonBody(id), custom = customWords.get(id), parsed = parseFeedback(body);
+  function mergeCustomWords(custom, parsed) {
     if (!custom) return parsed;
     const byWord = new Map(parsed.map(w => [wordKey(w.word), w]));
     return custom.map(w => ({...w, extra: w.extra || byWord.get(wordKey(w.word))?.extra || ''}));
+  }
+  async function lessonWords(id) {
+    const body = await lessonBody(id);
+    return mergeCustomWords(customWords.get(id), parseFeedback(body));
   }
   const wordKey = word => String(word || '').replace(/\u00a0/g, ' ').replace(/\u2011/g, '-').trim().toLowerCase();
   // Database rows have no word-position field. Recover each lesson's order from
@@ -358,12 +655,16 @@
   // A word saved under an older reading of the same feedback line ("repair v/" from "repair v/ 修复") is the same word.
   // Only rows nobody has edited by hand follow the new reading; the library row keeps its id and review history.
   const sourceLine = r => { const m = entryMeta(r); return m && m.line && m.word === r.word ? m.line : null; };
+  const isUneditedFrom = (stored, fresh) => {
+    const sm = entryMeta(stored), fm = entryMeta(fresh);
+    return !!(sm && fm && sm.line && sm.line === fm.line && sm.word === stored.word && sm.pos === (stored.pos || '') && sm.meaning === (stored.meaning || ''));
+  };
   const reread = w => ({word: w.word, pos: w.pos || '', meaning: w.meaning || '', extra: w.extra || ''});
   const healed = new Set();
   function healVocab(id, w) {
     if (!id || healed.has(id)) return;
     healed.add(id);
-    updateVocab(id, {word: w.word, pos: w.pos || null, meaning: w.meaning || '', extra: w.extra || null}).catch(() => {});   // the new spelling may already be another row: then leave both
+    updateVocab(id, {word: capWord(w.word), pos: w.pos || null, meaning: w.meaning || '', extra: w.extra || null}).catch(() => {});   // the new spelling may already be another row: then leave both
   }
   const linesOf = words => { const m = new Map(); words.forEach(w => { const line = entryMeta(w)?.line; if (line && !m.has(line)) m.set(line, w); }); return m; };
   async function feedbackOrder(items) {
@@ -374,10 +675,17 @@
       groups.get(item.lesson_id).push(item);
     }
     const ordered = new Map(await Promise.all([...groups].map(async ([id, rows]) => {
-      const ranks = new Map(), words = await lessonWords(id), byLine = linesOf(words);
-      words.forEach((w, i) => { if (!ranks.has(wordKey(w.word))) ranks.set(wordKey(w.word), i); });
+      const ranks = new Map(), words = await lessonWords(id), byLine = linesOf(words), byKey = new Map();
+      words.forEach((w, i) => { const k = wordKey(w.word); if (!ranks.has(k)) { ranks.set(k, i); byKey.set(k, w); } });
       rows.forEach(it => {
-        if (ranks.has(wordKey(it.word))) return;
+        const k = wordKey(it.word);
+        if (ranks.has(k)) {
+          const fresh = byKey.get(k);
+          if (fresh && isUneditedFrom(it, fresh) && (it.word !== fresh.word || (it.pos || '') !== (fresh.pos || '') || (it.meaning || '') !== (fresh.meaning || '') || (it.extra || '') !== (fresh.extra || ''))) {
+            Object.assign(it, reread(fresh)); healVocab(it.vocab_id, fresh);
+          }
+          return;
+        }
         const line = sourceLine(it), w = line && byLine.get(line);
         if (!w || rows.some(o => o !== it && wordKey(o.word) === wordKey(w.word))) return;
         Object.assign(it, reread(w)); healVocab(it.vocab_id, w);
@@ -400,30 +708,83 @@
       let stored = ownWords.get(wordKey(w.word));
       const line = !stored && entryMeta(w)?.line, old = line && stale.get(line);
       if (old) { stale.delete(line); Object.assign(old, reread(w), {pos: w.pos || null}); healVocab(old.id, w); stored = old; }
+      else if (stored && isUneditedFrom(stored, w) && (stored.word !== w.word || (stored.pos || '') !== (w.pos || '') || (stored.meaning || '') !== (w.meaning || '') || (stored.extra || '') !== (w.extra || ''))) {
+        Object.assign(stored, reread(w), {pos: w.pos || null}); healVocab(stored.id, w);
+      }
       return {...stored, ...w, id: stored?.id || 'pending:' + lesson.id + ':' + wordKey(w.word), learner: lesson.learner,
         lesson_id: lesson.id, lesson_date: lesson.lesson_date, subject: lesson.subject, _pending: !stored};
     });
   }
   const slimWords = ws => ws.map(w => ({word: w.word, pos: w.pos || '', meaning: w.meaning || '', extra: w.extra || ''}));
+  async function insertOrReuseVocabRows(learner, rows) {
+    if (!rows.length) return [];
+    if (mode === 'preview') {
+      const resolved = [];
+      for (const row of rows) {
+        const existing = preview.words.find(w => w.learner === learner && wordKey(w.word) === wordKey(row.word));
+        if (existing) {
+          if (existing.archived) Object.assign(existing, {archived: false, pos: row.pos ?? existing.pos, meaning: row.meaning || existing.meaning, extra: row.extra ?? existing.extra});
+          resolved.push(existing);
+        } else { preview.words.push(row); resolved.push(row); }
+      }
+      return resolved;
+    }
+    const {error} = await client().from('wayon_vocab').insert(rows);
+    if (!error) return rows;
+    if (!isDuplicatePgError(error)) throw error;
+    let allForLearner = null;
+    const findExisting = async k => {
+      if (!allForLearner) {
+        const list = await pageAll(() => client().from('wayon_vocab').select('id,learner,word,archived').eq('learner', learner));
+        allForLearner = new Map(list.map(r => [wordKey(r.word), r]));
+      }
+      return allForLearner.get(k) || null;
+    };
+    const resolved = [];
+    for (const row of rows) {
+      const {error: oneErr} = await client().from('wayon_vocab').insert(row);
+      if (!oneErr) { resolved.push(row); continue; }
+      if (!isDuplicatePgError(oneErr)) throw oneErr;
+      const existing = await findExisting(wordKey(row.word));
+      if (!existing) throw oneErr;
+      if (existing.archived) {
+        const {error: unErr} = await client().from('wayon_vocab').update({
+          archived: false, pos: row.pos, meaning: row.meaning, extra: row.extra,
+          subject: row.subject, lesson_id: row.lesson_id, lesson_date: row.lesson_date
+        }).eq('id', existing.id);
+        if (unErr) throw unErr;
+        existing.archived = false;
+      }
+      resolved.push({...row, id: existing.id});
+    }
+    return resolved;
+  }
   // Newly recognized sections in an old feedback are inserted only after an explicit
   // selection action. Re-read before inserting so an uncertain prior save is reused.
   async function materializeItems(items) {
-    const learners = [...new Set(items.filter(it => it._pending).map(it => it.learner))];
+    const learners = [...new Set(items.filter(it => it._pending && it.learner).map(it => it.learner))];
     for (const learner of learners) {
       dropVocabCache(learner);
       const lib = await vocabFor([learner]), byWord = new Map(lib.map(r => [wordKey(r.word), r])), fresh = [];
       for (const it of items.filter(x => x._pending && x.learner === learner)) {
-        if (byWord.has(wordKey(it.word))) continue;
+        it.word = capWord(it.word);
+        const k = wordKey(it.word);
+        if (!k || byWord.has(k)) continue;
         const row = {id: uuid(), learner, word: it.word, pos: it.pos || null, meaning: it.meaning || '', extra: it.extra || null,
-          subject: it.subject || null, lesson_id: it.lesson_id, lesson_date: it.lesson_date || today(),
+          subject: it.subject || null, lesson_id: it.lesson_id || null, lesson_date: it.lesson_date || today(),
           box: 0, wrong_count: 0, right_count: 0, archived: false};
-        byWord.set(wordKey(it.word), row); fresh.push(row);
+        byWord.set(k, row); fresh.push(row);
       }
       if (fresh.length) {
-        if (mode === 'preview') preview.words.push(...fresh);
-        else { const {error} = await client().from('wayon_vocab').insert(fresh); if (error) { dropVocabCache(learner); throw error; } }
+        try {
+          const resolved = await insertOrReuseVocabRows(learner, fresh);
+          resolved.forEach(r => byWord.set(wordKey(r.word), r));
+        } catch (err) { dropVocabCache(learner); throw err; }
       }
-      items.filter(x => x._pending && x.learner === learner).forEach(it => { it.vocab_id = byWord.get(wordKey(it.word)).id; delete it._pending; });
+      items.filter(x => x._pending && x.learner === learner).forEach(it => {
+        const hit = byWord.get(wordKey(it.word));
+        if (hit) { it.vocab_id = hit.id; delete it._pending; }
+      });
       dropVocabCache(learner);
     }
   }
@@ -431,7 +792,7 @@
     const key = [...learners].sort().join('|');
     if (vocabCache.has(key)) return vocabCache.get(key);
     let rows;
-    if (mode === 'preview') rows = preview.words.filter(w => learners.includes(w.learner));
+    if (mode === 'preview') rows = preview.words.filter(w => !w.archived && learners.includes(w.learner));
     else rows = learners.length ? await pageAll(() => client().from('wayon_vocab').select('*').in('learner', learners).eq('archived', false).order('lesson_date', {ascending: false, nullsFirst: false})) : [];
     vocabCache.set(key, rows); return rows;
   }
@@ -443,8 +804,8 @@
     if (mode === 'cloud') { try { const all = await pageAll(() => client().from('wayon_vocab').select('word').eq('learner', learner)); all.forEach(w => have.add(wordKey(w.word))); } catch {} }
     const fresh = [];
     for (const w of words) {
-      const k = wordKey(w.word); if (!k || have.has(k)) continue; have.add(k);
-      fresh.push({id: uuid(), learner, word: String(w.word).trim(), pos: w.pos || null, meaning: w.meaning || '', extra: w.extra || null, ...base,
+      const capped = capWord(w.word), k = wordKey(capped); if (!k || have.has(k)) continue; have.add(k);
+      fresh.push({id: uuid(), learner, word: capped, pos: w.pos || null, meaning: w.meaning || '', extra: w.extra || null, ...base,
         wrong_count: w.wrong ? 1 : 0, last_result: w.wrong ? 'wrong' : null, box: 0, due_date: null, right_count: 0, archived: false});
     }
     if (mode === 'preview') { preview.words.push(...fresh); return fresh.length; }
@@ -452,8 +813,8 @@
     for (let i = 0; i < fresh.length; i += 500) {
       const chunk = fresh.slice(i, i + 500), {error} = await client().from('wayon_vocab').insert(chunk);
       if (!error) { added += chunk.length; continue; }
-      if (!/duplicate|unique/i.test(error.message)) throw error;
-      for (const one of chunk) { const {error: e} = await client().from('wayon_vocab').insert(one); if (!e) added++; else if (!/duplicate|unique/i.test(e.message)) throw e; }   // someone else added it meanwhile
+      if (!isDuplicatePgError(error)) throw error;
+      for (const one of chunk) { const {error: e} = await client().from('wayon_vocab').insert(one); if (!e) added++; else if (!isDuplicatePgError(e)) throw e; }   // someone else added it meanwhile
     }
     return added;
   }
@@ -480,15 +841,16 @@
   // notion_synced_at is cleared so the evening backup replaces the Notion copy.
   async function editLesson(id, patch) {
     const body = patch.body, sha = await sha256(body), words = patch.words || parseFeedback(body);
-    const old = index.find(l => l.id === id) || {};
-    const learner = old.learner, subject = patch.subject || old.subject, lesson_date = patch.lesson_date === undefined ? old.lesson_date : patch.lesson_date;
+    const old = (index || []).find(l => l.id === id) || {};
+    const learner = patch.learner || old.learner, subject = patch.subject || old.subject, lesson_date = patch.lesson_date === undefined ? old.lesson_date : patch.lesson_date;
     let title = (body.split('\n').find(x => x.trim()) || '').trim().slice(0, 120) || old.title;
     const oldNo = lessonNo(old.title); if (oldNo && !lessonNo(title)) title += ' L' + oldNo;   // the first line may not carry the lesson number; keep it
     const oldSpan = normSpan(old.title); if (oldSpan && !normSpan(title)) title = oldSpan + ' ' + title;
     const row = {body, body_sha256: sha, title, subject, lesson_date, notion_synced_at: null, words: patch.custom ? slimWords(words) : null};
     if (mode === 'preview') {
       if (preview.lessons.some(l => l.id !== id && l.learner === learner && l.body_sha256 === sha)) throw new Error('这段内容和另一节完全相同');
-      Object.assign(preview.lessons.find(l => l.id === id), row);
+      const target = preview.lessons.find(l => l.id === id);
+      if (target) Object.assign(target, row);
     } else {
       const {error} = await client().from('wayon_lessons').update(row).eq('id', id);
       if (error) throw /duplicate|unique/i.test(error.message) ? new Error('这段内容和另一节完全相同') : error;
@@ -497,8 +859,12 @@
       if (mode === 'preview') preview.words.filter(w => w.lesson_id === id).forEach(w => { w.subject = subject; });
       else { const {error} = await client().from('wayon_vocab').update({subject}).eq('lesson_id', id).eq('learner', learner); if (error) throw error; }
     }
-    const added = await insertNewWords(learner, words, {subject, lesson_date, lesson_id: id});
-    bodies.set(id, body); customWords.set(id, row.words); Object.assign(old, {title, subject, lesson_date}); dropVocabCache(learner);
+    if (lesson_date !== old.lesson_date) {
+      if (mode === 'preview') preview.words.filter(w => w.lesson_id === id).forEach(w => { w.lesson_date = lesson_date; });
+      else if (learner) { const {error} = await client().from('wayon_vocab').update({lesson_date}).eq('lesson_id', id).eq('learner', learner); if (error) throw error; }
+    }
+    const added = learner ? await insertNewWords(learner, words, {subject, lesson_date, lesson_id: id}) : 0;
+    bodies.set(id, body); customWords.set(id, row.words); Object.assign(old, {title, subject, lesson_date}); if (learner) dropVocabCache(learner);
     return {total: words.length, added};
   }
   // 「不算缺课」：老师可能本来就跳过了某些课次编号；用户确认后记下，不再显示虚线缺课行。
@@ -539,6 +905,31 @@
       ov.addEventListener('click', e => { if (e.target === ov) done(false); }); document.addEventListener('keydown', key); ok.focus();
     });
   }
+  // Option A finish prompt when unmarked items remain: explicit 3-way choice with no global Enter hijack.
+  function askFinishChoice({unmarked, right, wrong}) {
+    return new Promise(resolve => {
+      const ov = make('div', 'vx-overlay fb-confirm'), box = make('div', 'vx-box fb-confirm-box');
+      let settled = false;
+      const done = v => { if (settled) return; settled = true; ov.remove(); document.removeEventListener('keydown', key); resolve(v); };
+      const key = e => {
+        const ovs = document.querySelectorAll('.vx-overlay');
+        if (ovs[ovs.length - 1] !== ov) return;
+        if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); done('cancel'); }
+      };
+      const title = (right + wrong === 0) ? ('全部 ' + unmarked + ' 项未标') : ('还有 ' + unmarked + ' 项未标');
+      const detail = '当前已标：✅ ' + right + ' · ❌ ' + wrong + ' · 未标 ' + unmarked + '\n可以把其余未标项直接标为 ✅ 并保存，或保留未标直接保存。';
+      box.append(make('h3', '', title), make('p', 'fb-meta', detail));
+      const row = make('div', 'fb-row fb-choice-actions');
+      const cancelBtn = btn('fb-btn', '返回继续', () => done('cancel'));
+      const keepBtn = btn('fb-btn', '保留未标直接保存', () => done('keep_unmarked'));
+      const markAllBtn = btn('fb-btn pri', '其余 ' + unmarked + ' 项标 ✅ 并保存', () => done('mark_all'));
+      row.append(cancelBtn, keepBtn, markAllBtn);
+      box.append(row); ov.append(box); document.body.append(ov);
+      ov.addEventListener('click', e => { if (e.target === ov) done('cancel'); });
+      document.addEventListener('keydown', key);
+      markAllBtn.focus();
+    });
+  }
   let busyBar = null;
   async function busy(text, work) {
     busyBar = busyBar || make('div', 'fb-busy'); busyBar.textContent = text; document.body.append(busyBar);
@@ -554,15 +945,15 @@
   // "和 10/31 听力 L16 那节内容完全一样" — so a wrong clipboard is obvious instead of a silent "already saved".
   const dupText = e => !e ? '这段内容之前已经保存过' : '这段内容和已保存的「' + [md(e.lesson_date) + weekday(e.lesson_date), subjectOf(e.subject), lessonNo(e.title) ? 'L' + lessonNo(e.title) : ''].filter(Boolean).join(' ') + '」完全一样' + (e.archived_at ? '（那节已删除）' : '') + '，没有重复保存。请检查剪贴板里是不是这节课的反馈。';
   async function updateVocab(id, patch) {
-    if (mode === 'preview') { const w = preview.words.find(x => x.id === id); if (w) Object.assign(w, patch); return; }
-    const {error} = await client().from('wayon_vocab').update(patch).eq('id', id); if (error) throw error;
+    const clean = patch && 'word' in patch ? {...patch, word: capWord(patch.word)} : patch;
+    if (mode === 'preview') { const w = preview.words.find(x => x.id === id); if (w) Object.assign(w, clean); return; }
+    const {error} = await client().from('wayon_vocab').update(clean).eq('id', id); if (error) throw error;
   }
   async function addVocab(learner, items) {
-    const rows = items.map(w => ({id: uuid(), learner, word: w.word, pos: w.pos || null, meaning: w.meaning || '', subject: w.subject || null, lesson_date: today(), box: 0, wrong_count: 0, right_count: 0, archived: false}));
+    const rows = items.map(w => ({id: uuid(), learner, word: capWord(w.word), pos: w.pos || null, meaning: w.meaning || '', extra: w.extra || null, subject: w.subject || null, lesson_id: w.lesson_id || null, lesson_date: today(), box: 0, wrong_count: 0, right_count: 0, archived: false})).filter(r => r.word);
     if (!rows.length) return rows;
-    if (mode === 'preview') preview.words.push(...rows);
-    else { const {error} = await client().from('wayon_vocab').insert(rows); if (error) throw error; }
-    dropVocabCache(learner); return rows;
+    const resolved = await insertOrReuseVocabRows(learner, rows);
+    dropVocabCache(learner); return resolved;
   }
   async function addReview(row) {
     if (mode === 'preview') { preview.reviews.push(row); return; }
@@ -584,9 +975,11 @@
     const k = day + '|' + student + '|' + phase;
     clearTimeout(saveTimers.get(k));
     saveTimers.set(k, setTimeout(async () => {
-      const items = listCache.get(day + '|' + student)[phase];
       try {
-        if (mode === 'preview') localStorage.setItem('wayon-vocab-lists-' + day + '|' + student, JSON.stringify(listCache.get(day + '|' + student)));
+        const cached = listCache.get(day + '|' + student);
+        const items = cached?.[phase];
+        if (!Array.isArray(items)) return;
+        if (mode === 'preview') localStorage.setItem('wayon-vocab-lists-' + day + '|' + student, JSON.stringify(cached));
         else if (mode === 'cloud') { const {error} = await client().from('wayon_vocab_lists').upsert({day, student, phase, items}, {onConflict: 'owner_id,day,student,phase'}); if (error) throw error; }
         flash('已保存');
       } catch (e) { flash('保存失败：' + (e.message || e), true); }
@@ -634,7 +1027,11 @@
     let timer; return Promise.race([work, new Promise((_, reject) => { timer = setTimeout(() => reject(Error('备份暂未完成')), ms); })]).finally(() => clearTimeout(timer));
   }
   const backupRunning = new Set(), backupListeners = new Map(), backupRetry = new Map();
-  function backupStatus(key, text) { backupListeners.get(key)?.(text); }
+  function backupStatus(key, text) {
+    const fn = backupListeners.get(key);
+    if (!fn) return;
+    if (fn(text) === false) backupListeners.delete(key);
+  }
   function retryVocabBackup(owner) { if (!backupRetry.has(owner)) backupRetry.set(owner, setTimeout(() => { backupRetry.delete(owner); void flushVocabBackups(owner); }, 30000)); }
   async function pendingStatus(owner, text) { for (const r of await pendingBackups(owner)) backupStatus(r.key, text); }
   async function flushVocabBackups(owner) {
@@ -654,7 +1051,13 @@
           if (ack?.id !== row.id || ack?.owner_id !== owner || ack?.payload_hash !== row.payload_hash) throw Error('备份内容不一致');
           await localRecords([{...record, status: 'backed_up'}]);
           backupStatus(record.key, '已备份 · 下班统一处理');
-        } catch {
+        } catch (err) {
+          if (isPermanentPgError(err)) {
+            try { await localRecords([{...record, status: 'failed_permanent', error: String(err?.code || '') + ' ' + String(err?.message || err)}]); } catch {}
+            backupStatus(record.key, '备份格式异常 · 本机保留');
+            if (typeof flash === 'function') flash('有一条旧抽背备份无法上传（已跳过，不影响后续备份）', true);
+            continue;
+          }
           backupStatus(record.key, '已存本机 · 备份待重试');
           retryVocabBackup(owner);
           break;
@@ -692,23 +1095,6 @@
   }
 
   // ---------- Learner mapping: a student's words live in their own folder and in their class folders ----------
-  const COURSE_ACRONYM = /^(?:sat|act|map|ap|ib|gre|gmat|toefl|ielts|esl|ket|pet|fce|cet|vip|tpo|cam)$/i;
-  function stripCourseSuffix(raw) {
-    let t = plainName(raw).replace(/[()（）]/g, '').trim();
-    for (;;) {
-      const next = t
-        .replace(/(?:[-\s]*(?:雅思|托福|新托福|SAT|ACT|MAP|AP|IB|GRE|校内英语|校内|能力提升|强化|基础|冲刺|听说|听力|阅读|写作|口语|读写|语法|数学|词汇)?\s*(?:1\s*v\s*1|一对一|1对1|班课|课程|自习|暂停))+$/i, '')
-        .replace(/(?:[-\s]+(?:雅思|托福|新托福|SAT|ACT|MAP)(?:基础|强化|冲刺)?|(?:雅思|托福|新托福|SAT|ACT|MAP)(?:基础|强化|冲刺)?)$/i, '')
-        .trim();
-      if (next === t) break;
-      t = next;
-    }
-    return t;
-  }
-  const displayStudent = s => {
-    const shown = globalThis.wayonDisplayName?.(s);
-    return plainName(stripCourseSuffix(shown || s) || shown || s);
-  };
   const PERSON_ALIAS_GROUPS = [
     ['卢泰戈', 'Tiger', '泰戈'],
     ['郭璟', 'Jack', 'guojing'],
@@ -962,7 +1348,7 @@
     .vq-ready .vq-copy+.vq-start{margin-left:0}
     .vq-ready .vq-start{margin-left:auto;min-height:34px}
     .vq-done{background:color-mix(in srgb,var(--done-bg,#e8f5ec) 70%,transparent)}.vq-done-mark{font-weight:650;font-size:13.5px;color:var(--done-dark,#1f7a3a)}
-    .vq-tally{display:inline-flex;gap:10px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}.vq-tally .ok{color:var(--done-dark,#1f7a3a);font-weight:600}.vq-tally .bad{color:#b42318;font-weight:600}
+    .vq-tally{display:inline-flex;gap:10px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}.vq-tally .ok{color:var(--done-dark,#1f7a3a);font-weight:600}.vq-tally .bad{color:var(--bad-dark,#b42318);font-weight:600}
     .vq-done .vq-again{margin-left:auto;font-size:12.5px;color:var(--muted)}.vq-done .fb-btn{min-height:34px}
     .fb-back{margin-bottom:12px}
     .fb-orphan{border-style:dashed}
@@ -1008,6 +1394,8 @@
     @media (prefers-color-scheme:dark){.tone-blue{background:#0c447c;color:#e6f1fb}.tone-green{background:#27500a;color:#eaf3de}.tone-amber{background:#633806;color:#faeeda}.tone-purple{background:#3c3489;color:#eeedfe}.tone-teal{background:#085041;color:#e1f5ee}.tone-pink{background:#72243e;color:#fbeaf0}.tone-coral{background:#712b13;color:#faece7}.tone-gray{background:#444441;color:#f1efe8}}
     .vx-overlay.fb-confirm{z-index:2147483600;padding:16px!important;align-items:center!important}.vx-box.fb-confirm-box{width:min(420px,100%);height:auto;max-height:none;border-radius:16px!important;padding:20px 22px}
     .fb-btn.danger{background:#e5484d;border-color:#e5484d;color:#fff}.fb-confirm-box h3{margin:0 0 8px;font-size:18px}.fb-confirm-box p{white-space:pre-line;margin:0 0 16px;line-height:1.6}
+    .fb-choice-actions{justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    @media(max-width:599px){.fb-choice-actions{flex-direction:column-reverse;align-items:stretch}.fb-choice-actions .fb-btn{width:100%}}
     .fb-busy{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483601;padding:10px 18px 10px 38px;border-radius:999px;background:#1d1d1f;color:#fff;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
     .fb-busy:before{content:'';position:absolute;left:14px;top:50%;width:14px;height:14px;margin-top:-7px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:fbspin .8s linear infinite}
     @keyframes fbspin{to{transform:rotate(360deg)}}
@@ -1134,7 +1522,7 @@
       .qgroup.vq-card>.qhead{grid-template-columns:minmax(0,1fr);gap:8px}
       .vq-meta{width:100%;justify-content:flex-start}.vq-session{width:100%}
       .vq-bar{align-items:stretch;gap:10px}.vq-bar .vq-actions{margin-left:auto}
-      .vq-done{grid-template-columns:minmax(0,1fr);gap:10px}.vq-result-actions{justify-content:flex-end}
+      .vq-done{grid-template-columns:minmax(0,1fr);gap:10px}.vq-result-actions{justify-content:flex-end;flex-wrap:wrap}
       .vq-result-info{gap:6px 10px}.vq-result-info .vq-tally{flex-basis:100%}
     }
     .vq-items{margin:10px 0 0}
@@ -1153,7 +1541,7 @@
     .vx-add-create{width:100%;margin-top:8px}
     .vq-clear{border:0!important;background:transparent!important;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;min-height:28px;padding:0 6px}
     .vq-paste{display:flex;gap:8px;margin-top:8px}.vq-paste textarea{flex:1;min-height:0!important;margin:0!important}
-    .vq-paste button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);font:inherit;font-size:13px;cursor:pointer}
+    .vq-paste button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg-secondary);font:inherit;font-size:13px;cursor:pointer}
     .vx-list{display:flex;flex-direction:column}
     .vx-section{margin:20px 0 6px;padding:0 4px 7px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
     .vx-section:first-child{margin-top:0}.fb-entry-notes,.vx-note{white-space:pre-wrap;overflow-wrap:anywhere}.vx-note{font-size:12px;color:var(--muted);line-height:1.65;margin-top:7px}
@@ -1209,7 +1597,7 @@
     .vx-big.right{background:var(--done-bg)!important;border-color:var(--done-border)!important;color:var(--done-dark)!important}
     .vx-big.wrong{background:var(--bad-bg)!important;border-color:var(--bad-border)!important;color:var(--bad-dark)!important}
     .vx-summary pre{white-space:pre-wrap;background:var(--code-bg);padding:12px;border-radius:10px;font:14px/1.7 var(--sans)}
-    .vx-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300;padding:8px 14px;border-radius:999px;background:var(--fg);color:var(--card);font-size:13px;opacity:.92;pointer-events:none}
+    .vx-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483602;padding:8px 14px;border-radius:999px;background:var(--fg);color:var(--card);font-size:13px;opacity:.92;pointer-events:none}
     .vx-toast.bad{background:var(--bad);color:#fff}
     @media(max-width:599px){.vx-overlay{padding:0;align-items:stretch}.vx-box{max-height:100dvh;border-radius:0}.vq-item span{max-width:8em}}
   `; document.head.append(style);
@@ -1581,7 +1969,10 @@
   // Words panel shared by view, edit and add: recognised live from the text.
   async function copyPlain(text) {
     const t = make('textarea'); t.value = text; t.setAttribute('readonly', '');
-    t.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.append(t); t.select();
+    t.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.append(t);
+    try { t.focus({preventScroll: true}); } catch { try { t.focus(); } catch {} }
+    t.select();
+    try { t.setSelectionRange?.(0, text.length); } catch {}
     let ok = false; try { ok = document.execCommand('copy') === true; } catch {} t.remove();
     if (ok) return true;
     try { await navigator.clipboard.writeText(text); return true; } catch {}
@@ -1615,15 +2006,26 @@
     const line = make('div', 'fb-row'); line.append(word, pos, mean, ok, btn('fb-btn', '取消', cancel), status);
     form.append(line); row.replaceWith(form); word.focus();
   }
+  function stripSyntheticVocabMeta(w, rawInput) {
+    const m = entryMeta(w);
+    if (!m || m.heading !== '词汇' || /^词汇[:：]?$/m.test(String(rawInput || ''))) return w;
+    return {...w, extra: (m.notes || []).join('\n')};
+  }
   // One word of a saved lesson changed by hand: the lesson keeps its own word list, and this student's library row is
   // corrected in place (no second row for the fixed spelling) unless the new spelling is already there.
   async function editLessonWord(l, i, patch) {
-    const raw = await lessonBody(l.id), list = (customWords.get(l.id) || parseFeedback(raw)).map(w => ({...w})), before = list[i];
+    const cleanPatch = {...patch, word: capWord(patch.word)};
+    const raw = await lessonBody(l.id), list = (await lessonWords(l.id)).map(w => ({...w})), before = list[i];
     if (!before) throw new Error('这个词已经变了，请重新展开这节');
-    const lib = await vocabFor([l.learner]), row = lib.find(r => wordKey(r.word) === wordKey(before.word)), taken = lib.find(r => wordKey(r.word) === wordKey(patch.word));
-    if (row && (!taken || taken.id === row.id)) { await updateVocab(row.id, {word: patch.word, pos: patch.pos || null, meaning: patch.meaning}); dropVocabCache(l.learner); }
-    list[i] = {...before, ...patch};
-    return editLesson(l.id, {body: raw, words: list, custom: true});
+    const lib = await vocabFor([l.learner]), row = lib.find(r => wordKey(r.word) === wordKey(before.word)), taken = lib.find(r => wordKey(r.word) === wordKey(cleanPatch.word));
+    const archivedTaken = mode === 'preview' && row && preview.words.some(r => r.learner === l.learner && r.id !== row.id && wordKey(r.word) === wordKey(cleanPatch.word));
+    if (row && (!taken || taken.id === row.id) && !archivedTaken) {
+      try { await updateVocab(row.id, {word: cleanPatch.word, pos: cleanPatch.pos || null, meaning: cleanPatch.meaning}); }
+      catch (e) { if (!isDuplicatePgError(e)) throw e; }
+      dropVocabCache(l.learner);
+    }
+    list[i] = {...before, ...cleanPatch};
+    return editLesson(l.id, {body: raw, words: list, custom: true, learner: l.learner});
   }
   // Editable word list beside a feedback text. It follows the text until you change a word; then your list is kept
   // (「按原文重新识别」 goes back). 「批量编辑」 turns it into one word per line: "word pos. 意思".
@@ -1632,8 +2034,10 @@
     let picked = new Set(), undo = null;   // marquee selection (row indices) and the last bulk removal
     const line = w => [w.word, w.pos ? w.pos + '.' : '', w.meaning].filter(Boolean).join(' ');
     const fromLine = raw => { let t = raw.replace(/^\s*(?:\d{1,3}[.、)）]|[①-⑳]|[-–•·*])\s*/u, '');
-      const lab = /^([\u4e00-\u9fff][^:：A-Za-z]{0,10})[:：]\s*([A-Za-z].*)$/u.exec(t); if (lab) return {word: lab[2].trim(), pos: '', meaning: lab[1].trim(), extra: ''};
-      const p = parseFeedback(t)[0]; if (p) return {...p, extra: list.find(w => wordKey(w.word) === wordKey(p.word))?.extra || p.extra || ''}; const cut = t.search(/[一-鿿]/), word = (cut >= 0 ? t.slice(0, cut) : t).trim(); return {word, pos: '', meaning: cut >= 0 ? t.slice(cut).trim() : '', extra: list.find(w => wordKey(w.word) === wordKey(word))?.extra || ''}; };
+      const lab = /^([\u4e00-\u9fff][^:：A-Za-z]{0,10})[:：]\s*([A-Za-z].*)$/u.exec(t); if (lab) return {word: capWord(lab[2]), pos: '', meaning: lab[1].trim(), extra: ''};
+      const parsed = parseFeedback('词汇\n' + t)[0];
+      const p = parsed && stripSyntheticVocabMeta(parsed, t);
+      if (p) return {...p, extra: list.find(w => wordKey(w.word) === wordKey(p.word))?.extra || p.extra || ''}; const cut = t.search(/[一-鿿]/), word = capWord(cut >= 0 ? t.slice(0, cut) : t); return {word, pos: '', meaning: cut >= 0 ? t.slice(cut).trim() : '', extra: list.find(w => wordKey(w.word) === wordKey(word))?.extra || ''}; };
     const touch = () => { edited = true; };
     const draw = () => {
       box.textContent = ''; box.classList.add('fb-wedit');
@@ -1767,7 +2171,7 @@
         e.preventDefault(); e.stopPropagation();   // inside <summary>: do not open or close the lesson
         const cached = bodies.has(l.id);
         try {
-          const raw = await lessonBody(l.id), ws = customWords.get(l.id) || parseFeedback(raw);
+          const ws = await lessonWords(l.id);
           if (!ws.length) { flash('这节没有识别到生词', true); return; }
           const ok = await copyPlain(wordsCopyText(subjectOf(l.subject) + (lessonNo(l.title) ? 'L' + lessonNo(l.title) : ''), ws));
           // A browser may refuse the clipboard once the tap is followed by a network read; the words are cached now.
@@ -1784,7 +2188,7 @@
     body.append(text, words); d.append(s, body, tools);
     const view = raw => {
       body.textContent = ''; tools.textContent = '';
-      text.textContent = raw; body.append(text, words); paintWords(words, customWords.get(l.id) || parseFeedback(raw), customWords.get(l.id) ? '本节生词（手动修改过）' : '本节生词', subjectOf(l.subject) + (lessonNo(l.title) ? 'L' + lessonNo(l.title) : ''),
+      text.textContent = raw; body.append(text, words); paintWords(words, mergeCustomWords(customWords.get(l.id), parseFeedback(raw)), customWords.get(l.id) ? '本节生词（手动修改过）' : '本节生词', subjectOf(l.subject) + (lessonNo(l.title) ? 'L' + lessonNo(l.title) : ''),
         async (i, patch) => { await editLessonWord(l, i, patch); flash('已保存'); view(raw); });
       tools.append(btn('fb-btn', '编辑', () => edit(raw)));
     };
@@ -2008,10 +2412,11 @@
           if (stName && ['课前', '课后', '补充'].some(p => Array.isArray(obj[p]) && obj[p].length)) active.add(stName);
         }
       } else {
-        const [listsRes, sessRes] = await Promise.all([
+        const [listsRes, sessRes] = await vocabDeadline(Promise.all([
           client().from('wayon_vocab_lists').select('student,items').eq('day', day),
           client().from('wayon_vocab_sessions').select('student,state').eq('day', day).in('state', ['draft', 'completed'])
-        ]);
+        ]));
+        if (listsRes?.error || sessRes?.error) throw (listsRes?.error || sessRes?.error);
         for (const r of (listsRes?.data || [])) {
           if (r?.student && Array.isArray(r.items) && r.items.length) active.add(displayStudent(r.student));
         }
@@ -2075,19 +2480,50 @@
       return true;
     });
   }
+  function sameSinglePerson(a, b) {
+    const da = displayStudent(a), db = displayStudent(b);
+    if (!da || !db) return false;
+    if (normSearch(da) === normSearch(db)) return true;
+    if (parts(da).length !== 1 || parts(db).length !== 1) return false;
+    const ea = expandPersonAliases(da), eb = expandPersonAliases(db);
+    return ea.some(x => eb.some(y => aliasMatch(x, y)));
+  }
+  function canonicalQuizStudent(raw, scheduledSet, extraMap) {
+    const name = displayStudent(raw);
+    if (!name) return '';
+    const q = normSearch(name);
+    const schedList = [...(scheduledSet || [])];
+    const schedExact = schedList.find(s => normSearch(s) === q);
+    if (schedExact) return schedExact;
+    const schedAlias = schedList.find(s => sameSinglePerson(s, name));
+    if (schedAlias) return schedAlias;
+    const extraKeys = Object.keys(extraMap || {});
+    const extraExact = extraKeys.find(k => normSearch(displayStudent(k)) === q);
+    if (extraExact) return displayStudent(extraExact);
+    const learnerSingles = allLearners().filter(l => parts(l).length === 1).map(displayStudent).filter(Boolean);
+    const learnerExact = learnerSingles.find(l => normSearch(l) === q);
+    if (learnerExact) return learnerExact;
+    return name;
+  }
   function extraQuizStudents(day) {
     const scheduled = scheduledQuizSet(day);
+    const schedList = [...scheduled];
     const extraMap = readQuizExtra(day);
+    const extraEntries = Object.entries(extraMap);
     const data = pageData();
     const doneState = pageDoneState(day);
-    const picked = new Map();
+    const picked = [];
+    const isScheduled = name => schedList.some(s => normSearch(s) === normSearch(name) || sameSinglePerson(s, name));
+    const isSuppressed = name => extraEntries.some(([k, v]) => v === false && (normSearch(displayStudent(k)) === normSearch(name) || sameSinglePerson(k, name)));
     const add = (rawName, reason, force = false) => {
-      const name = displayStudent(rawName);
-      if (!name || scheduled.has(name)) return;
-      if (!force && extraMap[name] === false) return;
-      if (!picked.has(name)) picked.set(name, { student: name, reason });
+      const name = canonicalQuizStudent(rawName, scheduled, extraMap);
+      if (!name || isScheduled(name)) return;
+      if (!force && isSuppressed(name)) return;
+      if (!picked.some(e => normSearch(e.student) === normSearch(name) || sameSinglePerson(e.student, name))) {
+        picked.push({ student: name, reason });
+      }
     };
-    for (const [name, val] of Object.entries(extraMap)) {
+    for (const [name, val] of extraEntries) {
       if (val === true) add(name, '手动添加抽背', true);
     }
     for (const row of (Array.isArray(data?.[day]) ? data[day] : [])) {
@@ -2100,13 +2536,13 @@
     }
     for (const card of studyCardsFor(day)) {
       if ((card.tasks || []).some(t => /抽背|默写/.test(t?.text || ''))) {
-        add(card.studentName, '今日自习含抽背');
+        String(card.studentName || '').split(/[&＆/／、]/).forEach(part => add(part, '今日自习含抽背'));
       }
     }
     for (const stName of (dayActiveQuiz.get(day) || [])) {
       add(stName, '今日已有词单');
     }
-    return [...picked.values()];
+    return picked;
   }
   function attachFoldAndLists(g, head, student, note, meta, readFoldsFn, onRemove) {
     const day = curDay();
@@ -2178,20 +2614,29 @@
     const listWrap = make('div', 'vx-add-list');
     o.body.append(search, listWrap);
     o.foot.append(btn('fb-btn', '关闭', () => o.close()));
-    try { if (mode === 'cloud' || mode === 'preview') await lessonIndex(); } catch {}
+    try { await ready(); if (mode === 'cloud' || mode === 'preview') await lessonIndex(); } catch {}
     const scheduled = scheduledQuizSet(day);
-    const extraShown = new Set(extraQuizStudents(day).map(e => e.student));
-    const shownNow = new Set([...scheduled, ...extraShown]);
+    const schedList = [...scheduled];
+    const extraShown = extraQuizStudents(day).map(e => e.student);
+    const shownList = [...schedList, ...extraShown];
+    const isShown = name => shownList.some(s => normSearch(s) === normSearch(name) || sameSinglePerson(s, name));
+    const isSched = name => schedList.some(s => normSearch(s) === normSearch(name) || sameSinglePerson(s, name));
     const data = pageData();
-    const stats = new Map();
+    const stats = new Map();   // normSearch(name) -> entry
     const noteStudent = (raw, cnt = 0, date = '', src = '') => {
       const name = displayStudent(raw);
       if (!name) return;
-      const curStats = stats.get(name) || { name, count: 0, latest: '', sources: new Set() };
+      const k = normSearch(name);
+      let curStats = stats.get(k);
+      if (!curStats) {
+        curStats = { name, count: 0, latest: '', sources: new Set() };
+        stats.set(k, curStats);
+      } else if (curStats.name === curStats.name.toLowerCase() && name !== name.toLowerCase()) {
+        curStats.name = name;
+      }
       curStats.count += cnt;
       if (date && date > curStats.latest) curStats.latest = date;
       if (src) curStats.sources.add(src);
-      stats.set(name, curStats);
     };
     const byBankCount = new Map(), byBankLatest = new Map();
     for (const l of (index || [])) {
@@ -2210,31 +2655,35 @@
       const members = parts(row?.[0]);
       if (members.length === 1) noteStudent(row[0], 0, '', '今日任务');
     }
-    for (const card of studyCardsFor(day)) noteStudent(card.studentName, 0, '', '今日自习');
+    for (const card of studyCardsFor(day)) {
+      String(card.studentName || '').split(/[&＆/／、]/).forEach(p => noteStudent(p, 0, '', '今日自习'));
+    }
     const aliasMap = buildDataAliasMap();
     const allEntries = [...stats.values()].map(entry => ({
       ...entry,
       searchEntry: buildLearnerSearchEntry(entry.name, [], aliasMap)
     })).sort((a, b) => {
-      const sa = shownNow.has(a.name) ? 1 : 0, sb = shownNow.has(b.name) ? 1 : 0;
+      const sa = isShown(a.name) ? 1 : 0, sb = isShown(b.name) ? 1 : 0;
       if (sa !== sb) return sa - sb;
       if (b.latest !== a.latest) return b.latest.localeCompare(a.latest);
       if (b.count !== a.count) return b.count - a.count;
       return a.name.localeCompare(b.name, 'zh');
     });
     const pickStudent = studentName => {
-      const cleanName = displayStudent(studentName);
+      const extraMap = readQuizExtra(day);
+      const cleanName = canonicalQuizStudent(studentName, scheduled, extraMap);
       if (!cleanName) return;
-      if (!scheduled.has(cleanName)) saveQuizExtra(day, cleanName, true);
+      const inSched = isSched(cleanName);
+      if (!inSched) saveQuizExtra(day, cleanName, true);
       o.close();
       decorateQuiz();
       syncExtraQuizCards();
       const targetCard = [...document.querySelectorAll('#list .quiz .vq-card')].find(c => {
         const s = c.dataset?.extraStudent || c.querySelector(':scope > .vq')?.dataset?.student;
-        return s === cleanName;
+        return s && (normSearch(s) === normSearch(cleanName) || sameSinglePerson(s, cleanName));
       });
       targetCard?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
-      flash(scheduled.has(cleanName) ? cleanName + ' 已在今日排课列表' : '已添加抽背学生：' + cleanName);
+      flash(inSched ? cleanName + ' 已在今日排课列表' : '已添加抽背学生：' + cleanName);
     };
     const paint = () => {
       listWrap.textContent = '';
@@ -2247,7 +2696,7 @@
         return;
       }
       matches.slice(0, 60).forEach(entry => {
-        const already = shownNow.has(entry.name);
+        const already = isShown(entry.name);
         const item = make('button', 'vx-add-item'); item.type = 'button';
         const left = make('div');
         left.append(make('b', '', entry.name));
@@ -2309,12 +2758,12 @@
       head.removeAttribute('role');
       head.removeAttribute('tabindex');
       g.classList.remove('qfold');
-      const student = plainName(head.childNodes[0]?.textContent || head.textContent).split(/\s/)[0];
+      const student = displayStudent(head.childNodes[0]?.textContent || head.textContent);
       if (!student) return;
       g.classList.add('vq-card');
       const title = make('span', 'vq-student-name');
       while (head.firstChild) title.append(head.firstChild);
-      title.childNodes.forEach(node => { if (node.nodeType === 3) node.textContent = plainName(globalThis.wayonDisplayName?.(node.textContent) || node.textContent); });
+      title.childNodes.forEach(node => { if (node.nodeType === 3) node.textContent = displayStudent(node.textContent); });
       head.append(title);
       const meta = make('div', 'vq-meta');
 
@@ -2356,7 +2805,7 @@
             let q = null;
             if (typeof quizRows === "function" && typeof qget === "function" && typeof qk === "function") {
               const rTime = (r.querySelector(".qrange")?.textContent || "").trim();
-              const matched = quizRows([]).filter(row => plainName(globalThis.wayonDisplayName?.(row[0]) || row[0]) === student);
+              const matched = quizRows([]).filter(row => displayStudent(row[0]) === student);
               const targetRow = matched.find(row => (row[1] || "").trim() === rTime) || matched[0];
               if (targetRow) q = qget(qk(targetRow));
             }
@@ -2404,12 +2853,9 @@
     if (!box) return;
     box.querySelectorAll(".vq-card:not(.vq-extra)").forEach(g => {
       const head = g.querySelector(".qhead");
-      const student = g.querySelector(":scope > .vq")?.dataset.student || plainName(head?.childNodes[0]?.textContent || head?.textContent || "").split(/\s/)[0];
+      const student = displayStudent(g.querySelector(":scope > .vq")?.dataset.student || head?.childNodes[0]?.textContent || head?.textContent || "");
       if (!student) return;
-      const matched = qr.filter(row => {
-        const disp = plainName(globalThis.wayonDisplayName?.(row[0]) || row[0]);
-        return disp === student || disp.split(/\s/)[0] === student;
-      });
+      const matched = qr.filter(row => displayStudent(row[0]) === student);
       const qrows = [...g.querySelectorAll(":scope > .qrow")];
       g.querySelectorAll(".vq-session").forEach((sess, si) => {
         const timeEl = sess.querySelector("span:first-child");
@@ -2464,10 +2910,14 @@
     }
   };
   async function fillLists(vq, student, cachedLists) {
+    const seq = (vq._fillSeq = (vq._fillSeq || 0) + 1);
+    const stale = () => vq._fillSeq !== seq || !vq.isConnected;
     if (!vq.childElementCount) vq.append(make('div', 'vq-empty', '读取单词清单…'));
     await ready();
+    if (stale()) return;
     if (mode !== 'cloud' && mode !== 'preview') { vq.textContent = ''; vq.append(make('div', 'vq-empty', '登录工作台后可选词和抽背')); return; }
     const day = curDay();
+    const staleDay = () => stale() || curDay() !== day;
     const phase = vqTab.get(student) || '课前';
     const localKey = activeOwner ? draftKey(activeOwner, day, student, phase) : null;
     const suppKey = activeOwner ? suppHistoryKey(activeOwner, day, student) : null;
@@ -2476,14 +2926,18 @@
       if (localKey) { localDraft = await localRecord(localKey); previousResult = await localRecord('result:' + localKey); }
       if (suppKey) localSuppHistory = await localRecord(suppKey);
     } catch (e) { flash(e.message, true); }
-    let lists = cachedLists, learners;
+    if (staleDay()) return;
+    let lists = cachedLists, learners, listsLoadFailed = false;
     if (!lists) {
       try { await lessonIndex(); lists = await getLists(day, student); learners = learnersFor(student, allLearners()); }
       catch (e) {
+        if (staleDay()) return;
         if (!localDraft && !previousResult && !localSuppHistory?.value?.length) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取失败：' + (e.message || e))); return; }
+        listsLoadFailed = true;
         lists = {课前: [], 课后: [], 补充: []}; learners = [];
         if (localDraft?.value?.state === 'draft') lists[localDraft.value.phase] = localDraft.value.payload.items;
       }
+      if (staleDay()) return;
     } else {
       learners = learnersFor(student, allLearners());
     }
@@ -2494,28 +2948,44 @@
     // Supplemental pasted words keep the user's own input order.
     if (!hydrated.has(phase) && phase !== '补充') {
       try {
-        const ordered = await feedbackOrder(items); items.splice(0, items.length, ...ordered);
+        const ordered = await feedbackOrder(items);
+        if (staleDay()) return;
+        items.splice(0, items.length, ...ordered);
         for (const id of new Set(items.map(x => x.lesson_id).filter(Boolean))) {
           if (!(index || []).some(l => l.id === id)) continue;
           const byWord = new Map((await lessonWords(id)).map(w => [wordKey(w.word), w]));
-          items.filter(x => x.lesson_id === id && !x.extra).forEach(it => { it.extra = byWord.get(wordKey(it.word))?.extra || ''; });
+          if (staleDay()) return;
+          items.filter(x => x.lesson_id === id).forEach(it => {
+            const fresh = byWord.get(wordKey(it.word));
+            if (!fresh) return;
+            if (!it.extra) it.extra = fresh.extra || '';
+            else if (isUneditedFrom(it, fresh) && (it.word !== fresh.word || (it.pos || '') !== (fresh.pos || '') || (it.meaning || '') !== (fresh.meaning || '') || (it.extra || '') !== (fresh.extra || ''))) {
+              Object.assign(it, reread(fresh)); healVocab(it.vocab_id, fresh);
+            }
+          });
         }
         hydrated.add(phase);
       }
-      catch (e) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取反馈词序失败：' + (e.message || e))); return; }
+      catch (e) { if (!staleDay()) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取反馈词序失败：' + (e.message || e))); } return; }
     }
     const redraw = () => fillLists(vq, student), keep = () => { hydrated.delete(phase); saveList(day, student, phase); redraw(); };
     let finished = previousResult?.value?.state === 'completed' && previousResult.value.payload?.day === day && !previousResult.value.payload?.re_quiz ? previousResult.value : null;
     const suppCacheKey = day + '|' + student;
     let cloudSuppRows = suppCloudCache.get(suppCacheKey) || [];
-    if (mode === 'cloud' && (!finished || phase === '补充')) {
+    let cloudRows = [];
+    if (mode === 'cloud') {
       try {
-        const {data} = await client().from('wayon_vocab_sessions').select('id,session_id,phase,state,payload,created_at').eq('day', day).eq('student', student).eq('state', 'completed').order('created_at', {ascending: false}).limit(50);
-        const rows = data || [];
-        if (!finished) finished = rows.find(r => (r.phase || r.payload?.phase) === phase && !r.payload?.re_quiz) || null;
-        cloudSuppRows = rows.filter(r => (r.phase || r.payload?.phase) === '补充' && !r.payload?.re_quiz);
-        suppCloudCache.set(suppCacheKey, cloudSuppRows);
+        const {data, error} = await vocabDeadline(client().from('wayon_vocab_sessions').select('id,session_id,phase,state,payload,created_at').eq('day', day).eq('student', student).eq('state', 'completed').order('created_at', {ascending: false}).limit(50));
+        if (staleDay()) return;
+        if (!error && Array.isArray(data)) {
+          cloudRows = data;
+          const cloudMatch = data.find(r => (r.phase || r.payload?.phase) === phase && !r.payload?.re_quiz) || null;
+          if (cloudMatch && (!finished || sessionTime(cloudMatch) > sessionTime(finished))) finished = cloudMatch;
+          cloudSuppRows = data.filter(r => (r.phase || r.payload?.phase) === '补充' && !r.payload?.re_quiz);
+          suppCloudCache.set(suppCacheKey, cloudSuppRows);
+        }
       } catch {}
+      if (staleDay()) return;
     }
     const wordsOf = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()));
     const suppCompleted = mergeCompletedSessions(localSuppHistory?.value, phase === '补充' ? previousResult?.value : null, cloudSuppRows, day);
@@ -2526,6 +2996,22 @@
     const doneNow = phase === '补充'
       ? (suppCompleted.length > 0 && (!lists['补充'].length || legacyDoneSupp))
       : !!(finished?.state === 'completed' && finished.payload?.day === day && items.length && wordsOf(finished.payload?.items) === wordsOf(items));
+    const extraCard = vq.closest?.('.vq-card');
+    let anyPhaseDone = doneNow || suppCompleted.length > 0;
+    if (!anyPhaseDone && extraCard?.classList?.contains('vq-extra')) {
+      if (cloudRows.some(r => !r.payload?.re_quiz)) anyPhaseDone = true;
+      else if (activeOwner) {
+        for (const p of ['课前', '课后']) {
+          if (p === phase) continue;
+          try {
+            const rec = await localRecord('result:' + draftKey(activeOwner, day, student, p));
+            if (staleDay()) return;
+            if (rec?.value?.state === 'completed' && rec.value.payload?.day === day && !rec.value.payload?.re_quiz) { anyPhaseDone = true; break; }
+          } catch {}
+        }
+      }
+    }
+    if (staleDay()) return;
     vq.textContent = '';
     const bar = make('div', 'vq-bar'), tabs = make('div', 'vq-tabs');
     tabs.title = learners.length ? '单词库：' + learners.map(l => l.replace(/\//g, '、')).join('，') : '还没有单词库（收集反馈后自动生成）';
@@ -2535,7 +3021,7 @@
         const pendingCnt = legacyDoneSupp ? 0 : lists[p].length;
         label = pendingCnt ? '补充 ' + pendingCnt + ' · 已抽' + suppCompleted.length : '补充 已抽' + suppCompleted.length;
       }
-      tabs.append(btn(p === phase ? 'on' : '', label, () => { vqTab.set(student, p); fillLists(vq, student, lists); }));
+      tabs.append(btn(p === phase ? 'on' : '', label, () => { vqTab.set(student, p); fillLists(vq, student, listsLoadFailed ? null : lists); }));
     });
     if (doneNow && !draft && phase !== '补充') {
       globalThis._wayonSuppressRender = true;
@@ -2545,9 +3031,8 @@
         globalThis._wayonSuppressRender = false;
       }
     }
-    const extraCard = vq.closest?.('.vq-card');
     if (extraCard?.classList?.contains('vq-extra')) {
-      const badgeDone = phase === '补充' ? (suppCompleted.length > 0) : (doneNow || (suppCompleted.length > 0 && !items.length));
+      const badgeDone = anyPhaseDone;
       const multiSupp = suppCompleted.length > 1 && (phase === '补充' || !doneNow);
       const stPill = extraCard.querySelector('.vq-extra-status');
       const nextSt = badgeDone ? (multiSupp ? '✓ 已抽 ' + suppCompleted.length + ' 份' : '✓ 今日已抽') : '复习待抽';
@@ -2561,13 +3046,13 @@
     }
     const showResult = res => {
       const last = overlay('抽背结果'); last.body.append(make('pre', 'fb-body', resultText(res.payload)));
-      last.foot.append(btn('fb-btn pri', '复制结果', async () => { try { await navigator.clipboard.writeText(resultText(res.payload)); flash('已复制'); } catch { flash('复制失败，请手动选中文字复制', true); } }), btn('fb-btn', '关闭', last.close));
+      last.foot.append(btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(res.payload)); flash(ok ? '已复制' : '复制失败，请手动选中文字复制', !ok); }), btn('fb-btn', '关闭', last.close));
     };
     const actions = make('div', 'vq-actions');
     const prevShownInSupp = phase === '补充' && previousResult?.value && suppCompleted.some(r => sessionKey(r) === sessionKey(previousResult.value));
     if (previousResult && !(phase === '补充' ? prevShownInSupp : doneNow)) actions.append(btn('', '上次结果', () => {
       const last = overlay('上次抽背结果'); last.body.append(make('pre', 'fb-body', resultText(previousResult.value.payload)));
-      last.foot.append(btn('fb-btn pri', '复制结果', async () => { try { await navigator.clipboard.writeText(resultText(previousResult.value.payload)); flash('已复制'); } catch { flash('复制失败，请手动选中文字复制', true); } }), btn('fb-btn', '关闭', last.close));
+      last.foot.append(btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(previousResult.value.payload)); flash(ok ? '已复制' : '复制失败，请手动选中文字复制', !ok); }), btn('fb-btn', '关闭', last.close));
     }));
     actions.append(btn('', '选词', () => {
       if (phase === '补充' && legacyDoneSupp) {
@@ -2585,46 +3070,109 @@
         keep();
       });
     }));
-    if (phase === '课前') actions.append(btn('', '推荐', async () => { try { const lib = await vocabFor(learners); (await recommend(lib, learners, day, todaysCourse(student))).forEach(r => { if (!items.some(x => wordKey(x.word) === wordKey(r.word))) items.push(fromRow(r, r._from)); }); await materializeItems(items); keep(); } catch (e) { flash('推荐未能保存：' + (e.message || e), true); } }, '推荐：今天这门课上一节的全部生词，再补错过的和到期复习的'));
-    if (phase === '课后') actions.append(btn('', '本节全部内容', async () => {
-      try {
-        const lib = await vocabFor(learners);
-        const lessons = (index || []).filter(l => learners.includes(l.learner) && l.lesson_date === day);
-        let count = 0;
-        for (const lesson of lessons) {
-          // A word first learned in an earlier lesson still belongs to today's feedback.
-          const rows = await rowsForLesson(lesson, lib); count += rows.length;
-          rows.forEach(r => {
-            const existing = items.find(x => wordKey(x.word) === wordKey(r.word));
-            if (!existing) items.push(fromRow(r, lesson.id));
-            else if (existing.vocab_id === r.id || existing._pending) Object.assign(existing, fromRow(r, lesson.id));
-          });
-        }
-        if (!count) { flash('今天这节的反馈还没收集，先到「课堂反馈 › 今日收集」粘贴'); return; }
-        await materializeItems(items);
-        const ordered = await feedbackOrder(items); items.splice(0, items.length, ...ordered); keep();
-      } catch (e) { flash('读取本节生词失败：' + (e.message || e), true); }
-    }));
+    if (phase === '课前') {
+      const recBtn = btn('', '推荐', async () => {
+        recBtn.disabled = true;
+        try {
+          const lib = await vocabFor(learners);
+          const recs = await recommend(lib, learners, day, todaysCourse(student));
+          const staged = items.map(x => ({...x}));
+          let capped = false;
+          for (const r of recs) {
+            if (staged.some(x => wordKey(x.word) === wordKey(r.word))) continue;
+            if (staged.length >= MAX_QUIZ_ITEMS) { capped = true; break; }
+            staged.push(fromRow(r, r._from));
+          }
+          await materializeItems(staged);
+          if (capped) flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，已截取前 ' + MAX_QUIZ_ITEMS + ' 项', true);
+          items.splice(0, items.length, ...staged);
+          keep();
+        } catch (e) { flash('推荐未能保存：' + (e.message || e), true); }
+        finally { recBtn.disabled = false; }
+      }, '推荐：今天这门课上一节的全部生词，再补错过的和到期复习的');
+      actions.append(recBtn);
+    }
+    if (phase === '课后') {
+      const allBtn = btn('', '本节全部内容', async () => {
+        allBtn.disabled = true;
+        try {
+          const lib = await vocabFor(learners);
+          const lessons = (index || []).filter(l => learners.includes(l.learner) && l.lesson_date === day);
+          const staged = items.map(x => ({...x}));
+          let count = 0, capped = false;
+          for (const lesson of lessons) {
+            // A word first learned in an earlier lesson still belongs to today's feedback.
+            const rows = await rowsForLesson(lesson, lib); count += rows.length;
+            for (const r of rows) {
+              const existing = staged.find(x => wordKey(x.word) === wordKey(r.word));
+              if (!existing) {
+                if (staged.length >= MAX_QUIZ_ITEMS) { capped = true; continue; }
+                staged.push(fromRow(r, lesson.id));
+              } else if (existing.vocab_id === r.id || existing._pending) Object.assign(existing, fromRow(r, lesson.id));
+            }
+          }
+          if (!count) { flash('今天这节的反馈还没收集，先到「课堂反馈 › 今日收集」粘贴'); return; }
+          await materializeItems(staged);
+          const ordered = await feedbackOrder(staged);
+          if (capped) flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，已截取前 ' + MAX_QUIZ_ITEMS + ' 项', true);
+          items.splice(0, items.length, ...ordered); keep();
+        } catch (e) { flash('读取本节生词失败：' + (e.message || e), true); }
+        finally { allBtn.disabled = false; }
+      });
+      actions.append(allBtn);
+    }
     bar.append(tabs, actions); vq.append(bar);
     const hasPendingSupp = phase === '补充' && !legacyDoneSupp && (items.length > 0 || !!draft);
     if (phase === '补充') {
       const add = make('div', 'vq-paste'), ta = make('textarea'); ta.rows = 2;
       ta.placeholder = suppCompleted.length && !hasPendingSupp ? '继续粘贴下一份补充单词，一行一个（可带中文）' : '粘贴单词，一行一个（可带中文），例如：resilient 有韧性的';
       const go = btn('', '加入', async () => {
-        const lines = ta.value.split('\n').map(x => x.trim()).filter(Boolean); if (!lines.length) { ta.focus(); return; }
-        if (legacyDoneSupp) items.splice(0);
-        const lib = await vocabFor(learners), byWord = new Map(lib.map(r => [r.word.trim().toLowerCase(), r])), unknown = [];
-        lines.forEach(line => {
-          const parsed = parseFeedback(line)[0] || {word: line.replace(/[一-鿿].*$/, '').trim() || line, meaning: (line.match(/[一-鿿].*$/) || [''])[0]};
-          if (items.some(x => x.word.toLowerCase() === parsed.word.toLowerCase())) return;
-          const hit = byWord.get(parsed.word.toLowerCase());
-          if (hit) items.push(fromRow(hit)); else { const it = {word: parsed.word, meaning: parsed.meaning || '', pos: parsed.pos || ''}; items.push(it); unknown.push(it); }
-        });
-        if (unknown.length) {   // new words join the student's own library so their results are kept
-          try { const rows = await addVocab(learners.find(l => keyOf(l) === student) || learners[0] || student, unknown); rows.forEach((r, i) => { unknown[i].vocab_id = r.id; unknown[i].learner = r.learner; }); } catch (e) { flash('新词未能加入单词库：' + (e.message || e), true); }
-        }
-        freshSuppLists.add(suppCacheKey);
-        keep();
+        const rawText = ta.value.trim();
+        if (!rawText) { ta.focus(); return; }
+        go.disabled = true;
+        try {
+          let parsed = parseFeedback('词汇\n' + rawText).map(w => stripSyntheticVocabMeta(w, rawText));
+          if (!parsed.length) {
+            for (const line of rawText.split('\n').map(x => x.trim()).filter(Boolean)) {
+              const title = feedbackHeading(line);
+              if (feedbackSection(line) || STRICT_META_SECTION.test(title) || SOFT_META_SECTION.test(title) || SECTION_END.test(line) || /https?:\/\//i.test(line) || line.includes('http')) continue;
+              const cut = line.search(/[\u4e00-\u9fff]/);
+              const w = capWord(cut >= 0 ? line.slice(0, cut) : line);
+              const m = cut >= 0 ? line.slice(cut).trim() : '';
+              if (w && /[A-Za-z]/.test(w)) parsed.push({word: w, pos: '', meaning: m, extra: ''});
+            }
+          }
+          if (!parsed.length) { flash('没有识别到可加入的单词', true); ta.focus(); return; }
+          const lib = await vocabFor(learners);
+          const byWord = new Map(lib.map(r => [wordKey(r.word), r]));
+          const targetLearner = learners.find(l => keyOf(l) === keyOf(student)) || learners[0] || student;
+          const next = legacyDoneSupp ? [] : items.map(x => ({...x}));
+          const unknown = [];
+          let capped = false;
+          for (const p of parsed) {
+            const k = wordKey(p.word);
+            if (!k || next.some(x => wordKey(x.word) === k)) continue;
+            if (next.length >= MAX_QUIZ_ITEMS) { capped = true; break; }
+            const hit = byWord.get(k);
+            if (hit) next.push({...fromRow(hit), lesson_id: null});
+            else {
+              const it = {learner: targetLearner, word: capWord(p.word), meaning: p.meaning || '', pos: p.pos || '', extra: p.extra || '', lesson_id: null};
+              next.push(it); unknown.push(it);
+            }
+          }
+          if (unknown.length) {   // new words join the student's own library so their results are kept
+            try {
+              const rows = await addVocab(targetLearner, unknown);
+              const byNewKey = new Map(rows.map(r => [wordKey(r.word), r]));
+              unknown.forEach((u, i) => { const r = byNewKey.get(wordKey(u.word)) || rows[i]; if (r) { u.vocab_id = r.id; u.learner = r.learner || targetLearner; } });
+            } catch (e) { flash('新词未能加入单词库：' + (e.message || e), true); }
+          }
+          if (capped) flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，已截取前 ' + MAX_QUIZ_ITEMS + ' 项', true);
+          items.splice(0, items.length, ...next);
+          freshSuppLists.add(suppCacheKey);
+          keep();
+        } catch (e) { flash('加入失败：' + (e.message || e), true); }
+        finally { go.disabled = false; }
       });
       add.append(ta, go); vq.append(add);
     }
@@ -2635,7 +3183,7 @@
       const tally = make('span', 'vq-tally'); tally.append(make('span', 'ok', '对 ' + right), make('span', 'bad', '错 ' + wrong)); if (unmarked > 0) tally.append(make('span', '', '未标 ' + unmarked));
       const info = make('div', 'vq-result-info'), rowActions = make('div', 'vq-result-actions');
       info.append(make('span', 'vq-done-mark', '✓ 已完成'), make('span', 'vq-label', labelText), tally);
-      rowActions.append(btn('fb-btn vq-again', '再抽一次', () => startQuiz(student, phase, JSON.parse(JSON.stringify(batchItems)), redraw, phase === '补充' && draft ? {keepDraft: true} : {})),
+      rowActions.append(btn('fb-btn vq-again', '再抽一次', () => startQuiz(student, phase, JSON.parse(JSON.stringify(batchItems)), redraw, phase === '补充' && (draft || hasPendingSupp) ? {keepDraft: true} : {})),
         btn('fb-btn', '查看', () => showResult(res)),
         btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(res.payload)); if (ok) flash('已复制'); else showResult(res); }));
       row.append(info, rowActions);
@@ -2644,8 +3192,9 @@
     const renderReadyRow = async () => {
       const sourceItems = draft?.payload?.items?.length ? draft.payload.items : items;
       const ready = make('div', 'vq-ready');
+      const draftLessons = draft?.payload?.course_lessons;
       const pendingLabel = draft
-        ? '已暂存 · ' + (draft.payload.course || phase) + (draft.payload.course_no ? 'L' + draft.payload.course_no : '')
+        ? '已暂存 · ' + (Array.isArray(draftLessons) && draftLessons.length >= 2 ? formatLessonsTitle(draftLessons) : (draft.payload.course || phase) + (draft.payload.course_no ? 'L' + draft.payload.course_no : ''))
         : (phase === '补充' && suppCompleted.length ? '补充 #' + (suppCompleted.length + 1) : listLabel(items, phase));
       ready.append(make('span', 'vq-label', pendingLabel), make('span', 'vq-n', sourceItems.length + ' 项'));
       if (draft && items.length) {
@@ -2680,12 +3229,14 @@
         }),
         copyBtn,
         btn('fb-btn pri vq-start', draft ? '▶ 继续抽背' : '▶ 开始抽背', () => startQuiz(student, phase, items, redraw)));
+      vq.append(ready);
       if (draft) {
         const pendingKey = 'snapshot:' + activeOwner + ':' + draft.id, backup = await localRecord(pendingKey);
+        if (staleDay() || !ready.isConnected) return;
         const status = make('span', 'fb-meta', backup?.status === 'backed_up' ? '暂存已备份' : '暂存已存本机 · 待备份');
-        backupListeners.set(pendingKey, value => { if (status.isConnected) status.textContent = value; }); ready.append(status);
+        backupListeners.set(pendingKey, value => { if (!status.isConnected) return false; status.textContent = value; });
+        ready.append(status);
       }
-      vq.append(ready);
     };
     if (phase === '补充') {
       if (hasPendingSupp) await renderReadyRow();
@@ -2701,19 +3252,21 @@
       await renderReadyRow();
     }
   }
-  const selectedListCopyText = (student, phase, sourceItems) => wordsCopyText('【' + displayStudent(student) + '】' + listLabel(sourceItems, phase), sourceItems);
-  // "20261031-阅读L3": the lesson most of the chosen words come from (teacher's lesson number); else the list name.
+  const selectedListCopyText = (student, phase, sourceItems) => wordsCopyText('【' + displayStudent(student) + '】' + listLabel(sourceItems, phase), sourceItems, {groupByLesson: phase !== '补充', phase});
+  // "20261031-阅读L3" for a single lesson; "写作L7+L8" when spanning multiple lessons; else the list name.
   function listLabel(items, phase) {
     if (phase === '补充') return '补充单词';   // pasted extras: where a word was first learned is not what this list is
+    const lessons = resolveLessons(items, {phase});
+    if (lessons.length > 1) return formatLessonsTitle(lessons);
     const counts = new Map(); items.forEach(it => { if (it.lesson_id) counts.set(it.lesson_id, (counts.get(it.lesson_id) || 0) + 1); });
     const main = [...counts.entries()].sort((a, b) => b[1] - a[1])[0], l = main && (index || []).find(x => x.id === main[0]);
     if (!l) return phase === '补充' ? '补充单词' : phase + '单词';
-    const no = lessonNo(l.title), many = counts.size > 1;
-    return (l.lesson_date || '').replace(/-/g, '') + '-' + subjectOf(l.subject) + (no ? 'L' + no : '') + (many ? ' 等 ' + counts.size + ' 节' : '');
+    const no = lessonNo(l.title);
+    return (l.lesson_date || '').replace(/-/g, '') + '-' + subjectOf(l.subject) + (no ? 'L' + no : '');
   }
   const fromRow = (r, from) => ({vocab_id: r._pending ? null : r.id, learner: r.learner, word: r.word, meaning: String(r.meaning || '').replace(/\s*[⭕◯○]\uFE0F?\s*$/u, '') /* a teacher's ⭕ is a mark, not meaning */, pos: r.pos || '', extra: r.extra || '', wrong: (r.wrong_count || 0) > 0, lesson_id: from || r.lesson_id || null, lesson_date: r.lesson_date || null, subject: r.subject || '', ...(r._pending ? {_pending: true} : {})});
   // Today's course for this student, from the published schedule (e.g. "阅读").
-  const todaysCourse = student => { try { const r = quizRows([]).find(x => plainName(x[0]) === student); return r ? r[2] || '' : ''; } catch { return ''; } };
+  const todaysCourse = student => { try { const target = displayStudent(student); const r = quizRows([]).find(x => displayStudent(x[0]) === target); return r ? r[2] || '' : ''; } catch { return ''; } };
   // The previous lesson's own word list first, then words answered wrong, then words due for review.
   async function recommend(lib, learners, day, course, limit = 20) {
     const before = (index || []).filter(l => learners.includes(l.learner) && l.lesson_date && l.lesson_date < day).sort((a, b) => b.lesson_date.localeCompare(a.lesson_date));
@@ -2734,21 +3287,23 @@
       make('div', 'fb-meta', lesson || it.vocab_id ? '保存后这节课的生词和单词库里这个词也会一起改。' : '这个词不在单词库里，只改这份清单。'));
     const save = btn('fb-btn pri', '保存', async () => {
       const beforeWord = it.word;
-      const patch = {word: word.value.trim() || it.word, pos: normPos(pos.value), meaning: meaning.value.trim()};
+      const patch = {word: capWord(word.value.trim() || it.word), pos: normPos(pos.value), meaning: meaning.value.trim()};
       save.disabled = true;
       try {
         let saved = false;
         const targetLesson = lesson || (it.lesson_id && (await lessonIndex().catch(() => [])).find(l => l.id === it.lesson_id));
         if (targetLesson) { const i = (await lessonWords(targetLesson.id)).findIndex(w => wordKey(w.word) === wordKey(beforeWord)); if (i >= 0) { await editLessonWord(targetLesson, i, patch); saved = true; } }
         if (!saved && it.vocab_id) { await updateVocab(it.vocab_id, {...patch, pos: patch.pos || null}); if (it.learner) dropVocabCache(it.learner); }
-      } catch (e) { flash('单词库未能更新：' + (e.message || e), true); }
+      } catch (e) { flash('单词库未能更新：' + (e.message || e), true); save.disabled = false; return; }
       Object.assign(it, patch);
       if (listCtx?.day && listCtx?.student && ['课前', '课后', '补充'].includes(listCtx.phase)) {
         const cached = listCache.get(listCtx.day + '|' + listCtx.student)?.[listCtx.phase];
         if (Array.isArray(cached)) {
           const hit = cached.find(x => x === it || (it.vocab_id && x.vocab_id === it.vocab_id) || wordKey(x.word) === wordKey(beforeWord));
-          if (hit && hit !== it) Object.assign(hit, patch);
-          saveList(listCtx.day, listCtx.student, listCtx.phase);
+          if (hit) {
+            if (hit !== it) Object.assign(hit, patch);
+            saveList(listCtx.day, listCtx.student, listCtx.phase);
+          }
         }
       }
       o.close(); done();
@@ -2771,7 +3326,8 @@
     } catch (e) { o.body.textContent = '读取失败：' + (e.message || e); return; }
     o.body.textContent = '';
     if (!lib.length && !all.length) { o.body.append(make('div', 'vq-empty', '这个学生还没有单词库。到「课堂反馈」收集反馈后会自动生成。')); return; }
-    const chosen = new Set(items.filter(x => x.vocab_id).map(x => x.vocab_id)), chosenFrom = new Map();
+    const chosen = new Set(items.filter(x => x.vocab_id).map(x => x.vocab_id)), chosenFrom = new Map(), chosenRow = new Map();
+    const unlinkedCount = items.filter(x => !x.vocab_id).length;
     const selectable = new Map(), loadedBanks = new Set([...matched, ...extraBanks]), allLoadedRows = [];
     const addRows = rows => { for (const r of rows) if (r?.id && !selectable.has(r.id)) { selectable.set(r.id, r); allLoadedRows.push(r); } };
     addRows(lib);
@@ -2785,7 +3341,7 @@
     }
     const lessonCountByBank = new Map();
     (index || []).forEach(l => lessonCountByBank.set(l.learner, (lessonCountByBank.get(l.learner) || 0) + 1));
-    const count = make('span', 'fb-meta'), recount = () => { count.textContent = '已选 ' + chosen.size; };
+    const count = make('span', 'fb-meta'), recount = () => { count.textContent = '已选 ' + (chosen.size + unlinkedCount); };
     let mode = 'lesson', filter = 'all', subject = '';
     const bankBar = make('div', 'vx-banks');
     const modes = make('div', 'fb-tabs'); modes.style.marginBottom = '10px';
@@ -2800,8 +3356,8 @@
     };
     const wordRow = (r, from) => {
       const row = make('label', 'vx-row'), cb = make('input'); cb.type = 'checkbox'; cb.checked = chosen.has(r.id); cb.dataset.id = r.id;
-      cb.onchange = () => { if (cb.checked) { chosen.add(r.id); if (from) chosenFrom.set(r.id, from); } else chosen.delete(r.id); recount(); row.dispatchEvent(new Event('wordchange', {bubbles: true})); };
-      const mid = make('div'), w = make('b', '', r.word); if (r.pos) w.append(make('small', 'pos', ' ' + r.pos));
+      cb.onchange = () => { if (cb.checked) { chosen.add(r.id); chosenRow.set(r.id, r); if (from) chosenFrom.set(r.id, from); } else { chosen.delete(r.id); chosenRow.delete(r.id); chosenFrom.delete(r.id); } recount(); row.dispatchEvent(new Event('wordchange', {bubbles: true})); };
+      const mid = make('div'), w = make('b', '', r.word), np = normPos(r.pos); if (np) w.append(make('small', 'pos', ' ' + np));
       if (!from && r.learner && (activeScope().activeLearners.length > 1 || keyOf(r.learner) !== keyOf(student))) w.append(make('small', 'vx-word-bank', r.learner.replace(/\//g, '、')));
       mid.append(w, make('div', 'm', r.meaning || ''));
       row.append(cb, mid, make('span', 'x' + ((r.wrong_count || 0) > 0 ? ' bad' : ''), (r.wrong_count || 0) > 0 ? '错过 ' + r.wrong_count + ' 次' : ''));
@@ -2814,7 +3370,7 @@
       if (l.pseudo) return l.rows;
       if (lessonWordCache.has(l.id)) return lessonWordCache.get(l.id);
       const rows = await rowsForLesson(l, allLoadedRows);
-      rows.forEach(r => selectable.set(r.id, r));
+      rows.forEach(r => { if (!selectable.has(r.id) || r._pending) selectable.set(r.id, r); });
       lessonWordCache.set(l.id, rows);
       return rows;
     }
@@ -2837,14 +3393,30 @@
       const body = make('div'); body.style.padding = '0 12px 10px'; d.append(body);
       if (l.pseudo) d.classList.add('fb-orphan');
       const sync = ws => { const k = ws.filter(r => chosen.has(r.id)).length; cb.checked = ws.length > 0 && k === ws.length; cb.indeterminate = k > 0 && k < ws.length; n.textContent = ws.length + ' 项' + (k ? ' · 已选 ' + k : ''); };
-      const known = l.pseudo ? l.rows : lessonWordCache.get(l.id); if (known) sync(known); else { const first = allLoadedRows.filter(r => r.lesson_id === l.id).length; n.textContent = first ? first + ' 个新词' : '展开查看'; }
+      const known = l.pseudo ? l.rows : lessonWordCache.get(l.id);
+      if (known) sync(known);
+      else {
+        const first = allLoadedRows.filter(r => r.lesson_id === l.id).length;
+        const prePicked = items.filter(x => x.lesson_id === l.id && x.vocab_id && chosen.has(x.vocab_id)).length;
+        if (prePicked > 0) { cb.checked = first > 0 && prePicked >= first; cb.indeterminate = !cb.checked; }
+        n.textContent = (first ? first + ' 个新词' : '展开查看') + (prePicked ? ' · 已选 ' + prePicked : '');
+      }
       cb.addEventListener('click', e => e.stopPropagation());
       cb.onchange = async () => {
-        const ws = await wordsOf(l), validIds = new Set(ws.map(r => r.id));
-        ws.forEach(r => { if (cb.checked) { chosen.add(r.id); if (!l.pseudo) chosenFrom.set(r.id, l.id); } else chosen.delete(r.id); });
-        if (!l.pseudo) items.forEach(x => { if (x.lesson_id === l.id && x.vocab_id && (!cb.checked || !validIds.has(x.vocab_id))) chosen.delete(x.vocab_id); });
-        recount(); sync(ws);
-        body.querySelectorAll('input[data-id]').forEach(i => { i.checked = chosen.has(i.dataset.id); });
+        const want = cb.checked;
+        cb.disabled = true;
+        try {
+          const ws = await wordsOf(l), validIds = new Set(ws.map(r => r.id));
+          ws.forEach(r => { if (want) { chosen.add(r.id); chosenRow.set(r.id, r); if (!l.pseudo) chosenFrom.set(r.id, l.id); } else { chosen.delete(r.id); chosenRow.delete(r.id); chosenFrom.delete(r.id); } });
+          if (!l.pseudo) items.forEach(x => { if (x.lesson_id === l.id && x.vocab_id && (!want || !validIds.has(x.vocab_id))) { chosen.delete(x.vocab_id); chosenRow.delete(x.vocab_id); chosenFrom.delete(x.vocab_id); } });
+          recount(); sync(ws);
+          body.querySelectorAll('input[data-id]').forEach(i => { i.checked = chosen.has(i.dataset.id); });
+        } catch (e) {
+          cb.checked = !want;
+          flash('读取本节生词失败：' + (e.message || e), true);
+        } finally {
+          cb.disabled = false;
+        }
       };
       d.addEventListener('toggle', async () => {
         if (!d.open || body.dataset.loaded) return;
@@ -2852,7 +3424,7 @@
         try { const ws = await wordsOf(l); body.textContent = ''; body.dataset.loaded = '1'; if (!ws.length) body.append(make('div', 'vq-empty', '这节课的反馈里没有识别到生词')); let previous = ''; ws.forEach(r => { const heading = entryHeading(r); if (heading && heading !== previous) body.append(make('h4', 'vx-section', heading)); previous = heading; body.append(wordRow(r, l.pseudo ? null : l.id)); }); sync(ws); }
         catch (e) { body.textContent = '读取失败：' + (e.message || e); }
       });
-      body.addEventListener('wordchange', () => sync(lessonWordCache.get(l.id) || []));
+      body.addEventListener('wordchange', () => sync(l.pseudo ? l.rows : (lessonWordCache.get(l.id) || [])));
       return d;
     }
     const paintBanks = () => {
@@ -2869,7 +3441,10 @@
           const cnt = lessonCountByBank.get(b) || 0;
           const label = b.replace(/\//g, '、') + (cnt ? ' · ' + cnt + '节' : '');
           pills.append(btn('vx-bank-pill' + (activeBank === b ? ' on' : ''), label, async () => {
-            if (!loadedBanks.has(b)) await ensureBank(b);
+            if (!loadedBanks.has(b)) {
+              try { await ensureBank(b); }
+              catch (e) { flash('读取词库失败：' + (e.message || e), true); return; }
+            }
             activeBank = b; subject = ''; paintBanks(); paint();
           }));
         });
@@ -2923,7 +3498,7 @@
         activeLib.filter(r => !r.lesson_id).forEach(r => { const k = r.learner + '|' + subjectOf(r.subject) + '|' + (r.lesson_date || ''); if (!orphans.has(k)) orphans.set(k, {id: 'quiz:' + k, pseudo: true, learner: r.learner, subject: r.subject, lesson_date: r.lesson_date, title: '', rows: []}); orphans.get(k).rows.push(r); });
         const lessons = [...index.filter(l => activeLearners.includes(l.learner)), ...orphans.values()]
           .filter(l => matchLessonQuery(l, rawQ))
-          .sort((a, b) => String(b.lesson_date || '').localeCompare(String(a.lesson_date || '')));
+          .sort((a, b) => String(b.lesson_date || '').localeCompare(String(a.lesson_date || '')) || (lessonNo(b.title) || 0) - (lessonNo(a.title) || 0));
         if (!lessons.length) { list.append(make('div', 'vq-empty', '没有符合的课')); return; }
         const groups = new Map(); lessons.forEach(l => { const k = subjectOf(l.subject); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(l); });
         [...groups.entries()].forEach(([name, ls], gi) => {
@@ -2950,15 +3525,42 @@
       if (!rows.length) list.append(make('div', 'vq-empty', '没有符合的单词'));
     };
     search.oninput = search.onsearch = paint; paintBanks(); paint(); recount();
-    o.foot.append(count, btn('fb-btn pri', '加入清单', async () => {
-      const keep = items.filter(x => !x.vocab_id || chosen.has(x.vocab_id)).map(x => { const r = selectable.get(x.vocab_id), from = chosenFrom.get(x.vocab_id); return r && from ? {...x, ...fromRow(r, from)} : x; });
-      const have = new Set(keep.map(x => x.vocab_id).filter(Boolean));
-      const byId = selectable;
-      const added = [...chosen].filter(id => !have.has(id) && byId.has(id)).map(id => fromRow(byId.get(id), chosenFrom.get(id)));
-      try { keep.push(...await feedbackOrder(added)); await materializeItems(keep); }
-      catch (e) { flash('读取反馈词序失败：' + (e.message || e), true); return; }
-      items.splice(0, items.length, ...keep); o.close(); done();
-    }), btn('fb-btn', '取消', () => o.close()));
+    let applying = false;
+    const addBtn = btn('fb-btn pri', '加入清单', async () => {
+      if (applying) return;
+      applying = true; addBtn.disabled = true;
+      try {
+        const keepRaw = items.filter(x => !x.vocab_id || chosen.has(x.vocab_id)).map(x => { const r = chosenRow.get(x.vocab_id) || selectable.get(x.vocab_id), from = chosenFrom.get(x.vocab_id); return r && from ? {...x, ...fromRow(r, from)} : x; });
+        const have = new Set(keepRaw.map(x => x.vocab_id).filter(Boolean));
+        const addedRaw = [...chosen].filter(id => !have.has(id) && (chosenRow.has(id) || selectable.has(id))).map(id => fromRow(chosenRow.get(id) || selectable.get(id), chosenFrom.get(id)));
+        let orderedAdded;
+        try { orderedAdded = await feedbackOrder(addedRaw); }
+        catch (e) { flash('读取反馈词序失败：' + (e.message || e), true); return; }
+        const merged = [], keyToIdx = new Map();
+        for (const it of keepRaw) {
+          const k = wordKey(it.word);
+          if (!k || keyToIdx.has(k)) continue;
+          keyToIdx.set(k, merged.length); merged.push(it);
+        }
+        for (const it of orderedAdded) {
+          const k = wordKey(it.word);
+          if (!k) continue;
+          if (keyToIdx.has(k)) {
+            const idx = keyToIdx.get(k);
+            if (!merged[idx].vocab_id && (it.vocab_id || it._pending)) merged[idx] = it;
+            continue;
+          }
+          keyToIdx.set(k, merged.length); merged.push(it);
+        }
+        if (merged.length > MAX_QUIZ_ITEMS) { flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，请精简后再加入', true); return; }
+        try { await materializeItems(merged); }
+        catch (e) { flash('保存新词到单词库失败：' + (e.message || e), true); return; }
+        items.splice(0, items.length, ...merged); o.close(); done();
+      } finally {
+        applying = false; addBtn.disabled = false;
+      }
+    });
+    o.foot.append(count, addBtn, btn('fb-btn', '取消', () => o.close()));
   }
 
   // ---------- Quiz ----------
@@ -2975,14 +3577,16 @@
     }
     const resume = stored?.value?.state === 'draft' ? stored.value : null;
     if (resume) items = JSON.parse(JSON.stringify(resume.payload.items));
+    if (!Array.isArray(items) || !items.length) { flash('当前清单没有可抽背的单词', true); return; }
+    if (items.length > MAX_QUIZ_ITEMS) { flash('单次抽背最多 ' + MAX_QUIZ_ITEMS + ' 项，请先删减清单后再开始', true); return; }
     const marks = new Map((resume?.payload?.marks || []).map(m => [m.index, {result: m.result, reason: m.reason || ''}]));
     const sessionId = resume?.session_id || uuid(), listDay = resume?.payload?.list_day || curDay();
     let revision = resume?.revision || 0;
-    let finishing = false, summaryShown = false;
+    let finishing = false, choosingFinish = false, summaryShown = false;
     let hide = resume?.payload?.hide || localStorage.getItem('wayon-vocab-hide') || 'none';
-    const o = overlay(student + ' · ' + phase + (reQuiz ? '错词复抽' : '抽背') + ' · ' + items.length + ' 项', {
+    const o = overlay(displayStudent(student) + ' · ' + phase + (reQuiz ? '错词复抽' : '抽背') + ' · ' + items.length + ' 项', {
       onClose: () => {
-        if (finishing) return false;
+        if (finishing || choosingFinish) return false;
         if (summaryShown) { done(); return true; }
         return !marks.size || confirm('不保存这次抽背结果？');
       }
@@ -3009,7 +3613,7 @@
       const no = make('span', 'vx-no', String(i + 1));
       const text = make('div', 'vx-text');
       const en = make('div', 'vx-en'), zh = make('div', 'vx-zh');
-      const paintText = () => { en.textContent = ''; en.append(make('b', '', it.word)); if (it.pos) en.append(make('small', '', ' ' + it.pos)); zh.textContent = it.meaning || ''; zh.hidden = !it.meaning; };
+      const paintText = () => { en.textContent = ''; en.append(make('b', '', it.word)); const np = normPos(it.pos); if (np) en.append(make('small', '', ' ' + np)); zh.textContent = it.meaning || ''; zh.hidden = !it.meaning; };
       paintText(); text.title = '双击修改';
       text.ondblclick = e => { e.preventDefault(); getSelection()?.removeAllRanges(); row.classList.remove('peek'); editItem(it, paintText, {day: listDay, student, phase}); };
       text.append(en, zh); entryNotes(it).forEach(t => text.append(make('div', 'vx-note', t)));
@@ -3028,23 +3632,48 @@
       row.append(no, text, ok, x, reasons); list.append(row); paintRow();
     });
     paintTools(); recount();
-    o.foot.append(tally, ...(reQuiz || keepDraft ? [] : [btn('fb-btn', '暂存', () => finish('draft'))]), btn('fb-btn pri', '完成并保存', () => finish('completed')));
+    const finishClick = async () => {
+      if (finishing || choosingFinish) return;
+      const unmarked = items.length - marks.size;
+      if (unmarked > 0) {
+        choosingFinish = true;
+        let choice = 'cancel';
+        try {
+          const w = [...marks.values()].filter(m => m.result === 'wrong').length;
+          const r = [...marks.values()].filter(m => m.result === 'right').length;
+          choice = await askFinishChoice({unmarked, right: r, wrong: w, total: items.length});
+        } finally {
+          choosingFinish = false;
+        }
+        if (choice === 'cancel') return;
+        if (choice === 'mark_all') {
+          items.forEach((_, i) => { if (!marks.has(i)) marks.set(i, {result: 'right'}); });
+          painters.forEach(p => p());
+          recount();
+        }
+      }
+      await finish('completed');
+    };
+    o.foot.append(tally, ...(reQuiz || keepDraft ? [] : [btn('fb-btn', '暂存', () => finish('draft'))]), btn('fb-btn pri', '完成并保存', finishClick));
     if (resume) { requestAnimationFrame(() => { o.body.scrollTop = resume.payload.scroll_top || 0; }); flash('已恢复暂存，可继续抽背'); }
     async function finish(state) {
       if (finishing) return;
       finishing = true; o.ov.querySelectorAll('button').forEach(b => { b.disabled = true; });
-      const day = today();
+      const now = new Date();
+      const day = bjDay(now), savedAt = now.toISOString();
       const wrong = items.filter((_, i) => marks.get(i)?.result === 'wrong'), right = [...marks.values()].filter(m => m.result === 'right').length;
       // "陈书进_阅读L3_11/7" (student_course+lesson no_quiz date), then every word with ✅ / ❌ (+ reason) as marked.
       const counts = new Map(); items.forEach(it => { if (it.lesson_id) counts.set(it.lesson_id, (counts.get(it.lesson_id) || 0) + 1); });
       const main = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
       const lesson = phase === '补充' ? null : main && (index || []).find(l => l.id === main[0]);   // 补充 is titled 补充, not after a source lesson
+      const courseLessons = phase === '补充' ? [] : resolveLessons(items, {phase, fallbackLessons: resume?.payload?.course_lessons});
       const course = phase === '补充' && !resume?.payload?.course ? '补充' : resume?.payload?.course || (lesson ? subjectOf(lesson.subject) : subjectOf(todaysCourse(student)) || phase);
       const courseNo = resume?.payload && 'course_no' in resume.payload ? resume.payload.course_no : lesson ? lessonNo(lesson.title) : null;
-      const text = quizCopyText(student, course, courseNo, day, items, marks);
-      const payload = {schema: 1, session_id: sessionId, state, student, phase, list_day: listDay, day, saved_at: new Date().toISOString(),
+      const text = quizCopyText(student, course, courseNo, day, items, marks, {lessons: courseLessons, phase});
+      const payload = {schema: 1, session_id: sessionId, state, student, phase, list_day: listDay, day, saved_at: savedAt,
         items: JSON.parse(JSON.stringify(items)), marks: [...marks].map(([index, m]) => ({index, result: m.result, reason: m.result === 'wrong' ? m.reason || null : null})),
-        text, course, course_no: courseNo, hide, direction: hide === 'zh' ? 'en-zh' : 'zh-en', scroll_top: o.body.scrollTop, ...(reQuiz ? {re_quiz: true} : {})};
+        text, course, course_no: courseNo, ...(courseLessons.length ? {course_lessons: courseLessons} : {}),
+        hide, direction: hide === 'zh' ? 'en-zh' : 'zh-en', scroll_top: o.body.scrollTop, ...(reQuiz ? {re_quiz: true} : {})};
       let snapshot;
       const snapshotKey = 'snapshot:' + owner + ':' + uuid();
       try {
@@ -3086,22 +3715,23 @@
       const sum = make('div', 'vx-summary'); sum.append(make('div', 'fb-meta', '✅ ' + right + ' · ❌ ' + wrong.length + ' · 未标 ' + (totalCount - marks.size)), make('pre', '', text));
       list.append(sum);
       const status = make('span', 'fb-meta', owner === 'preview' ? '已保存本机' : '已保存本机 · 正在备份');
-      backupListeners.set(snapshotKey, value => { if (status.isConnected) status.textContent = value; });
-      o.foot.append(status, btn('fb-btn pri', '复制结果', async () => { try { await navigator.clipboard.writeText(text); flash('已复制'); } catch { flash('复制失败，请手动选中文字复制', true); } }));
-      if (wrong.length) o.foot.append(btn('fb-btn', '错的再抽一遍', () => { o.close(); startQuiz(student, phase, wrong, done, {reQuiz: true}); }));
+      backupListeners.set(snapshotKey, value => { if (!status.isConnected) return false; status.textContent = value; });
+      o.foot.append(status, btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(text); flash(ok ? '已复制' : '复制失败，请手动选中文字复制', !ok); }));
+      if (wrong.length) o.foot.append(btn('fb-btn', '错的再抽一遍', () => { o.close(); done(); startQuiz(student, phase, wrong, done, {reQuiz: true}); }));
       o.foot.append(btn('fb-btn', '完成', () => { o.close(); done(); }));
     }
   }
   // Tick the existing 课前/课后 check for this student once a quiz is finished.
   function matchingQuizRows(student) {
-    const display = value => plainName(globalThis.wayonDisplayName?.(value) || value);
+    const display = typeof displayStudent === 'function' ? displayStudent : value => plainName(globalThis.wayonDisplayName?.(value) || value);
     return quizRows([]).filter(row => display(row[0]) === display(student));
   }
   function markChecked(student, phase, snapshot) {
+    const display = typeof displayStudent === 'function' ? displayStudent : value => plainName(globalThis.wayonDisplayName?.(value) || value);
     const k = phase === '课前' ? 'pre' : phase === '课后' ? 'post' : '';
     const payload = snapshot?.payload, token = snapshot?.id;
     if (!k || snapshot?.state !== 'completed' || !token || payload?.day !== curDay() || payload?.list_day !== curDay()
-        || payload.student !== student || payload.phase !== phase || !payload.items?.length || !payload.marks?.length
+        || display(payload.student) !== display(student) || payload.phase !== phase || !payload.items?.length || !payload.marks?.length
         || typeof quizRows !== 'function' || typeof qget !== 'function' || typeof qk !== 'function') return false;
     try {
       const rows = matchingQuizRows(student); if (rows.length !== 1) return false;
@@ -3163,28 +3793,43 @@
     mountObserver = new MutationObserver(mount);
     mountObserver.observe(document.body, {childList: true, subtree: true});
     window.addEventListener('online', () => void flushVocabBackups(activeOwner));
+    let wait = 0;
+    const isEditingFeedback = () => open && root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit');
+    const refreshVocabLists = () => document.querySelectorAll('.vq').forEach(v => { if (v.dataset.student && !v.contains(document.activeElement)) void fillLists(v, v.dataset.student); });
     const refreshAfterAuthOrData = () => {
+      if (wait) { clearInterval(wait); wait = 0; }
       const prevOwner = activeOwner;
       mode = 'pending';
       void ready().then(nextMode => {
         if (nextMode !== 'cloud' && nextMode !== 'preview') activeOwner = null;
-        if (prevOwner && activeOwner !== prevOwner) { index = null; bodies.clear(); customWords.clear(); vocabCache.clear(); listCache.clear(); ignored = null; dayActiveQuiz.clear(); }
+        if (prevOwner && activeOwner !== prevOwner) {
+          index = null; bodies.clear(); customWords.clear(); vocabCache.clear(); listCache.clear();
+          ignored = null; dayActiveQuiz.clear(); suppCloudCache.clear(); freshSuppLists.clear();
+        }
         dayActiveLoaded.clear();
         void updateBadge();
-        const editingFeedback = open && root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit');
-        if (open && !editingFeedback) renderPanel();
+        if (open && !isEditingFeedback()) renderPanel();
         decorateQuiz();
-        document.querySelectorAll('.vq').forEach(v => { if (v.dataset.student && !v.contains(document.activeElement)) void fillLists(v, v.dataset.student); });
+        refreshVocabLists();
       });
     };
     window.addEventListener('wayon-refresh-ready', refreshAfterAuthOrData);
     window.addEventListener('wayon-refresh-updated', () => {
       void updateBadge();
-      if (open && view === 'today' && !root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit')) renderPanel();
+      if (open && view === 'today' && !isEditingFeedback()) renderPanel();
     });
     setInterval(() => { if (!document.hidden) void updateBadge(); }, 300000);   // a lesson ending turns into a reminder without a reload
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { void flushVocabBackups(activeOwner); void updateBadge(); } });
-    let tries = 0; const wait = setInterval(() => { if (client() || ++tries > 60) { clearInterval(wait); mode = 'pending'; dayActiveLoaded.clear(); if (open) renderPanel(); else void updateBadge(); decorateQuiz(); document.querySelectorAll('.vq').forEach(v => fillLists(v, v.dataset.student)); } }, 1000);
+    let tries = 0;
+    wait = setInterval(() => {
+      if (client() || ++tries > 60) {
+        clearInterval(wait); wait = 0;
+        mode = 'pending'; dayActiveLoaded.clear();
+        if (open && !isEditingFeedback()) renderPanel(); else void updateBadge();
+        decorateQuiz();
+        refreshVocabLists();
+      }
+    }, 1000);
   }
   globalThis.wayonVocab = {parseFeedback, lessonNo, subjectOf, learnersFor};
   Object.assign(globalThis.wayonVocab, {captureQuizExtra, applyQuizExtra, extraQuizStudents, openAddQuizStudent, decorateQuiz, pinyinInitials, buildLearnerSearchEntry, matchStudentSearch, matchLessonQuery, matchWordQuery});
