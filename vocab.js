@@ -2729,15 +2729,16 @@
       row.append(cb, mid, make('span', 'x' + ((r.wrong_count || 0) > 0 ? ' bad' : ''), (r.wrong_count || 0) > 0 ? '错过 ' + r.wrong_count + ' 次' : ''));
       return row;
     };
-    // One lesson = the words written in that lesson's feedback (parsed from its text), matched to the library.
+    // One lesson = the words in that lesson's feedback (edited word list if present, otherwise current parser), matched to the library.
+    // Stale wayon_vocab rows whose lesson_id still points here (manually deleted from the lesson or dropped by newer parser rules) are not re-appended.
     const lessonWordCache = new Map();
     async function wordsOf(l) {
       if (l.pseudo) return l.rows;
       if (lessonWordCache.has(l.id)) return lessonWordCache.get(l.id);
       const rows = await rowsForLesson(l, allLoadedRows);
-      const ids = new Set(rows.map(r => r.id));
-      const firstSeen = allLoadedRows.filter(r => r.lesson_id === l.id && !ids.has(r.id));
-      const allRows = [...rows, ...firstSeen]; allRows.forEach(r => selectable.set(r.id, r)); lessonWordCache.set(l.id, allRows); return allRows;
+      rows.forEach(r => selectable.set(r.id, r));
+      lessonWordCache.set(l.id, rows);
+      return rows;
     }
     function lessonBlock(l) {
       const d = make('details', 'fb-lesson'), sum = make('summary'), cb = make('input'); cb.type = 'checkbox';
@@ -2760,7 +2761,13 @@
       const sync = ws => { const k = ws.filter(r => chosen.has(r.id)).length; cb.checked = ws.length > 0 && k === ws.length; cb.indeterminate = k > 0 && k < ws.length; n.textContent = ws.length + ' 项' + (k ? ' · 已选 ' + k : ''); };
       const known = l.pseudo ? l.rows : lessonWordCache.get(l.id); if (known) sync(known); else { const first = allLoadedRows.filter(r => r.lesson_id === l.id).length; n.textContent = first ? first + ' 个新词' : '展开查看'; }
       cb.addEventListener('click', e => e.stopPropagation());
-      cb.onchange = async () => { const ws = await wordsOf(l); ws.forEach(r => { if (cb.checked) { chosen.add(r.id); if (!l.pseudo) chosenFrom.set(r.id, l.id); } else chosen.delete(r.id); }); recount(); sync(ws); body.querySelectorAll('input[data-id]').forEach(i => { i.checked = chosen.has(i.dataset.id); }); };
+      cb.onchange = async () => {
+        const ws = await wordsOf(l), validIds = new Set(ws.map(r => r.id));
+        ws.forEach(r => { if (cb.checked) { chosen.add(r.id); if (!l.pseudo) chosenFrom.set(r.id, l.id); } else chosen.delete(r.id); });
+        if (!l.pseudo) items.forEach(x => { if (x.lesson_id === l.id && x.vocab_id && (!cb.checked || !validIds.has(x.vocab_id))) chosen.delete(x.vocab_id); });
+        recount(); sync(ws);
+        body.querySelectorAll('input[data-id]').forEach(i => { i.checked = chosen.has(i.dataset.id); });
+      };
       d.addEventListener('toggle', async () => {
         if (!d.open || body.dataset.loaded) return;
         body.append(make('div', 'vq-empty', '读取这节课的生词…'));
