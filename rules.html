@@ -3,67 +3,252 @@
 <head>
   <meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png"><link rel="apple-touch-icon" href="./favicon-180.png">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Wayon · 任务规则</title>
+  <meta name="color-scheme" content="light dark">
+  <title>Wayon-edu · 任务规则</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      color-scheme: light dark;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+      --canvas-light: #F5F5F7;
+      --canvas-dark: #000000;
+      --surface-light: #FFFFFF;
+      --surface-dark: #1C1C1E;
+      --fg-light: #1D1D1F;
+      --fg-dark: #F5F5F7;
+      --fg2-light: #6E6E73;
+      --fg2-dark: #98989D;
+      --accent-light: #0071E3;
+      --accent-dark: #2997FF;
+      --accent-hover-light: #0077ED;
+      --accent-hover-dark: #4CA8FF;
+      --danger-light: #D70015;
+      --danger-dark: #FF6961;
+      --glass-top-light: rgba(255, 255, 255, 0.78);
+      --glass-top-dark: rgba(38, 38, 42, 0.76);
+      --glass-bot-light: rgba(248, 249, 252, 0.66);
+      --glass-bot-dark: rgba(24, 24, 28, 0.66);
+      --hairline-light: rgba(29, 29, 31, 0.08);
+      --hairline-dark: rgba(255, 255, 255, 0.12);
+      --card-rim-light: rgba(255, 255, 255, 0.96);
+      --card-rim-dark: rgba(255, 255, 255, 0.12);
+      --card-ring-light: rgba(0, 0, 0, 0.04);
+      --card-ring-dark: rgba(255, 255, 255, 0.08);
+      --card-shadow-light: rgba(0, 0, 0, 0.055);
+      --card-shadow-dark: rgba(0, 0, 0, 0.56);
+      --glow-key-light: rgba(255, 255, 255, 0.96);
+      --glow-key-dark: rgba(41, 151, 255, 0.085);
+      --glow-sky-light: rgba(212, 229, 252, 0.38);
+      --glow-sky-dark: rgba(255, 255, 255, 0.035);
+      --sb-thumb-light: rgba(29, 29, 31, 0.24);
+      --sb-thumb-dark: rgba(245, 245, 247, 0.28);
+
+      --canvas: var(--canvas-light);
+      --surface: var(--surface-light);
+      --fg: var(--fg-light);
+      --fg2: var(--fg2-light);
+      --accent: var(--accent-light);
+      --accent-hover: var(--accent-hover-light);
+      --danger: var(--danger-light);
+      --glass-top: var(--glass-top-light);
+      --glass-bot: var(--glass-bot-light);
+      --hairline: var(--hairline-light);
+      --card-rim: var(--card-rim-light);
+      --card-ring: var(--card-ring-light);
+      --card-shadow: var(--card-shadow-light);
+      --glow-key: var(--glow-key-light);
+      --glow-sky: var(--glow-sky-light);
+      --sb-thumb: var(--sb-thumb-light);
+
+      accent-color: var(--accent);
+      scrollbar-color: var(--sb-thumb) transparent;
+    }
+    :root[data-theme="dark"],
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) { color-scheme: dark; }
+    :root[data-theme="light"],
+    :root:has(> head > meta[name="color-scheme"][content="light"]) { color-scheme: light; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]):not(:has(> head > meta[name="color-scheme"][content="light"])) {
+        --canvas: var(--canvas-dark);
+        --surface: var(--surface-dark);
+        --fg: var(--fg-dark);
+        --fg2: var(--fg2-dark);
+        --accent: var(--accent-dark);
+        --accent-hover: var(--accent-hover-dark);
+        --danger: var(--danger-dark);
+        --glass-top: var(--glass-top-dark);
+        --glass-bot: var(--glass-bot-dark);
+        --hairline: var(--hairline-dark);
+        --card-rim: var(--card-rim-dark);
+        --card-ring: var(--card-ring-dark);
+        --card-shadow: var(--card-shadow-dark);
+        --glow-key: var(--glow-key-dark);
+        --glow-sky: var(--glow-sky-dark);
+        --sb-thumb: var(--sb-thumb-dark);
+      }
+    }
+    :root[data-theme="dark"] {
+      --canvas: var(--canvas-dark);
+      --surface: var(--surface-dark);
+      --fg: var(--fg-dark);
+      --fg2: var(--fg2-dark);
+      --accent: var(--accent-dark);
+      --accent-hover: var(--accent-hover-dark);
+      --danger: var(--danger-dark);
+      --glass-top: var(--glass-top-dark);
+      --glass-bot: var(--glass-bot-dark);
+      --hairline: var(--hairline-dark);
+      --card-rim: var(--card-rim-dark);
+      --card-ring: var(--card-ring-dark);
+      --card-shadow: var(--card-shadow-dark);
+      --glow-key: var(--glow-key-dark);
+      --glow-sky: var(--glow-sky-dark);
+      --sb-thumb: var(--sb-thumb-dark);
+    }
+    @supports (color: light-dark(white, black)) {
+      :root {
+        --canvas: light-dark(var(--canvas-light), var(--canvas-dark));
+        --surface: light-dark(var(--surface-light), var(--surface-dark));
+        --fg: light-dark(var(--fg-light), var(--fg-dark));
+        --fg2: light-dark(var(--fg2-light), var(--fg2-dark));
+        --accent: light-dark(var(--accent-light), var(--accent-dark));
+        --accent-hover: light-dark(var(--accent-hover-light), var(--accent-hover-dark));
+        --danger: light-dark(var(--danger-light), var(--danger-dark));
+        --glass-top: light-dark(var(--glass-top-light), var(--glass-top-dark));
+        --glass-bot: light-dark(var(--glass-bot-light), var(--glass-bot-dark));
+        --hairline: light-dark(var(--hairline-light), var(--hairline-dark));
+        --card-rim: light-dark(var(--card-rim-light), var(--card-rim-dark));
+        --card-ring: light-dark(var(--card-ring-light), var(--card-ring-dark));
+        --card-shadow: light-dark(var(--card-shadow-light), var(--card-shadow-dark));
+        --glow-key: light-dark(var(--glow-key-light), var(--glow-key-dark));
+        --glow-sky: light-dark(var(--glow-sky-light), var(--glow-sky-dark));
+        --sb-thumb: light-dark(var(--sb-thumb-light), var(--sb-thumb-dark));
+      }
+    }
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
     body {
       margin: 0;
-      background: #f5f5f7;
-      color: #1d1d1f;
-      font: 15px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
-      min-height: 100vh;
+      background-color: var(--canvas);
+      background-image:
+        radial-gradient(1200px 440px at 20% -10%, var(--glow-key) 0%, transparent 66%),
+        radial-gradient(880px 400px at 88% -8%, var(--glow-sky) 0%, transparent 62%);
+      background-attachment: fixed;
+      color: var(--fg);
+      font: 14px/1.5 var(--font-sans);
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
     }
     header {
-      background: #fff;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(180deg, var(--glass-top) 0%, var(--glass-bot) 100%);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      padding: 12px 24px;
+      border-bottom: 0.5px solid var(--hairline);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
     .brand-link {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 700;
-      color: #1d1d1f;
+      color: var(--fg);
       text-decoration: none;
       letter-spacing: -0.03em;
     }
     .back-link {
       font-size: 13px;
-      color: #0071e3;
+      font-weight: 500;
+      color: var(--accent);
       text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 999px;
+      transition: color 0.18s ease, background-color 0.18s ease;
     }
     .back-link:hover {
+      color: var(--accent-hover);
       text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .brand-link:focus-visible,
+    .back-link:focus-visible,
+    .rules-retry-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
     main {
       flex: 1;
       max-width: 1480px;
       width: 100%;
-      margin: 20px auto;
-      padding: 0 16px 40px;
-      box-sizing: border-box;
+      margin: 16px auto;
+      padding: 0 20px 24px;
     }
     #rules-standalone-root {
-      background: #fff;
-      border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 20px;
+      background: var(--surface);
+      border: 0;
+      border-radius: 22px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      box-shadow:
+        inset 0 1px 0 var(--card-rim),
+        0 8px 32px -8px var(--card-shadow),
+        0 0 0 0.5px var(--card-ring);
       min-height: 0;
+    }
+    .rules-boot-state {
+      padding: 56px 24px;
+      text-align: center;
+      color: var(--fg2);
+    }
+    .rules-boot-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--danger);
+      margin: 0 0 8px;
+      letter-spacing: -0.015em;
+    }
+    .rules-boot-copy {
+      font-size: 13.5px;
+      color: var(--fg2);
+      margin: 0 0 18px;
+    }
+    .rules-retry-btn {
+      min-height: 38px;
+      padding: 8px 22px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #FFFFFF;
+      font: 550 13.5px/1 var(--font-sans);
+      cursor: pointer;
+      transition: background-color 0.18s ease;
+    }
+    .rules-retry-btn:hover { background: var(--accent-hover); }
+    @media (forced-colors: active) {
+      #rules-standalone-root { border: 1px solid CanvasText; box-shadow: none; }
+    }
+    @media (max-width: 760px) {
+      header { padding: 10px 16px; }
+      main { margin: 10px auto; padding: 0 10px 16px; }
+      #rules-standalone-root { border-radius: 18px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <a href="./" class="brand-link">Wayon</a>
+    <a href="./" class="brand-link">Wayon-edu</a>
     <a href="./" class="back-link">← 返回教学工作台</a>
   </header>
   <main>
     <div id="rules-standalone-root">
-      <div style="padding:48px 20px;text-align:center;color:#666">
-        <p style="font-size:15px;margin:0 0 8px">正在连接统一规则库…</p>
+      <div class="rules-boot-state">
+        <p class="rules-boot-copy" style="margin:0">正在连接统一规则库…</p>
       </div>
     </div>
   </main>
@@ -85,13 +270,13 @@
       throw last || new Error('SDK_UNAVAILABLE');
     };
     const showLoading = () => {
-      root.innerHTML = '<div style="padding:48px 20px;text-align:center;color:#666"><p style="font-size:15px;margin:0 0 8px" role="status">正在连接统一规则库…</p></div>';
+      root.innerHTML = '<div class="rules-boot-state"><p class="rules-boot-copy" style="margin:0" role="status">正在连接统一规则库…</p></div>';
     };
     const showError = () => {
-      root.innerHTML = '<div style="padding:40px 20px;text-align:center" role="alert">'
-        + '<p style="font-size:16px;font-weight:600;color:#d93025;margin:0 0 8px">无法载入任务规则</p>'
-        + '<p style="font-size:13px;color:#666;margin:0 0 16px">网络或云端暂时连不上；规则没有任何改动。请检查网络后重试。</p>'
-        + '<button type="button" id="rules-retry" style="min-height:40px;padding:8px 20px;border:0;border-radius:10px;background:#0071e3;color:#fff;font:inherit;cursor:pointer">重试</button></div>';
+      root.innerHTML = '<div class="rules-boot-state" role="alert">'
+        + '<p class="rules-boot-title">无法载入任务规则</p>'
+        + '<p class="rules-boot-copy">网络或云端暂时连不上；规则没有任何改动。请检查网络后重试。</p>'
+        + '<button type="button" id="rules-retry" class="rules-retry-btn">重试</button></div>';
       document.getElementById('rules-retry').onclick = load;
     };
     async function load() {

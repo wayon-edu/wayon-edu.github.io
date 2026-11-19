@@ -1,7 +1,7 @@
 import { clone, clean, todayShanghai, inspectTask, taskLines, manualTask, setManual, validateDraft, publicData } from './rules-model.mjs?v=20261118-02';
 import { canonical, saveCatalog } from './rules-store.mjs?v=20261111-studio4';
 import { buildRuleEntities, entityStatus, setEntityStatus, ruleEntityDisplayName } from './rules-entities.mjs?v=20261111-studio4';
-import { STYLE } from './rules-studio-style.mjs?v=20261111-studio4';
+import { STYLE } from './rules-studio-style.mjs?v=20261119-02';
 import { parseTaskUnits, replaceTaskUnit, removeTaskUnit } from './rule-task-text.mjs?v=20261111-studio4';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));

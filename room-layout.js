@@ -4,139 +4,409 @@
   const style = document.createElement('style');
   style.id = 'wayon-room-layout';
   style.textContent = `
+  /* Parent workbench integration: full-width flush classroom frame, no sidebar height override. */
   .wayon-workbench:has(#classroom-frame) #list{columns:1;max-width:none!important}
-  .wayon-workbench:has(#classroom-frame) .main-content{max-width:none!important}
-  .wayon-workbench:has(#classroom-frame) .main-content{padding-bottom:18px!important}
-  @media(min-width:1024px){.wayon-workbench:has(#classroom-frame) .sidebar{height:calc(100dvh - var(--room-shell-height,172px))}}
-  body.wayon-workbench .app-layout #classroom-frame{display:block;width:100%!important;max-width:none!important;height:var(--room-frame-height,calc(100dvh - 140px))!important;min-height:0!important;border:0!important;border-radius:16px!important}
-  body.wayon-room{background:var(--card);padding:16px!important;gap:10px!important}
-  .wayon-room .top{gap:8px 12px;min-height:44px;padding-bottom:10px;flex:none}
-  .wayon-room .top>b{font-size:18px}.wayon-room #cf{font-size:13px;line-height:1.4}
-  .wayon-room .days{order:3;gap:4px}.wayon-room .days button{min-height:36px;height:36px;padding:0 13px;font-size:13px}
-  .wayon-room .legend{gap:6px 14px;font-size:12px;min-height:20px;align-items:center;flex:none}
-  .wayon-room .legend span{white-space:nowrap}.wayon-room .legend i{width:10px;height:10px;border-radius:3px}
-  .wayon-room .room-scroll{border-radius:12px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-  .wayon-room .room-scroll>.grid{min-width:880px!important;min-height:0;grid-template-columns:72px repeat(5,minmax(100px,1fr)) minmax(210px,1.2fr)!important;grid-template-rows:42px repeat(4,minmax(0,1fr))!important;gap:8px!important}
-  .wayon-room .grid>.h{font-size:14px;line-height:20px;padding:2px 0 4px;align-self:stretch;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}.wayon-room .grid>.h small{font-size:11px;line-height:14px}
-  .wayon-room .grid>.r{font-size:14px;line-height:1.45;position:sticky;left:0;background:var(--card);z-index:2}
-  .wayon-room .r .hcnt{font-size:11px;font-weight:400;white-space:nowrap}
-  .wayon-room .c{border-radius:12px;padding:5px;font-size:14px;line-height:1.45}
-  .wayon-room .c.free{font-size:12px;background:var(--code-bg);border-color:var(--line);opacity:.75}
-  .wayon-room .c.used{padding:0}.wayon-room .c.man{padding:4px}.wayon-room .c.man::after{right:8px;top:4px}
-  .wayon-room .k{padding:12px;border-radius:10px;border-left-width:4px;gap:3px;min-width:0}
-  .wayon-room .k .w{font-size:15px;line-height:1.45;font-weight:650;word-break:normal;overflow-wrap:anywhere}
-  .wayon-room .k .s{font-size:13px;line-height:1.45;word-break:normal;overflow-wrap:anywhere}
-  .wayon-room .room-teacher{display:block;font-size:12px;opacity:.75;white-space:nowrap}
-  .wayon-room .room-subject{display:block}.wayon-room .k .tt{font-size:12px;line-height:1.4;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .wayon-room .hallbox{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))!important;grid-auto-rows:minmax(36px,auto);gap:5px;padding:4px;align-content:start;overflow:auto;border-radius:12px}
-  .wayon-room .hallbox>.seat.free{display:none}.wayon-room .hallbox>.seat.room-seat-add{display:flex;opacity:1;min-height:36px;cursor:pointer;background:transparent;color:var(--accent);border:1px dashed var(--line-strong);font-size:12px}
-  .wayon-room .c.seat{min-height:36px;border-radius:7px;padding:0}
-  .wayon-room .k.chip{padding:6px 5px;border-radius:7px;min-height:36px;width:100%}
-  .wayon-room .k.chip .w{font-size:12px;font-weight:550;line-height:1.3;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal}
-  .wayon-room .k.chip.pre{border-color:var(--hallb);background:var(--hall)!important;opacity:.85}
-  .wayon-room .k.chip .x{border-radius:0 7px 7px 0;padding:0 6px;min-width:24px}
-  .wayon-room .room-cont{display:flex;flex-direction:column;justify-content:center;gap:2px;height:100%;min-height:48px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line-strong,rgba(0,0,0,.18));color:var(--muted);font-size:12px;line-height:1.4;box-sizing:border-box}
-  .wayon-room .room-cont b{color:var(--fg);font-weight:600;font-size:13px;overflow-wrap:anywhere}
-  .wayon-room .room-scroll-hint{display:none;font-size:12px;color:var(--muted);flex:none;margin:-2px 0 2px}
-  .wayon-room.room-overflow .room-scroll-hint{display:block}
-  .wayon-room .foot{font-size:12px;line-height:1.5;padding-top:2px;flex:none}.wayon-room .foot:empty{display:none}
-  .room-info{position:relative;order:2;margin-left:auto;flex:none;font-size:12px}
-  .room-info>summary{display:grid;place-items:center;list-style:none;width:36px;height:36px;border:1px solid var(--line);border-radius:9px;color:var(--muted);cursor:pointer;font-size:16px}
-  .room-info>summary::-webkit-details-marker{display:none}.room-info>summary:hover{color:var(--accent);background:var(--accent-subtle)}
-  .room-info-panel{display:none;position:absolute;right:0;top:100%;z-index:20;width:min(340px,calc(100vw - 32px));padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 8px 32px rgba(0,0,0,.12);font-size:12px;line-height:1.7;color:var(--fg-secondary);overflow-wrap:anywhere}
-  .room-info[open]>.room-info-panel,.room-info:hover>.room-info-panel,.room-info:focus-within>.room-info-panel{display:block}
-  .room-info-panel p{margin:0 0 8px}.room-info-panel [role=status]{padding:8px 0 0!important;background:transparent!important;border:0!important;font-size:11px!important}
-  .room-info-panel #sync{white-space:normal;display:block;margin-top:6px}
-  .wayon-room .sheet{max-height:calc(100dvh - 16px);overflow-y:auto}
-  @media(max-height:650px) and (min-width:880px){body.wayon-room{padding:12px!important;gap:6px!important}.wayon-room .top{padding-bottom:6px;min-height:38px}.wayon-room .legend{font-size:11px}.wayon-room .k{padding:7px 9px;gap:1px}.wayon-room .k .w{font-size:14px;line-height:1.3}.wayon-room .k .s{font-size:12px;line-height:1.3}.wayon-room .k .tt,.wayon-room .room-teacher{font-size:11px}.wayon-room .hallbox{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))!important;gap:3px;grid-auto-rows:minmax(28px,auto)}.wayon-room .c.seat,.wayon-room .k.chip,.wayon-room .hallbox>.seat.room-seat-add{min-height:28px}.wayon-room .k.chip{padding:3px 5px}.wayon-room .foot{font-size:11px}}
+  .wayon-workbench:has(#classroom-frame) .main-content{max-width:none!important;padding-bottom:18px!important}
+  body.wayon-workbench .app-layout #classroom-frame{display:block;width:100%!important;max-width:none!important;height:var(--room-frame-height,calc(100dvh - 116px))!important;min-height:0!important;border:0!important;border-radius:22px!important;background:transparent!important;box-shadow:none!important}
   @media(max-width:1023px){.wayon-workbench:has(#classroom-frame) #list>div:has(>a[target="_blank"]){min-height:44px!important}.wayon-workbench .sidebar #workflow-tools{position:absolute;left:14px;top:calc(100% + 8px);flex-direction:row!important;gap:4px!important;margin:0!important;z-index:4}}
-  @media(max-width:700px){body.wayon-room{padding:10px!important}.wayon-room .top>b{font-size:17px}.wayon-room #cf{font-size:12px}.wayon-room .days{order:4;flex-basis:100%;margin:0}.wayon-room .days button{min-height:44px;height:44px;flex:1}.room-info>summary{width:44px;height:44px}.room-info-panel{right:0;width:min(320px,calc(100vw - 32px))}.wayon-room .room-scroll>.grid{min-height:540px;grid-template-rows:42px repeat(4,minmax(116px,1fr))!important}.wayon-room .legend{font-size:11px;gap:5px 10px}.wayon-room .c.seat,.wayon-room .k.chip,.wayon-room .hallbox>.seat.room-seat-add{min-height:44px}.wayon-room .sheet button{min-height:44px}}
+
+  /* Apple Cupertino · Liquid Glass tokens scoped strictly to the rooms page (never pollutes parent :root). */
+  html.wayon-room-root,body.wayon-room{
+    --rm-sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang SC","Hiragino Sans GB","Helvetica Neue",sans-serif;
+    --rm-canvas-light:#F5F5F7;--rm-canvas-dark:#000000;
+    --rm-surface-light:#FFFFFF;--rm-surface-dark:#1C1C1E;
+    --rm-elevated-light:#FFFFFF;--rm-elevated-dark:#242426;
+    --rm-fg-light:#1D1D1F;--rm-fg-dark:#F5F5F7;
+    --rm-fg2-light:#6E6E73;--rm-fg2-dark:#98989D;
+    --rm-fg3-light:#86868B;--rm-fg3-dark:#6E6E73;
+    --rm-accent-light:#0071E3;--rm-accent-dark:#2997FF;
+    --rm-accent-hover-light:#0077ED;--rm-accent-hover-dark:#4CA8FF;
+    --rm-accent-sub-light:rgba(0,113,227,.08);--rm-accent-sub-dark:rgba(41,151,255,.15);
+    --rm-hairline-light:rgba(29,29,31,.09);--rm-hairline-dark:rgba(255,255,255,.12);
+    --rm-hairline-soft-light:rgba(29,29,31,.05);--rm-hairline-soft-dark:rgba(255,255,255,.065);
+    --rm-card-rim-light:rgba(255,255,255,.96);--rm-card-rim-dark:rgba(255,255,255,.12);
+    --rm-ring-light:rgba(0,0,0,.045);--rm-ring-dark:rgba(255,255,255,.09);
+    --rm-shadow1-light:rgba(0,0,0,.05);--rm-shadow1-dark:rgba(0,0,0,.52);
+    --rm-shadow2-light:rgba(0,0,0,.025);--rm-shadow2-dark:rgba(0,0,0,.36);
+    --rm-shadow-hover-light:rgba(0,0,0,.11);--rm-shadow-hover-dark:rgba(0,0,0,.72);
+    --rm-seg-track-light:rgba(118,118,128,.12);--rm-seg-track-dark:rgba(118,118,128,.28);
+    --rm-seg-inset-light:rgba(0,0,0,.065);--rm-seg-inset-dark:rgba(0,0,0,.48);
+    --rm-seg-lip-light:rgba(255,255,255,.78);--rm-seg-lip-dark:rgba(255,255,255,.08);
+    --rm-thumb-top-light:#FFFFFF;--rm-thumb-top-dark:rgba(99,99,102,.92);
+    --rm-thumb-bot-light:#FAFAFC;--rm-thumb-bot-dark:rgba(72,72,74,.84);
+    --rm-thumb-rim-light:#FFFFFF;--rm-thumb-rim-dark:rgba(255,255,255,.22);
+    --rm-thumb-shadow-light:rgba(0,0,0,.10);--rm-thumb-shadow-dark:rgba(0,0,0,.46);
+    --rm-glass-top-light:rgba(255,255,255,.92);--rm-glass-top-dark:rgba(42,42,46,.90);
+    --rm-glass-bot-light:rgba(248,249,252,.86);--rm-glass-bot-dark:rgba(28,28,30,.88);
+    --rm-ok-bg-light:rgba(52,199,89,.13);--rm-ok-bg-dark:rgba(48,209,88,.18);
+    --rm-ok-fg-light:#1B7F37;--rm-ok-fg-dark:#32D74B;
+    --rm-ok-border-light:rgba(27,127,55,.24);--rm-ok-border-dark:rgba(50,215,75,.30);
+    --rm-pre-bg-light:rgba(0,113,227,.065);--rm-pre-bg-dark:rgba(41,151,255,.12);
+    --rm-pre-border-light:rgba(0,113,227,.52);--rm-pre-border-dark:rgba(41,151,255,.58);
+    --rm-danger-bg-light:rgba(255,59,48,.12);--rm-danger-bg-dark:rgba(255,69,58,.22);
+    --rm-danger-fg-light:#D70015;--rm-danger-fg-dark:#FF6961;
+    --rm-now-light:#FF3B30;--rm-now-dark:#FF453A;
+    --rm-edit-light:#B85D00;--rm-edit-dark:#FF9F0A;
+    --rm-hall-band-light:rgba(118,118,128,.04);--rm-hall-band-dark:rgba(255,255,255,.03);
+    --rm-off-stripe-light:rgba(118,118,128,.055);--rm-off-stripe-dark:rgba(255,255,255,.045);
+    --rm-sb-thumb-light:rgba(29,29,31,.24);--rm-sb-thumb-dark:rgba(245,245,247,.28);
+    /* Harmonious Apple Calendar semantic pastels (WCAG AA/AAA text contrast in both modes) */
+    --rm-t1-bg-light:rgba(0,113,227,.105);--rm-t1-bg-dark:rgba(41,151,255,.18);
+    --rm-t1-bar-light:#0071E3;--rm-t1-bar-dark:#2997FF;
+    --rm-t1-fg-light:#004A9E;--rm-t1-fg-dark:#8AC8FF;
+    --rm-t2-bg-light:rgba(88,86,214,.11);--rm-t2-bg-dark:rgba(94,92,230,.22);
+    --rm-t2-bar-light:#5856D6;--rm-t2-bar-dark:#7D7AFF;
+    --rm-t2-fg-light:#3C3AA6;--rm-t2-fg-dark:#BEBDFE;
+    --rm-t3-bg-light:rgba(48,176,199,.125);--rm-t3-bg-dark:rgba(64,200,224,.19);
+    --rm-t3-bar-light:#1EA4BC;--rm-t3-bar-dark:#40C8E0;
+    --rm-t3-fg-light:#0B6475;--rm-t3-fg-dark:#8BE4F4;
+    --rm-t4-bg-light:rgba(255,149,0,.12);--rm-t4-bg-dark:rgba(255,159,10,.19);
+    --rm-t4-bar-light:#E08600;--rm-t4-bar-dark:#FF9F0A;
+    --rm-t4-fg-light:#8C4F00;--rm-t4-fg-dark:#FFCA6B;
+    --rm-t5-bg-light:rgba(118,118,128,.105);--rm-t5-bg-dark:rgba(142,142,147,.19);
+    --rm-t5-bar-light:#8E8E93;--rm-t5-bar-dark:#98989D;
+    --rm-t5-fg-light:#48484A;--rm-t5-fg-dark:#D1D1D6;
+
+    /* Base light resolved tokens (fallback for browsers without light-dark()) */
+    --rm-canvas:var(--rm-canvas-light);--rm-surface:var(--rm-surface-light);--rm-elevated:var(--rm-elevated-light);
+    --rm-fg:var(--rm-fg-light);--rm-fg2:var(--rm-fg2-light);--rm-fg3:var(--rm-fg3-light);
+    --rm-accent:var(--rm-accent-light);--rm-accent-hover:var(--rm-accent-hover-light);--rm-accent-sub:var(--rm-accent-sub-light);
+    --rm-hairline:var(--rm-hairline-light);--rm-hairline-soft:var(--rm-hairline-soft-light);
+    --rm-card-rim:var(--rm-card-rim-light);--rm-ring:var(--rm-ring-light);
+    --rm-shadow1:var(--rm-shadow1-light);--rm-shadow2:var(--rm-shadow2-light);--rm-shadow-hover:var(--rm-shadow-hover-light);
+    --rm-seg-track:var(--rm-seg-track-light);--rm-seg-inset:var(--rm-seg-inset-light);--rm-seg-lip:var(--rm-seg-lip-light);
+    --rm-thumb-top:var(--rm-thumb-top-light);--rm-thumb-bot:var(--rm-thumb-bot-light);--rm-thumb-rim:var(--rm-thumb-rim-light);--rm-thumb-shadow:var(--rm-thumb-shadow-light);
+    --rm-glass-top:var(--rm-glass-top-light);--rm-glass-bot:var(--rm-glass-bot-light);
+    --rm-ok-bg:var(--rm-ok-bg-light);--rm-ok-fg:var(--rm-ok-fg-light);--rm-ok-border:var(--rm-ok-border-light);
+    --rm-pre-bg:var(--rm-pre-bg-light);--rm-pre-border:var(--rm-pre-border-light);
+    --rm-danger-bg:var(--rm-danger-bg-light);--rm-danger-fg:var(--rm-danger-fg-light);
+    --rm-now:var(--rm-now-light);--rm-edit:var(--rm-edit-light);
+    --rm-hall-band:var(--rm-hall-band-light);--rm-off-stripe:var(--rm-off-stripe-light);--rm-sb-thumb:var(--rm-sb-thumb-light);
+    --t1:var(--rm-t1-bg-light);--t1b:var(--rm-t1-bar-light);--t1fg:var(--rm-t1-fg-light);
+    --t2:var(--rm-t2-bg-light);--t2b:var(--rm-t2-bar-light);--t2fg:var(--rm-t2-fg-light);
+    --t3:var(--rm-t3-bg-light);--t3b:var(--rm-t3-bar-light);--t3fg:var(--rm-t3-fg-light);
+    --t4:var(--rm-t4-bg-light);--t4b:var(--rm-t4-bar-light);--t4fg:var(--rm-t4-fg-light);
+    --t5:var(--rm-t5-bg-light);--t5b:var(--rm-t5-bar-light);--t5fg:var(--rm-t5-fg-light);
+
+    /* Bridge legacy ROOM_PAGE_TEMPLATE variables to the Apple palette */
+    --bg:var(--rm-canvas);--card:var(--rm-surface);--fg:var(--rm-fg);--fg-secondary:var(--rm-fg2);--muted:var(--rm-fg2);
+    --line:var(--rm-hairline);--line-strong:var(--rm-hairline);--accent:var(--rm-accent);--accent-subtle:var(--rm-accent-sub);
+    --code-bg:var(--rm-canvas);--bad:var(--rm-now);--bad-dark:var(--rm-danger-fg);--bad-bg:var(--rm-danger-bg);
+    --done-dark:var(--rm-ok-fg);--done-bg:var(--rm-ok-bg);--edit:var(--rm-edit);--hall:var(--rm-ok-bg);--hallb:var(--rm-ok-border);
+  }
+  html.wayon-room-root{
+    color-scheme:light dark;
+    accent-color:var(--rm-accent);
+    scrollbar-color:var(--rm-sb-thumb) transparent;
+  }
+  html.wayon-room-root[data-theme="dark"],
+  html.wayon-room-root:has(> head > meta[name="color-scheme"][content="dark"]){color-scheme:dark}
+  html.wayon-room-root[data-theme="light"],
+  html.wayon-room-root:has(> head > meta[name="color-scheme"][content="light"]){color-scheme:light}
+
+  @media (prefers-color-scheme: dark){
+    html.wayon-room-root:not([data-theme="light"]):not(:has(> head > meta[name="color-scheme"][content="light"])),
+    html.wayon-room-root:not([data-theme="light"]):not(:has(> head > meta[name="color-scheme"][content="light"])) body.wayon-room{
+      --rm-canvas:var(--rm-canvas-dark);--rm-surface:var(--rm-surface-dark);--rm-elevated:var(--rm-elevated-dark);
+      --rm-fg:var(--rm-fg-dark);--rm-fg2:var(--rm-fg2-dark);--rm-fg3:var(--rm-fg3-dark);
+      --rm-accent:var(--rm-accent-dark);--rm-accent-hover:var(--rm-accent-hover-dark);--rm-accent-sub:var(--rm-accent-sub-dark);
+      --rm-hairline:var(--rm-hairline-dark);--rm-hairline-soft:var(--rm-hairline-soft-dark);
+      --rm-card-rim:var(--rm-card-rim-dark);--rm-ring:var(--rm-ring-dark);
+      --rm-shadow1:var(--rm-shadow1-dark);--rm-shadow2:var(--rm-shadow2-dark);--rm-shadow-hover:var(--rm-shadow-hover-dark);
+      --rm-seg-track:var(--rm-seg-track-dark);--rm-seg-inset:var(--rm-seg-inset-dark);--rm-seg-lip:var(--rm-seg-lip-dark);
+      --rm-thumb-top:var(--rm-thumb-top-dark);--rm-thumb-bot:var(--rm-thumb-bot-dark);--rm-thumb-rim:var(--rm-thumb-rim-dark);--rm-thumb-shadow:var(--rm-thumb-shadow-dark);
+      --rm-glass-top:var(--rm-glass-top-dark);--rm-glass-bot:var(--rm-glass-bot-dark);
+      --rm-ok-bg:var(--rm-ok-bg-dark);--rm-ok-fg:var(--rm-ok-fg-dark);--rm-ok-border:var(--rm-ok-border-dark);
+      --rm-pre-bg:var(--rm-pre-bg-dark);--rm-pre-border:var(--rm-pre-border-dark);
+      --rm-danger-bg:var(--rm-danger-bg-dark);--rm-danger-fg:var(--rm-danger-fg-dark);
+      --rm-now:var(--rm-now-dark);--rm-edit:var(--rm-edit-dark);
+      --rm-hall-band:var(--rm-hall-band-dark);--rm-off-stripe:var(--rm-off-stripe-dark);--rm-sb-thumb:var(--rm-sb-thumb-dark);
+      --t1:var(--rm-t1-bg-dark);--t1b:var(--rm-t1-bar-dark);--t1fg:var(--rm-t1-fg-dark);
+      --t2:var(--rm-t2-bg-dark);--t2b:var(--rm-t2-bar-dark);--t2fg:var(--rm-t2-fg-dark);
+      --t3:var(--rm-t3-bg-dark);--t3b:var(--rm-t3-bar-dark);--t3fg:var(--rm-t3-fg-dark);
+      --t4:var(--rm-t4-bg-dark);--t4b:var(--rm-t4-bar-dark);--t4fg:var(--rm-t4-fg-dark);
+      --t5:var(--rm-t5-bg-dark);--t5b:var(--rm-t5-bar-dark);--t5fg:var(--rm-t5-fg-dark);
+    }
+  }
+  html.wayon-room-root[data-theme="dark"],
+  html.wayon-room-root[data-theme="dark"] body.wayon-room,
+  html.wayon-room-root:has(> head > meta[name="color-scheme"][content="dark"]),
+  html.wayon-room-root:has(> head > meta[name="color-scheme"][content="dark"]) body.wayon-room{
+    --rm-canvas:var(--rm-canvas-dark);--rm-surface:var(--rm-surface-dark);--rm-elevated:var(--rm-elevated-dark);
+    --rm-fg:var(--rm-fg-dark);--rm-fg2:var(--rm-fg2-dark);--rm-fg3:var(--rm-fg3-dark);
+    --rm-accent:var(--rm-accent-dark);--rm-accent-hover:var(--rm-accent-hover-dark);--rm-accent-sub:var(--rm-accent-sub-dark);
+    --rm-hairline:var(--rm-hairline-dark);--rm-hairline-soft:var(--rm-hairline-soft-dark);
+    --rm-card-rim:var(--rm-card-rim-dark);--rm-ring:var(--rm-ring-dark);
+    --rm-shadow1:var(--rm-shadow1-dark);--rm-shadow2:var(--rm-shadow2-dark);--rm-shadow-hover:var(--rm-shadow-hover-dark);
+    --rm-seg-track:var(--rm-seg-track-dark);--rm-seg-inset:var(--rm-seg-inset-dark);--rm-seg-lip:var(--rm-seg-lip-dark);
+    --rm-thumb-top:var(--rm-thumb-top-dark);--rm-thumb-bot:var(--rm-thumb-bot-dark);--rm-thumb-rim:var(--rm-thumb-rim-dark);--rm-thumb-shadow:var(--rm-thumb-shadow-dark);
+    --rm-glass-top:var(--rm-glass-top-dark);--rm-glass-bot:var(--rm-glass-bot-dark);
+    --rm-ok-bg:var(--rm-ok-bg-dark);--rm-ok-fg:var(--rm-ok-fg-dark);--rm-ok-border:var(--rm-ok-border-dark);
+    --rm-pre-bg:var(--rm-pre-bg-dark);--rm-pre-border:var(--rm-pre-border-dark);
+    --rm-danger-bg:var(--rm-danger-bg-dark);--rm-danger-fg:var(--rm-danger-fg-dark);
+    --rm-now:var(--rm-now-dark);--rm-edit:var(--rm-edit-dark);
+    --rm-hall-band:var(--rm-hall-band-dark);--rm-off-stripe:var(--rm-off-stripe-dark);--rm-sb-thumb:var(--rm-sb-thumb-dark);
+    --t1:var(--rm-t1-bg-dark);--t1b:var(--rm-t1-bar-dark);--t1fg:var(--rm-t1-fg-dark);
+    --t2:var(--rm-t2-bg-dark);--t2b:var(--rm-t2-bar-dark);--t2fg:var(--rm-t2-fg-dark);
+    --t3:var(--rm-t3-bg-dark);--t3b:var(--rm-t3-bar-dark);--t3fg:var(--rm-t3-fg-dark);
+    --t4:var(--rm-t4-bg-dark);--t4b:var(--rm-t4-bar-dark);--t4fg:var(--rm-t4-fg-dark);
+    --t5:var(--rm-t5-bg-dark);--t5b:var(--rm-t5-bar-dark);--t5fg:var(--rm-t5-fg-dark);
+  }
+  @supports (color: light-dark(white, black)){
+    html.wayon-room-root,html.wayon-room-root body.wayon-room{
+      --rm-canvas:light-dark(var(--rm-canvas-light),var(--rm-canvas-dark));
+      --rm-surface:light-dark(var(--rm-surface-light),var(--rm-surface-dark));
+      --rm-elevated:light-dark(var(--rm-elevated-light),var(--rm-elevated-dark));
+      --rm-fg:light-dark(var(--rm-fg-light),var(--rm-fg-dark));
+      --rm-fg2:light-dark(var(--rm-fg2-light),var(--rm-fg2-dark));
+      --rm-fg3:light-dark(var(--rm-fg3-light),var(--rm-fg3-dark));
+      --rm-accent:light-dark(var(--rm-accent-light),var(--rm-accent-dark));
+      --rm-accent-hover:light-dark(var(--rm-accent-hover-light),var(--rm-accent-hover-dark));
+      --rm-accent-sub:light-dark(var(--rm-accent-sub-light),var(--rm-accent-sub-dark));
+      --rm-hairline:light-dark(var(--rm-hairline-light),var(--rm-hairline-dark));
+      --rm-hairline-soft:light-dark(var(--rm-hairline-soft-light),var(--rm-hairline-soft-dark));
+      --rm-card-rim:light-dark(var(--rm-card-rim-light),var(--rm-card-rim-dark));
+      --rm-ring:light-dark(var(--rm-ring-light),var(--rm-ring-dark));
+      --rm-shadow1:light-dark(var(--rm-shadow1-light),var(--rm-shadow1-dark));
+      --rm-shadow2:light-dark(var(--rm-shadow2-light),var(--rm-shadow2-dark));
+      --rm-shadow-hover:light-dark(var(--rm-shadow-hover-light),var(--rm-shadow-hover-dark));
+      --rm-seg-track:light-dark(var(--rm-seg-track-light),var(--rm-seg-track-dark));
+      --rm-seg-inset:light-dark(var(--rm-seg-inset-light),var(--rm-seg-inset-dark));
+      --rm-seg-lip:light-dark(var(--rm-seg-lip-light),var(--rm-seg-lip-dark));
+      --rm-thumb-top:light-dark(var(--rm-thumb-top-light),var(--rm-thumb-top-dark));
+      --rm-thumb-bot:light-dark(var(--rm-thumb-bot-light),var(--rm-thumb-bot-dark));
+      --rm-thumb-rim:light-dark(var(--rm-thumb-rim-light),var(--rm-thumb-rim-dark));
+      --rm-thumb-shadow:light-dark(var(--rm-thumb-shadow-light),var(--rm-thumb-shadow-dark));
+      --rm-glass-top:light-dark(var(--rm-glass-top-light),var(--rm-glass-top-dark));
+      --rm-glass-bot:light-dark(var(--rm-glass-bot-light),var(--rm-glass-bot-dark));
+      --rm-ok-bg:light-dark(var(--rm-ok-bg-light),var(--rm-ok-bg-dark));
+      --rm-ok-fg:light-dark(var(--rm-ok-fg-light),var(--rm-ok-fg-dark));
+      --rm-ok-border:light-dark(var(--rm-ok-border-light),var(--rm-ok-border-dark));
+      --rm-pre-bg:light-dark(var(--rm-pre-bg-light),var(--rm-pre-bg-dark));
+      --rm-pre-border:light-dark(var(--rm-pre-border-light),var(--rm-pre-border-dark));
+      --rm-danger-bg:light-dark(var(--rm-danger-bg-light),var(--rm-danger-bg-dark));
+      --rm-danger-fg:light-dark(var(--rm-danger-fg-light),var(--rm-danger-fg-dark));
+      --rm-now:light-dark(var(--rm-now-light),var(--rm-now-dark));
+      --rm-edit:light-dark(var(--rm-edit-light),var(--rm-edit-dark));
+      --rm-hall-band:light-dark(var(--rm-hall-band-light),var(--rm-hall-band-dark));
+      --rm-off-stripe:light-dark(var(--rm-off-stripe-light),var(--rm-off-stripe-dark));
+      --rm-sb-thumb:light-dark(var(--rm-sb-thumb-light),var(--rm-sb-thumb-dark));
+      --t1:light-dark(var(--rm-t1-bg-light),var(--rm-t1-bg-dark));
+      --t1b:light-dark(var(--rm-t1-bar-light),var(--rm-t1-bar-dark));
+      --t1fg:light-dark(var(--rm-t1-fg-light),var(--rm-t1-fg-dark));
+      --t2:light-dark(var(--rm-t2-bg-light),var(--rm-t2-bg-dark));
+      --t2b:light-dark(var(--rm-t2-bar-light),var(--rm-t2-bar-dark));
+      --t2fg:light-dark(var(--rm-t2-fg-light),var(--rm-t2-fg-dark));
+      --t3:light-dark(var(--rm-t3-bg-light),var(--rm-t3-bg-dark));
+      --t3b:light-dark(var(--rm-t3-bar-light),var(--rm-t3-bar-dark));
+      --t3fg:light-dark(var(--rm-t3-fg-light),var(--rm-t3-fg-dark));
+      --t4:light-dark(var(--rm-t4-bg-light),var(--rm-t4-bg-dark));
+      --t4b:light-dark(var(--rm-t4-bar-light),var(--rm-t4-bar-dark));
+      --t4fg:light-dark(var(--rm-t4-fg-light),var(--rm-t4-fg-dark));
+      --t5:light-dark(var(--rm-t5-bg-light),var(--rm-t5-bg-dark));
+      --t5b:light-dark(var(--rm-t5-bar-light),var(--rm-t5-bar-dark));
+      --t5fg:light-dark(var(--rm-t5-fg-light),var(--rm-t5-fg-dark));
+    }
+  }
+
+  /* Base canvas & standalone vs embedded framing */
+  body.wayon-room{background:var(--rm-canvas)!important;color:var(--rm-fg)!important;font-family:var(--rm-sans)!important;padding:12px 18px 14px!important;gap:8px!important;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  html.wayon-room-root.is-embedded,body.wayon-room.is-embedded{background:transparent!important}
+  body.wayon-room.is-embedded{padding:2px 2px 6px!important;gap:8px!important}
+  .wayon-room .room-scroll-hint{display:none;font-size:12px;color:var(--rm-fg2);flex:none;margin:-2px 0 2px}
+  .wayon-room.room-overflow .room-scroll-hint{display:block}
+  .wayon-room .foot{font-size:11.5px;line-height:1.45;color:var(--rm-fg2);padding:2px 4px 0;flex:none}
+  .wayon-room .foot:empty{display:none}
+  .wayon-room .sheet{max-height:calc(100dvh - 16px);overflow-y:auto}
   `;
   document.head.append(style);
+
   const timelineStyle = document.createElement('style');
   timelineStyle.id = 'wayon-room-timeline';
   timelineStyle.textContent = `
-  /* Header: title + status pill on the left, segmented day picker and info on the right. */
-  body.wayon-room{gap:8px!important}
-  .wayon-room .top{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;min-height:40px;padding:0!important;border-bottom:0!important}
-  .wayon-room .top>b{font-size:20px!important;font-weight:650!important;letter-spacing:-.02em;order:0}
-  .wayon-room .top #cf{order:1;display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px!important;font-weight:550;background:var(--done-bg);color:var(--done-dark)}
-  .wayon-room .top #cf.no,.wayon-room .top #cf.miss{background:var(--bad-bg);color:var(--bad-dark)}
-  .wayon-room .top #cf:empty{display:none}
-  .wayon-room .top .days{order:2;margin-left:auto!important;display:inline-flex;gap:2px!important;padding:3px;border-radius:10px;background:var(--code-bg);border:1px solid var(--line)}
-  .wayon-room .top .days button{height:30px!important;min-height:30px!important;padding:0 14px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:var(--muted)!important;box-shadow:none!important;font-size:13px!important;font-weight:550!important;font-variant-numeric:tabular-nums}
-  .wayon-room .top .days button:hover{color:var(--fg)!important}
-  .wayon-room .top .days button.on{background:var(--card)!important;color:var(--fg)!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important;font-weight:650!important}
-  .wayon-room .top .room-info{order:3;margin-left:0}
-  .wayon-room .top .room-info>summary{width:34px;height:34px;border-radius:9px;font-size:15px}
-  .wayon-room .legend{gap:4px 14px!important;font-size:12px!important;color:var(--muted);padding:0 0 4px}
-  .wayon-room .legend i{width:8px!important;height:8px!important;border-radius:50%!important}
-  .wayon-room .legend .lg-hall-note{margin-left:auto;opacity:.85}
-  /* Column headers: one line each, aligned, with a hairline under them. */
-  .wayon-room .grid.tl>.h{flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:6px;font-size:13px!important;font-weight:600;padding:0 0 6px!important;border-bottom:1px solid var(--line-strong);white-space:nowrap}
-  .wayon-room .grid.tl>.h small{display:inline;font-size:11px!important;font-weight:400;color:var(--muted)}
-  .wayon-room .grid.tl>.h.man::after{content:"✎";font-size:11px}
-  .wayon-room .grid.tl>.h.tl-corner{border-bottom-color:transparent}
-  @media(max-width:700px){.wayon-room .top .days{order:4;flex-basis:100%;margin-left:0!important}.wayon-room .top .days button{flex:1;height:38px!important;min-height:38px!important}.wayon-room .top .room-info{margin-left:auto}.wayon-room .top .room-info>summary{width:40px;height:40px}.wayon-room .legend .lg-hall-note{margin-left:0}}
-  .wayon-room .room-scroll>.grid.tl{height:auto!important;min-height:0!important;row-gap:0!important;column-gap:8px!important;align-items:stretch}
-  .wayon-room .grid.tl>.h{position:sticky;top:0;z-index:4;background:var(--card);padding-bottom:6px}
-  .wayon-room .grid.tl>.h.man::after{content:" ✎";color:var(--edit);font-size:12px}
-  .wayon-room .grid.tl>.h.tl-corner{left:0;z-index:5}
-  .wayon-room .tl-time{position:sticky;left:0;z-index:2;background:var(--card);font-size:11px;line-height:1;color:var(--muted);text-align:right;padding-right:8px;font-variant-numeric:tabular-nums;transform:translateY(-5px);white-space:nowrap}
-  .wayon-room .tl-time.first{transform:none}
-  .wayon-room .tl-time.hour{color:var(--fg-secondary);font-weight:600;font-size:12px}
-  .wayon-room .tl-slot{border-top:1px solid var(--line);cursor:copy;min-width:0}
+  /* Ultra-slim single-row Apple Calendar micro-header (zero redundant heading or conflict-free badge). */
+  .wayon-room .top{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;min-height:36px;padding:0 2px!important;border-bottom:0!important;flex:none}
+  /* Keep semantic title for screen readers while freeing 100% of its vertical visual height */
+  .wayon-room .top>b{position:absolute!important;clip-path:inset(50%)!important;overflow:hidden!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;border:0!important;white-space:nowrap!important}
+  /* Status pill: silent when conflict-free; crisp Apple Red pill ONLY on real conflict / overflow / missing data */
+  .wayon-room .top #cf,
+  .wayon-room .top #booking-warning{order:1;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 11px;border-radius:999px;font-size:12px!important;font-weight:600;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+  .wayon-room .top #cf.no,
+  .wayon-room .top #cf.miss,
+  .wayon-room .top #booking-warning{background:var(--rm-danger-bg);color:var(--rm-danger-fg)}
+  .wayon-room .top #cf.ok,
+  .wayon-room .top #cf:empty,
+  .wayon-room .top #cf[hidden]{display:none!important}
+  /* Compact inline legend inside the same single top bar */
+  .wayon-room .top .legend{order:2;display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 13px!important;font-size:12px!important;line-height:1.35;color:var(--rm-fg2);padding:0;margin:0;min-height:0;flex:1 1 auto;min-width:0}
+  .wayon-room .legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .wayon-room .legend i{width:8px!important;height:8px!important;border-radius:999px!important;flex:none}
+  .wayon-room .legend .lg-hall-note{margin-left:0;color:var(--rm-fg2);opacity:.92}
+  .wayon-room .legend .lg-hall-swatch{width:10px!important;height:10px!important;border-radius:3px!important;border:1.5px dashed var(--rm-accent);background:transparent!important;box-sizing:border-box}
+  .wayon-room .top .tl-summary{order:3;margin-left:auto;font-size:12px;font-weight:450;color:var(--rm-fg2);font-variant-numeric:tabular-nums;letter-spacing:-.005em;white-space:nowrap}
+  .wayon-room .top .tl-summary:empty{display:none}
+
+  /* Apple Cupertino physical-spring sliding segmented date control */
+  .wayon-room .top .days{order:4;position:relative;margin-left:auto!important;display:inline-flex;align-items:center;gap:0!important;padding:3px;border-radius:999px;background:var(--rm-seg-track);border:0!important;box-shadow:inset 0 .5px 1.5px var(--rm-seg-inset),inset 0 -.5px 0 var(--rm-seg-lip);user-select:none;flex:none}
+  .wayon-room .top .tl-summary+.days{margin-left:0!important}
+  .wayon-room .top .days .tl-seg-thumb{position:absolute;top:3px;left:0;height:calc(100% - 6px);width:var(--seg-w,0px);border-radius:999px;background:linear-gradient(180deg,var(--rm-thumb-top) 0%,var(--rm-thumb-bot) 100%);box-shadow:inset 0 1px .5px var(--rm-thumb-rim),0 2px 8px -1px var(--rm-thumb-shadow),0 .5px 1.5px var(--rm-shadow2);transform:translate3d(var(--seg-x,3px),0,0);pointer-events:none;z-index:0;opacity:0;will-change:transform,width}
+  .wayon-room .top .days.is-thumb-ready .tl-seg-thumb{opacity:1}
+  @media (prefers-reduced-motion: no-preference){
+    .wayon-room .top .days.is-animated .tl-seg-thumb{
+      transition:transform .34s cubic-bezier(.32,.72,0,1),width .3s cubic-bezier(.22,1,.36,1);
+      transition:transform .44s linear(0,.014 .8%,.056 1.7%,.214 3.6%,.659 8.1%,.848 10.6%,.974 13.1%,1.044 15.6%,1.074 18.2%,1.078 20.9%,1.066 24%,1.024 31.8%,1.003 38.4%,.995 45.2%,.996 53.5%,1.001 66.5%,1),width .32s cubic-bezier(.22,1,.36,1);
+    }
+  }
+  .wayon-room .top .days button{position:relative;z-index:1;height:28px!important;min-height:28px!important;padding:0 13px!important;border:0!important;border-radius:999px!important;background:transparent!important;color:var(--rm-fg2)!important;box-shadow:none!important;font-size:12.5px!important;font-weight:500!important;letter-spacing:-.01em;font-variant-numeric:tabular-nums;transition:color .18s ease}
+  .wayon-room .top .days button:hover{color:var(--rm-fg)!important;background:transparent!important}
+  .wayon-room .top .days button.on{color:var(--rm-fg)!important;font-weight:600!important;background:transparent!important;box-shadow:none!important}
+  .wayon-room .top .days:not(.is-thumb-ready) button.on{background:var(--rm-surface)!important;box-shadow:0 1px 4px var(--rm-thumb-shadow)!important}
+  .wayon-room .top .days button:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
+
+  /* Compact Liquid Glass info disclosure button */
+  .wayon-room .top .room-info{position:relative;order:5;margin-left:0;flex:none;font-size:12px}
+  .wayon-room .top .room-info>summary{display:grid;place-items:center;list-style:none;width:32px;height:32px;border:0;border-radius:999px;background:var(--rm-seg-track);color:var(--rm-fg2);cursor:pointer;font-size:14px;transition:background-color .18s ease,color .18s ease}
+  .wayon-room .top .room-info>summary::-webkit-details-marker{display:none}
+  .wayon-room .top .room-info>summary:hover,.wayon-room .top .room-info[open]>summary{color:var(--rm-accent);background:var(--rm-accent-sub)}
+  .wayon-room .top .room-info>summary:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
+  .room-info-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(340px,calc(100vw - 32px));padding:14px 16px;border:0;border-radius:16px;background:linear-gradient(168deg,var(--rm-glass-top) 0%,var(--rm-glass-bot) 100%);backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);box-shadow:inset 0 1px .5px var(--rm-card-rim),0 18px 42px -12px var(--rm-shadow-hover),0 0 0 .5px var(--rm-hairline);font-size:12px;line-height:1.68;color:var(--rm-fg2);overflow-wrap:anywhere}
+  .room-info[open]>.room-info-panel,.room-info:hover>.room-info-panel,.room-info:focus-within>.room-info-panel{display:block}
+  .room-info-panel p{margin:0 0 8px}.room-info-panel [role=status]{padding:8px 0 0!important;background:transparent!important;border:0!important;border-top:.5px solid var(--rm-hairline)!important;color:var(--rm-fg2)!important;font-size:11px!important}
+  .room-info-panel #sync{white-space:normal;display:block;margin-top:6px;color:var(--rm-fg3)}
+
+  /* Apple Calendar rounded elevated board */
+  .wayon-room .room-scroll{flex:1;min-height:0;min-width:0;width:100%;overflow:auto;overscroll-behavior:contain;border-radius:20px!important;background:var(--rm-surface);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 6px 28px -6px var(--rm-shadow1),0 1px 2px var(--rm-shadow2),0 0 0 .5px var(--rm-ring);scrollbar-width:thin;scrollbar-color:var(--rm-sb-thumb) transparent}
+  @supports not (scrollbar-color: auto){
+    .wayon-room .room-scroll{scrollbar-width:auto}
+    .wayon-room .room-scroll::-webkit-scrollbar{width:8px;height:8px}
+    .wayon-room .room-scroll::-webkit-scrollbar-thumb{background:var(--rm-sb-thumb);border-radius:999px}
+    .wayon-room .room-scroll::-webkit-scrollbar-track{background:transparent}
+  }
+  .wayon-room .room-scroll>.grid.tl{min-width:860px!important;height:auto!important;min-height:0!important;row-gap:0!important;column-gap:0!important;align-items:stretch;background:var(--rm-surface)}
+
+  /* Sticky column headers */
+  .wayon-room .grid.tl>.h{position:sticky;top:0;z-index:6;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:6px;padding:0 12px!important;background:var(--rm-surface);border-bottom:.5px solid var(--rm-hairline);border-left:.5px solid var(--rm-hairline-soft);font-size:12.5px!important;font-weight:600;letter-spacing:-.01em;color:var(--rm-fg);white-space:nowrap;overflow:visible}
+  .wayon-room .grid.tl>.h small{display:inline;font-size:11px!important;font-weight:500;color:var(--rm-fg3);font-variant-numeric:tabular-nums}
+  .wayon-room .grid.tl>.h.man::after{content:"✎";color:var(--rm-edit);font-size:11px;margin-left:auto}
+  .wayon-room .grid.tl>.h.tl-corner{left:0;z-index:7;justify-content:center!important;border-left:0;border-right:.5px solid var(--rm-hairline-soft);color:var(--rm-fg3);font-size:11.5px!important;font-weight:500;padding:0!important}
+
+  /* Time axis gutter & crisp hairlines */
+  .wayon-room .tl-time{position:sticky;left:0;z-index:3;background:var(--rm-surface);border-right:.5px solid var(--rm-hairline-soft);font-size:11px;font-weight:500;line-height:1;color:var(--rm-fg3);text-align:right;padding-right:10px;font-variant-numeric:tabular-nums;transform:translateY(-5px);white-space:nowrap}
+  .wayon-room .tl-time.first{transform:translateY(3px)}
+  .wayon-room .tl-time.hour{color:var(--rm-fg2);font-weight:550;font-size:11.5px}
+  .wayon-room .tl-slot{border-top:.5px solid var(--rm-hairline-soft);border-left:.5px solid var(--rm-hairline-soft);cursor:copy;min-width:0;transition:background-color .14s ease}
   .wayon-room .tl-slot.half{border-top-style:dashed}
-  .wayon-room .tl-slot.off{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--line) 6px 7px)}
-  .wayon-room .tl-slot:hover{background:var(--accent-subtle)}
-  .wayon-room .k.tl-lesson{position:relative;z-index:1;justify-self:start;margin:1px 0;padding:6px 9px;border-radius:8px;gap:1px;overflow:hidden;justify-content:flex-start;box-shadow:0 1px 2px rgba(0,0,0,.06)}
-  .wayon-room .k.tl-lesson .tt{order:-1}
-  .wayon-room .k.tl-lesson.short{padding:2px 8px;flex-direction:row;align-items:center;gap:6px}
-  .wayon-room .k.tl-lesson.short .s{display:none}.wayon-room .k.tl-lesson.short .w{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .wayon-room .k.tl-lesson.man{outline:1.5px solid var(--edit);outline-offset:-1.5px}
-  .wayon-room .k.tl-lesson.man::after{content:"✎";position:absolute;top:3px;right:6px;font-size:10px;color:var(--edit)}
-  .wayon-room .k.tl-lesson.bad{outline:2px solid var(--bad);outline-offset:-2px}
-  .wayon-room .k.tl-lesson:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
-  .wayon-room .tl-preview{z-index:3;border:2px dashed var(--accent);border-radius:8px;background:var(--accent-subtle);color:var(--accent);font-size:12px;font-weight:600;padding:4px 8px;pointer-events:none;font-variant-numeric:tabular-nums;margin:1px 0}
-  .wayon-room .grid.tl .hallbox{margin:2px 0;border:1px dashed var(--line-strong);grid-auto-rows:minmax(28px,auto)!important;grid-template-columns:repeat(auto-fill,minmax(72px,1fr))!important}
-  .wayon-room .grid.tl .c.seat,.wayon-room .grid.tl .k.chip,.wayon-room .grid.tl .hallbox>.seat.room-seat-add{min-height:28px}
-  .wayon-room .grid.tl .k.chip{padding:3px 5px}
-  .wayon-room .tl-hall-label{font-size:11px;color:var(--muted);grid-column:1/-1;padding:2px 4px 0}
-  .wayon-room .tl-now{z-index:3;height:2px;background:var(--bad);align-self:start;pointer-events:none;position:relative}
-  .wayon-room .tl-now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
-  .wayon-room .tl-hallband{border-top:1px solid var(--line);background:color-mix(in srgb,var(--hall) 38%,transparent);border-radius:0 0 8px 8px;cursor:copy;position:relative;margin-bottom:2px}
-  .wayon-room .tl-hallband:hover{background:color-mix(in srgb,var(--hall) 70%,transparent)}
-  .wayon-room .tl-hallband.over{background:var(--bad-bg);box-shadow:inset 0 0 0 1.5px var(--bad)}
-  .wayon-room .tl-hallband.man::after{content:"✎";position:absolute;right:6px;bottom:3px;font-size:10px;color:var(--edit)}
-  .wayon-room .tl-hallcount{position:absolute;right:6px;top:3px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
-  .wayon-room .tl-hallband.over .tl-hallcount{color:var(--bad);font-weight:700}
-  .wayon-room .tl-hallbar{z-index:1;justify-self:start;display:flex;flex-direction:column;gap:2px;margin:18px 0 3px;padding:6px 7px;border-radius:7px;background:var(--hall);border:1px solid var(--hallb);border-left-width:3px;color:var(--fg);font-size:12.5px;font-weight:600;line-height:1.25;overflow:hidden;cursor:pointer;min-width:0;box-sizing:border-box}
-  .wayon-room .tl-hallbar.pre{background:transparent;border-style:dashed;border-left-width:1px;color:var(--fg-secondary)}
+  .wayon-room .tl-slot.off{background:repeating-linear-gradient(135deg,transparent 0 7px,var(--rm-off-stripe) 7px 8px)}
+  .wayon-room .tl-slot:hover{background:var(--rm-accent-sub)}
+
+  /* Apple Calendar pastel lesson cards with rounded left accent bar */
+  .wayon-room .k.tl-lesson{position:relative;z-index:2;justify-self:start;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-auto-rows:min-content;align-items:baseline;align-content:start;column-gap:6px;row-gap:2px;margin:2px 5px;padding:7px 10px 7px 13px;border:0!important;border-radius:11px;overflow:hidden;box-shadow:none;box-sizing:border-box;transition:filter .18s ease,box-shadow .2s ease}
+  .wayon-room .k.tl-lesson::before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:3px;border-radius:99px;background:var(--ev-bar,var(--rm-accent))}
+  @media (prefers-reduced-motion: no-preference){
+    .wayon-room .k.tl-lesson{transition:transform .22s cubic-bezier(.28,.11,.32,1),box-shadow .22s cubic-bezier(.28,.11,.32,1)}
+    .wayon-room .k.tl-lesson:hover{transform:scale(1.012);box-shadow:0 6px 16px -4px var(--rm-shadow-hover);z-index:4}
+  }
+  .wayon-room .k.tl-lesson .w{grid-column:1;grid-row:1;font-size:13px;line-height:1.3;font-weight:600;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+  .wayon-room .k.tl-lesson .tt{grid-column:2;grid-row:1;order:0;font-size:11px;line-height:1.3;font-weight:500;opacity:.78;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .wayon-room .k.tl-lesson .s{grid-column:1 / -1;grid-row:2;font-size:11.5px;line-height:1.35;opacity:.86;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+  .wayon-room .k.tl-lesson .room-subject,.wayon-room .k.tl-lesson .room-teacher{display:inline;font-size:inherit;opacity:1}
+  .wayon-room .k.tl-lesson .room-teacher::before{content:" · "}
+  .wayon-room .k.tl-lesson.short{padding:3px 9px 3px 12px;align-content:center;align-items:center}
+  .wayon-room .k.tl-lesson.short .s{display:none}
+  .wayon-room .k.tl-lesson.short .w{font-size:12px}
+  .wayon-room .k.tl-lesson.man{box-shadow:inset 0 0 0 1.25px color-mix(in oklab,var(--rm-edit) 65%,transparent)}
+  .wayon-room .k.tl-lesson.man::after{content:"✎";position:absolute;bottom:3px;right:7px;font-size:10px;color:var(--rm-edit);opacity:.9}
+  .wayon-room .k.tl-lesson.bad{outline:2px solid var(--rm-now);outline-offset:-2px;box-shadow:0 0 0 2px var(--rm-danger-bg)}
+  .wayon-room .k.tl-lesson:focus-visible{outline:2px solid var(--rm-accent);outline-offset:1px}
+  .wayon-room .tl-preview{z-index:5;margin:2px 5px;border:1.5px dashed var(--rm-accent);border-radius:11px;background:var(--rm-accent-sub);color:var(--rm-accent);font-size:12px;font-weight:600;padding:5px 10px;pointer-events:none;font-variant-numeric:tabular-nums}
+
+  /* Crisp Apple Red current time line + left time pill badge */
+  .wayon-room .tl-now{z-index:5;height:1.5px;background:var(--rm-now);align-self:start;pointer-events:none;position:relative}
+  .wayon-room .tl-now::before{content:"";position:absolute;left:-4px;top:-3.25px;width:8px;height:8px;border-radius:999px;background:var(--rm-now);box-shadow:0 0 0 3px var(--rm-danger-bg)}
+  .wayon-room .tl-now-badge{position:absolute;left:-54px;top:-9px;padding:2px 6px;border-radius:999px;background:var(--rm-now);color:#FFFFFF;font-size:10px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:0 2px 6px var(--rm-danger-bg)}
+
+  /* Hall whole-day board: soft neutral wash + Apple Green confirmed / dashed Apple Blue pre-booked bars */
+  .wayon-room .tl-hallband{border-top:.5px solid var(--rm-hairline-soft);border-left:.5px solid var(--rm-hairline-soft);background:var(--rm-hall-band);cursor:copy;position:relative;transition:background-color .16s ease}
+  .wayon-room .tl-hallband:hover{background:var(--rm-accent-sub)}
+  .wayon-room .tl-hallband.over{background:var(--rm-danger-bg);box-shadow:inset 0 0 0 1.5px var(--rm-now)}
+  .wayon-room .tl-hallband.man::after{content:"✎";position:absolute;right:7px;bottom:4px;font-size:10px;color:var(--rm-edit)}
+  .wayon-room .tl-hallcount{position:absolute;right:8px;top:4px;font-size:10.5px;font-weight:500;color:var(--rm-fg3);font-variant-numeric:tabular-nums;pointer-events:none}
+  .wayon-room .tl-hallband.over .tl-hallcount{color:var(--rm-danger-fg);font-weight:700}
+  .wayon-room .tl-hallbar{z-index:2;justify-self:start;display:flex;flex-direction:column;gap:2px;margin:20px 0 4px;padding:6px 8px;border-radius:10px;background:var(--rm-ok-bg);border:1px solid var(--rm-ok-border);color:var(--rm-ok-fg);font-size:12px;font-weight:600;line-height:1.25;letter-spacing:-.01em;overflow:hidden;cursor:pointer;min-width:0;box-sizing:border-box;transition:background-color .18s ease,border-color .18s ease,color .18s ease,filter .18s ease}
+  .wayon-room .tl-hallbar:hover{filter:brightness(.97)}
+  .wayon-room .tl-hallbar.pre{background:var(--rm-pre-bg);border:1.5px dashed var(--rm-pre-border);color:var(--rm-accent)}
   .wayon-room .tl-hallbar.vertical{align-items:center;padding:6px 0}
   .wayon-room .tl-hallbar.vertical .tl-hallname{writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.06em;white-space:nowrap}
   .wayon-room .tl-hallname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .wayon-room .tl-hallmeta{font-size:10.5px;font-weight:400;color:var(--muted)}
-  .wayon-room .tl-hallbar:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
-  .wayon-room #tlhall .tl-fields{display:grid;grid-template-columns:1fr;gap:8px}
-  .wayon-room #tlhall label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
-  .wayon-room #tlhall input:not([type=checkbox]){font:inherit;font-size:16px;min-height:40px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--bg);color:var(--fg)}
+  .wayon-room .tl-hallmeta{font-size:10.5px;font-weight:500;opacity:.82}
+  .wayon-room .tl-hallbar:focus-visible{outline:2px solid var(--rm-accent);outline-offset:1px}
+  @media (prefers-reduced-motion: no-preference){
+    .wayon-room .tl-hallbar:active{transform:scale(.98)}
+  }
+
+  /* Liquid Glass floating edit sheets (#tlsh, #tlhall, #sh) */
+  .wayon-room .sheet{inset:auto 16px 16px 16px;margin:0 auto;max-width:680px;border:0;border-radius:22px;padding:18px 20px max(18px,env(safe-area-inset-bottom));background:linear-gradient(168deg,var(--rm-glass-top) 0%,var(--rm-glass-bot) 100%);backdrop-filter:blur(32px) saturate(200%);-webkit-backdrop-filter:blur(32px) saturate(200%);color:var(--rm-fg);box-shadow:inset 0 1px .5px var(--rm-card-rim),0 24px 60px -12px rgba(0,0,0,.32),0 0 0 .5px var(--rm-hairline);z-index:25}
+  .wayon-room .sheet .t{font-size:16px;font-weight:650;letter-spacing:-.02em;color:var(--rm-fg)}
+  .wayon-room .sheet .hint{font-size:12px;color:var(--rm-fg2);line-height:1.5}
+  .wayon-room .sheet .row{gap:8px;margin-top:4px}
+  .wayon-room .sheet button{min-height:36px;padding:0 16px;border:0;border-radius:999px;background:var(--rm-seg-track);color:var(--rm-fg);font-size:13px;font-weight:550;transition:background-color .16s ease,color .16s ease}
+  .wayon-room .sheet button:hover{filter:brightness(.95)}
+  .wayon-room .sheet .pri{background:var(--rm-accent);color:#FFFFFF;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 4px 12px -3px color-mix(in oklab,var(--rm-accent) 42%,transparent)}
+  .wayon-room .sheet .pri:hover{background:var(--rm-accent-hover);filter:none}
+  .wayon-room #tlhall .tl-fields{display:grid;grid-template-columns:1fr;gap:10px}
+  .wayon-room #tlhall label,.wayon-room #tlsh label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--rm-fg2)}
+  .wayon-room #tlhall input:not([type=checkbox]),.wayon-room #tlsh input,.wayon-room #tlsh select{font:inherit;font-size:15px;min-height:40px;padding:6px 12px;border:0;border-radius:11px;background:var(--rm-surface);color:var(--rm-fg);box-shadow:0 0 0 .5px var(--rm-hairline),inset 0 1px 0 var(--rm-card-rim);min-width:0}
+  .wayon-room #tlhall input:not([type=checkbox]):focus,.wayon-room #tlsh input:focus,.wayon-room #tlsh select:focus{outline:2px solid var(--rm-accent);outline-offset:0}
   .wayon-room #tlhall .tl-hallsegs{display:flex;flex-wrap:wrap;gap:8px}
-  .wayon-room #tlhall .tl-hallseg{flex-direction:row;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1px solid var(--line-strong);border-radius:9px;font-size:13px;color:var(--fg);cursor:pointer}
-  .wayon-room #tlhall .tl-hallseg:has(input:checked){border-color:var(--accent);background:var(--accent-subtle)}
-  .wayon-room #tlhall .tl-hallseg input{width:18px;height:18px;margin:0}
-  .wayon-room #tlhall .tl-err{color:var(--bad);font-size:13px;min-height:1em}
-  .wayon-room #tlsh .tl-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-  .wayon-room #tlsh label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
-  .wayon-room #tlsh input,.wayon-room #tlsh select{font:inherit;font-size:16px;min-height:40px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--bg);color:var(--fg);min-width:0}
-  .wayon-room #tlsh .tl-err{color:var(--bad);font-size:13px;min-height:1em}
-  @media(max-width:700px){.wayon-room .tl-time{font-size:10px;padding-right:4px}.wayon-room .k.tl-lesson{padding:4px 6px}.wayon-room .k.tl-lesson .w{font-size:13px}.wayon-room .k.tl-lesson .s,.wayon-room .k.tl-lesson .tt{font-size:11px}}
+  .wayon-room #tlhall .tl-hallseg{flex-direction:row;align-items:center;gap:6px;min-height:38px;padding:0 13px;border:1px solid var(--rm-hairline);border-radius:999px;background:var(--rm-surface);font-size:13px;color:var(--rm-fg);cursor:pointer}
+  .wayon-room #tlhall .tl-hallseg:has(input:checked){border-color:var(--rm-accent);background:var(--rm-accent-sub);color:var(--rm-accent);font-weight:600}
+  .wayon-room #tlhall .tl-hallseg input{width:16px;height:16px;margin:0;accent-color:var(--rm-accent)}
+  .wayon-room #tlhall .tl-err,.wayon-room #tlsh .tl-err{color:var(--rm-danger-fg);font-size:12.5px;font-weight:500;min-height:1em}
+  .wayon-room #tlsh .tl-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+
+  /* Forced Colors Mode accessibility fallbacks */
+  @media (forced-colors: active){
+    .wayon-room .room-scroll,.wayon-room .k.tl-lesson,.wayon-room .tl-hallbar,.wayon-room .sheet{border:1px solid CanvasText!important;box-shadow:none!important}
+    .wayon-room .top .days button.on{outline:2px solid Highlight!important}
+    .wayon-room .k.tl-lesson.bad{outline:2px solid LinkText!important}
+    .wayon-room .tl-now{background:Highlight!important}
+  }
+
+  /* Responsive refinement */
+  @media(max-width:1120px){.wayon-room .top .tl-summary{display:none}}
+  @media(max-width:700px){
+    body.wayon-room{padding:8px 10px 10px!important}
+    .wayon-room .top{gap:6px 8px}
+    .wayon-room .top .days{order:4;flex-basis:100%;margin-left:0!important}
+    .wayon-room .top .days button{flex:1;height:36px!important;min-height:36px!important}
+    .wayon-room .top .room-info{margin-left:auto}
+    .wayon-room .top .room-info>summary{width:38px;height:38px}
+    .wayon-room .room-scroll{border-radius:16px!important}
+    .wayon-room .tl-time{font-size:10px;padding-right:6px}
+    .wayon-room .k.tl-lesson{padding:5px 7px 5px 11px;margin:1px 3px}
+    .wayon-room .k.tl-lesson .w{font-size:12.5px}
+    .wayon-room .k.tl-lesson .s,.wayon-room .k.tl-lesson .tt{font-size:10.5px}
+    .wayon-room .sheet{inset:auto 0 0 0;border-radius:20px 20px 0 0;max-width:none}
+    .wayon-room .sheet button{min-height:44px}
+    .wayon-room #tlhall input:not([type=checkbox]),.wayon-room #tlsh input,.wayon-room #tlsh select{font-size:16px}
+  }
   `;
   document.head.append(timelineStyle);
+
+  // Explicit theme detection & cross-iframe sync (Safari resolves prefers-color-scheme to OS inside iframes).
+  const readDocumentTheme = doc => {
+    const t = doc?.documentElement?.dataset?.theme;
+    if (t === 'dark' || t === 'light') return t;
+    const meta = doc?.querySelector?.('meta[name="color-scheme"]')?.getAttribute?.('content');
+    if (meta === 'dark' || meta === 'light') return meta;
+    return '';
+  };
+
   // Calendar view: rooms on a real time axis instead of four fixed two-hour cells.
   // Storage is unchanged: a lesson still lives in every A–D cell it overlaps, with its exact time in x[3].
-  function installTimeline(grid) {
+  function installTimeline(grid, top) {
     if (typeof render !== 'function' || typeof items !== 'function' || typeof setCell !== 'function') return;
-    const STEP = 5, SNAP = 10, MIN_ROW = 6, MAX_ROW = 11;   // grid rows are 5 minutes; dragging snaps to 10
+    const STEP = 5, SNAP = 10, MIN_ROW = 6, MAX_ROW = 12;   // grid rows are 5 minutes; dragging snaps to 10
     const toM = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim()); return m ? +m[1] * 60 + +m[2] : NaN; };
     const toT = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
     const plain = value => String(value || '').replace(/[【】「」]/g, '').trim();
@@ -183,11 +453,34 @@
     let view = null, tdrag = null, pendingRender = false, renderedDay = null, sheetLesson = null;
     const scroller = grid.closest('.room-scroll');
     function rowHeight(rows) {
-      const head = 34, room = scroller ? scroller.clientHeight - head - 8 : 0;
+      const head = 38, room = scroller ? scroller.clientHeight - head - 8 : 0;
       return Math.max(MIN_ROW, Math.min(MAX_ROW, Math.floor(room / rows) || MIN_ROW));
     }
     const lineOf = m => Math.round((m - view.lo) / STEP) + 2;
     const place = (node, row1, row2, col) => { node.style.gridRow = row1 + ' / ' + row2; node.style.gridColumn = String(col); return node; };
+
+    // Quiet right-aligned summary (only shown in the single-row micro-bar; stays silent about conflict-free status).
+    const summaryEl = el('span', 'tl-summary', '');
+    if (top) top.append(summaryEl);
+
+    // Persistent Apple spring segmented date control state
+    let lastDayKeys = '', daysThumb = null, daysButtons = [], daysBound = false;
+    function syncDaysThumb(dl, animate) {
+      if (!dl || !daysThumb) return;
+      const active = daysButtons.find(b => b.classList.contains('on'));
+      if (!active || typeof active.offsetLeft !== 'number' || typeof active.offsetWidth !== 'number' || active.offsetWidth <= 0) {
+        dl.classList.remove('is-thumb-ready');
+        return;
+      }
+      if (!animate) dl.classList.remove('is-animated');
+      daysThumb.style.setProperty('--seg-x', active.offsetLeft + 'px');
+      daysThumb.style.setProperty('--seg-w', active.offsetWidth + 'px');
+      dl.classList.add('is-thumb-ready');
+      if (!animate && typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => dl.classList.add('is-animated'));
+      }
+    }
+
     // Hall: one whole-day board. Each person is a bar running through the periods they sit in the hall.
     // Storage is unchanged: one seat entry per A–D period, as before.
     function hallPeople() {
@@ -266,9 +559,9 @@
           const from = S[run[0]][1], to = S[run[run.length - 1]][2];
           const bar = el('div', 'tl-hallbar' + (pre ? ' pre' : '') + (vertical ? ' vertical' : ''));
           bar.append(el('span', 'tl-hallname', person.name));
-          if (!vertical) bar.append(el('span', 'tl-hallmeta', run.map(si => S[si][0]).join(' ')));
-          bar.style.width = 'calc(' + (100 / lanes) + '% - 3px)';
-          bar.style.marginLeft = 'calc(' + (100 * lane / lanes) + '%)';
+          if (!vertical) bar.append(el('span', 'tl-hallmeta', (pre ? '点选确认 · ' : '') + run.map(si => S[si][0]).join(' ')));
+          bar.style.width = 'calc(' + (100 / lanes) + '% - 6px)';
+          bar.style.marginLeft = 'calc(' + (100 * lane / lanes) + '% + 3px)';
           bar.tabIndex = 0; bar.setAttribute('role', 'button');
           const label = person.name + ' 大厅 ' + run.map(si => S[si][0]).join('、') + ' 段 ' + from + '–' + to + (pre ? '，预占（上完课自动放入，点一下确认）' : '');
           bar.title = label; bar.setAttribute('aria-label', label);
@@ -297,16 +590,18 @@
       const tone = borrowed ? '5' : tcol[x[2]] || '5';
       const node = el('div', 'k tl-lesson' + (borrowed ? ' borrowed' : '') + (minutes < 45 ? ' short' : '') + (man ? ' man' : '') + (bad ? ' bad' : ''));
       node.style.background = 'var(--t' + tone + ')';
+      node.style.color = 'var(--t' + tone + 'fg)';
       node.style.borderLeftColor = 'var(--t' + tone + 'b)';
-      node.append(el('div', 'tt', lesson.a + '–' + lesson.b));
+      node.style.setProperty('--ev-bar', 'var(--t' + tone + 'b)');
       node.append(el('div', 'w', who));
+      node.append(el('div', 'tt', lesson.a + '–' + lesson.b));
       const sub = [subject, teacher].filter(Boolean).join('·');
       if (sub) node.append(el('div', 's', sub));
       node.tabIndex = 0; node.setAttribute('role', 'button');
       node.setAttribute('aria-label', R[lesson.ri] + ' ' + lesson.a + '到' + lesson.b + ' ' + who + (sub ? ' ' + sub : '') + (borrowed ? '，借用教室' : '') + (bad ? '，时间冲突' : ''));
       node.title = who + ' ' + lesson.a + '–' + lesson.b + (sub ? '\n' + sub : '') + (borrowed ? '\n借用教室（课表外）' : '') + (bad ? '\n⚠️ 与同教室另一节课时间重叠' : '');
-      node.style.width = 'calc(' + (100 / lanes) + '% - ' + (lanes > 1 ? 3 : 0) + 'px)';
-      node.style.marginLeft = 'calc(' + (100 * lane / lanes) + '%)';
+      node.style.width = 'calc(' + (100 / lanes) + '% - ' + (lanes > 1 ? 8 : 10) + 'px)';
+      node.style.marginLeft = 'calc(' + (100 * lane / lanes) + '% + 5px)';
       place(node, lineOf(toM(lesson.a)), lineOf(toM(lesson.b)), col);
       node.addEventListener('pointerdown', e => lessonDown(e, node, lesson));
       node.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLesson(lesson); } };
@@ -324,9 +619,9 @@
       lo = Math.floor(lo / 30) * 30; hi = Math.ceil(hi / 30) * 30;
       const rows = (hi - lo) / STEP, rowH = rowHeight(rows), hallCol = R.length + 1;
       view = {lo, hi, rowH, cols: {}};
-      grid.style.setProperty('grid-template-columns', '52px repeat(' + rooms.length + ',minmax(104px,1fr)) minmax(190px,1.15fr)', 'important');
-      grid.style.setProperty('grid-template-rows', '34px repeat(' + rows + ',' + rowH + 'px)', 'important');
-      const corner = el('div', 'h tl-corner', ''); place(corner, 1, 2, 1); grid.append(corner);
+      grid.style.setProperty('grid-template-columns', '60px repeat(' + rooms.length + ',minmax(108px,1fr)) minmax(190px,1.15fr)', 'important');
+      grid.style.setProperty('grid-template-rows', '38px repeat(' + rows + ',' + rowH + 'px)', 'important');
+      const corner = el('div', 'h tl-corner', '时间'); place(corner, 1, 2, 1); grid.append(corner);
       R.forEach((name, ri) => {
         const head = el('div', 'h', name.replace('教室', '').replace('（自习）', ''));
         if (ri === HALL) head.append(el('small', '', SEATS + ' 座'));
@@ -374,21 +669,94 @@
         const now = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Shanghai'})), m = now.getHours() * 60 + now.getMinutes();
         if (m >= lo && m < hi) {
           const line = el('div', 'tl-now'); line.style.marginTop = ((m - lo) % STEP) / STEP * rowH + 'px';
-          line.setAttribute('aria-hidden', 'true'); place(line, lineOf(m - (m - lo) % STEP), lineOf(m - (m - lo) % STEP) + 1, '2 / ' + hallCol); grid.append(line);
+          line.append(el('span', 'tl-now-badge', toT(m)));
+          line.setAttribute('aria-hidden', 'true'); place(line, lineOf(m - (m - lo) % STEP), lineOf(m - (m - lo) % STEP) + 1, '2 / ' + (hallCol + 1)); grid.append(line);
         }
       }
       const legend = $('lg'), anyBorrowed = !!grid.querySelector('.tl-lesson.borrowed');
-      if (legend && anyBorrowed && !legend.querySelector('.lg-borrowed')) {
-        const item = el('span', 'lg-borrowed'), dot = el('i'); dot.style.background = 'var(--t5b)';
-        item.append(dot, document.createTextNode('借用教室')); legend.prepend(item);
-      } else if (legend && !anyBorrowed) legend.querySelector('.lg-borrowed')?.remove();
+      if (legend) {
+        if (anyBorrowed && !legend.querySelector('.lg-borrowed')) {
+          const item = el('span', 'lg-borrowed'), dot = el('i'); dot.style.background = 'var(--t5b)';
+          item.append(dot, document.createTextNode('借用教室')); legend.prepend(item);
+        } else if (!anyBorrowed) legend.querySelector('.lg-borrowed')?.remove();
+      }
       const pairs = Math.ceil(bad / 2);
-      $('cf').className = DATA.missing ? 'miss' : (bad || maxHall > SEATS) ? 'no' : 'ok';
-      $('cf').textContent = DATA.missing ? (DATA.booking_preview ? '课表待更新；已显示借用预留' : '这天还没生成')
-        : (bad ? '⚠️ ' + pairs + ' 处教室时间重叠' : '✓ 无冲突') + (maxHall > SEATS ? ' · ⚠️ 大厅超员' : ' · 大厅最多 ' + maxHall + '/' + SEATS);
-      const dl = $('days'); dl.textContent = '';
-      [...new Set([today, tomorrow, ...Object.keys(ALL).filter(d => d >= today)])].sort().slice(0, 7).forEach(d => {
-        const b = el('button', d === curD ? 'on' : '', relD(d) + mdD(d)); b.type = 'button'; b.onclick = () => { if (d !== curD) useDay(d); }; dl.append(b); });
+      const cf = $('cf');
+      if (cf) {
+        if (DATA.missing) {
+          cf.className = 'miss';
+          cf.hidden = false;
+          cf.textContent = DATA.booking_preview ? '课表待更新 · 已显示借用预留' : '这天还没生成';
+        } else if (bad > 0 || maxHall > SEATS) {
+          cf.className = 'no';
+          cf.hidden = false;
+          const alerts = [];
+          if (bad > 0) alerts.push('⚠️ ' + pairs + ' 处教室时间重叠');
+          if (maxHall > SEATS) alerts.push('⚠️ 大厅超员 ' + maxHall + '/' + SEATS);
+          cf.textContent = alerts.join(' · ');
+        } else {
+          // Zero conflicts: stay silently hidden instead of taking space with a green status badge.
+          cf.className = 'ok';
+          cf.textContent = '';
+          cf.hidden = true;
+        }
+      }
+      const totalLessons = current.reduce((acc, list) => acc + list.length, 0);
+      summaryEl.textContent = DATA.missing ? '' : (totalLessons + ' 节排课 · 大厅 ' + maxHall + '/' + SEATS + ' 座');
+
+      const dl = $('days');
+      if (dl) {
+        const dayKeys = [...new Set([today, tomorrow, ...Object.keys(ALL).filter(d => d >= today)])].sort().slice(0, 7);
+        const keysStr = dayKeys.join(',');
+        if (keysStr !== lastDayKeys) {
+          lastDayKeys = keysStr;
+          dl.textContent = '';
+          dl.setAttribute('role', 'group');
+          dl.setAttribute('aria-label', '选择课表日期');
+          daysThumb = el('span', 'tl-seg-thumb');
+          daysThumb.setAttribute('aria-hidden', 'true');
+          dl.append(daysThumb);
+          daysButtons = dayKeys.map(d => {
+            const on = d === curD;
+            const b = el('button', on ? 'on' : '', relD(d) + mdD(d));
+            b.type = 'button';
+            b.dataset.day = d;
+            b.setAttribute('aria-pressed', String(on));
+            b.onclick = () => { if (d !== curD) useDay(d); };
+            dl.append(b);
+            return b;
+          });
+          if (!daysBound && typeof dl.addEventListener === 'function') {
+            daysBound = true;
+            dl.addEventListener('keydown', e => {
+              const i = daysButtons.indexOf(e.target);
+              if (i < 0) return;
+              let next = -1;
+              if (e.key === 'ArrowRight') next = (i + 1) % daysButtons.length;
+              else if (e.key === 'ArrowLeft') next = (i - 1 + daysButtons.length) % daysButtons.length;
+              else if (e.key === 'Home') next = 0;
+              else if (e.key === 'End') next = daysButtons.length - 1;
+              if (next >= 0 && daysButtons[next]) {
+                e.preventDefault();
+                daysButtons[next].focus();
+                const targetDay = daysButtons[next].dataset.day;
+                if (targetDay && targetDay !== curD) useDay(targetDay);
+              }
+            });
+            if (typeof ResizeObserver === 'function') new ResizeObserver(() => syncDaysThumb(dl, false)).observe(dl);
+          }
+          syncDaysThumb(dl, false);
+          if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => syncDaysThumb(dl, false));
+        } else {
+          daysButtons.forEach((b, idx) => {
+            const d = dayKeys[idx], on = d === curD;
+            b.classList.toggle('on', on);
+            b.setAttribute('aria-pressed', String(on));
+            b.textContent = relD(d) + mdD(d);
+          });
+          syncDaysThumb(dl, true);
+        }
+      }
     }
     // Drag a lesson to another room or time; the preview snaps to 10 minutes and keeps the length.
     function lessonDown(e, node, lesson) {
@@ -403,8 +771,8 @@
       const length = toM(tdrag.lesson.b) - toM(tdrag.lesson.a);
       const ri = rooms.find(r => { const box = view.cols[r].getBoundingClientRect(); return px >= box.left - 4 && px <= box.right + 4; });
       if (ri === undefined) return null;
-      const top = view.cols[ri].getBoundingClientRect().bottom;
-      let start = view.lo + Math.round((py - tdrag.grab - top) / (view.rowH * SNAP / STEP)) * SNAP;
+      const topY = view.cols[ri].getBoundingClientRect().bottom;
+      let start = view.lo + Math.round((py - tdrag.grab - topY) / (view.rowH * SNAP / STEP)) * SNAP;
       start = Math.max(view.lo, Math.min(view.hi - length, start));
       return {ri, a: toT(start), b: toT(start + length)};
     }
@@ -532,85 +900,148 @@
     setInterval(() => { if (!tdrag && !sheet.classList.contains('on') && !hallSheet.classList.contains('on') && curD === today) render(); }, 300000);
     render();
   }
+
   const setup = () => {
     if (document.body.classList.contains('wayon-workbench')) {
-      let scheduled=false;
-      const fit=()=>{
-        scheduled=false;
-        const frame=document.getElementById('classroom-frame');if(!frame)return;
-        const top=frame.getBoundingClientRect().top+window.scrollY;
-        const brand=document.querySelector('.app-brand');
-        if(brand)document.body.style.setProperty('--room-shell-height',brand.getBoundingClientRect().height+'px');
-        const minimum=window.innerWidth<=700?620:360;
-        const bottom=parseFloat(getComputedStyle(frame.closest('.main-content')).paddingBottom)||18;
-        const height=Math.max(minimum,Math.floor(window.innerHeight-top-Math.max(18,bottom)));
-        const value=height+'px';if(frame.style.getPropertyValue('--room-frame-height')!==value)frame.style.setProperty('--room-frame-height',value);
+      let scheduled = false;
+      const syncFrameTheme = () => {
+        const frame = document.getElementById('classroom-frame');
+        if (!frame?.contentWindow || typeof location === 'undefined') return;
+        try { frame.contentWindow.postMessage({type: 'wayon-theme', theme: readDocumentTheme(document)}, location.origin); } catch (_) {}
       };
-      const schedule=()=>{if(!scheduled){scheduled=true;requestAnimationFrame(fit);}};
-      new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
-      new ResizeObserver(schedule).observe(document.querySelector('.app-layout')||document.body);
-      window.addEventListener('resize',schedule);schedule();return;
+      const fit = () => {
+        scheduled = false;
+        const frame = document.getElementById('classroom-frame'); if (!frame) return;
+        if (!frame.dataset.wayonThemeBound) {
+          frame.dataset.wayonThemeBound = '1';
+          frame.addEventListener('load', syncFrameTheme);
+        }
+        syncFrameTheme();
+        const top = frame.getBoundingClientRect().top + (Number(window.scrollY) || 0);
+        const minimum = window.innerWidth <= 700 ? 620 : 360;
+        const mc = frame.closest?.('.main-content');
+        const bottom = (mc && typeof getComputedStyle === 'function' ? parseFloat(getComputedStyle(mc).paddingBottom) : 18) || 18;
+        const height = Math.max(minimum, Math.floor(window.innerHeight - top - Math.max(18, bottom)));
+        const value = height + 'px';
+        if (frame.style.getPropertyValue('--room-frame-height') !== value) frame.style.setProperty('--room-frame-height', value);
+      };
+      const schedule = () => { if (!scheduled) { scheduled = true; requestAnimationFrame(fit); } };
+      if (typeof MutationObserver === 'function') {
+        new MutationObserver(schedule).observe(document.body, {childList: true, subtree: true});
+        if (document.documentElement) new MutationObserver(syncFrameTheme).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+        if (document.head) new MutationObserver(syncFrameTheme).observe(document.head, {childList: true, subtree: true, attributes: true, attributeFilter: ['content']});
+      }
+      if (typeof ResizeObserver === 'function') new ResizeObserver(schedule).observe(document.querySelector('.app-layout') || document.body);
+      window.addEventListener('resize', schedule); schedule(); return;
     }
     if (!document.body.classList.contains('wayon-room')) return;
+
+    // Mark root for scoped Cupertino light/dark color-scheme and apply explicit theme handoff.
+    document.documentElement?.classList?.add('wayon-room-root');
+    const isEmbedded = (() => { try { return typeof window !== 'undefined' && window.self !== window.top; } catch (_) { return false; } })();
+    if (isEmbedded) { document.documentElement?.classList?.add('is-embedded'); document.body.classList.add('is-embedded'); }
+    let schemeMeta = document.querySelector?.('meta[name="color-scheme"]') || null;
+    if (!schemeMeta && document.head) {
+      schemeMeta = document.createElement('meta');
+      schemeMeta.setAttribute('name', 'color-scheme');
+      schemeMeta.setAttribute('content', 'light dark');
+      document.head.append(schemeMeta);
+    }
+    const applyTheme = theme => {
+      const next = theme === 'dark' || theme === 'light' ? theme : '';
+      if (document.documentElement?.dataset) {
+        if (next) document.documentElement.dataset.theme = next;
+        else delete document.documentElement.dataset.theme;
+      }
+      if (schemeMeta) schemeMeta.setAttribute('content', next || 'light dark');
+    };
+    try {
+      const urlTheme = typeof location !== 'undefined' && location.search ? new URLSearchParams(location.search).get('theme') : '';
+      if (urlTheme === 'dark' || urlTheme === 'light') applyTheme(urlTheme);
+      else if (isEmbedded && window.parent && window.parent !== window) applyTheme(readDocumentTheme(window.parent.document));
+    } catch (_) {}
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('message', e => {
+        if (typeof location !== 'undefined' && e.origin === location.origin && e.data?.type === 'wayon-theme') applyTheme(e.data.theme);
+      });
+    }
+
     const top = document.querySelector('.top'), grid = document.getElementById('g');
     if (!top || !grid) return;
-    const info = document.createElement('details');info.className='room-info';
-    const summary = document.createElement('summary');summary.textContent='ⓘ';summary.setAttribute('aria-label','课表状态与操作说明');
-    const panel = document.createElement('div');panel.className='room-info-panel';
-    const help=document.createElement('p');help.textContent='课程按真实时间排列：点空白时间可添加课程，点课程可改时间或教室，按住课程块可拖到别的教室或时间（10 分钟对齐）。大厅虚线姓名为课后预占，点一下确认；“＋ 加座”可填写空座。';
-    panel.append(help);const status=document.querySelector('body>[role="status"]');if(status)panel.append(status);
-    const sync=document.getElementById('sync');if(sync)panel.append(sync);info.append(summary,panel);top.append(info);
-    const plain = value => String(value||'').replace(/[【】「」]/g,'').trim();
+    const legendEl = document.getElementById('lg');
+    if (legendEl && legendEl.parentNode !== top) top.append(legendEl);
+
+    const info = document.createElement('details'); info.className = 'room-info';
+    const summary = document.createElement('summary'); summary.textContent = 'ⓘ'; summary.setAttribute('aria-label', '课表状态与操作说明');
+    const panel = document.createElement('div'); panel.className = 'room-info-panel';
+    const help = document.createElement('p'); help.textContent = '课程按真实时间排列：点空白时间可添加课程，点课程可改时间或教室，按住课程块可拖到别的教室或时间（10 分钟对齐）。大厅虚线姓名为课后预占，点一下确认；点大厅空白处可添加自习。';
+    panel.append(help);
+    const status = document.querySelector('body>[role="status"]'); if (status) panel.append(status);
+    const sync = document.getElementById('sync'); if (sync) panel.append(sync);
+    info.append(summary, panel); top.append(info);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && info.open) info.open = false; });
+
+    const plain = value => String(value || '').replace(/[【】「」]/g, '').trim();
     const decorate = () => {
       // Names only: brackets around a student name are presentation, never stored data.
-      grid.querySelectorAll('.k .w').forEach(node => {const next=plain(node.textContent);if(next!==node.textContent)node.textContent=next;});
+      grid.querySelectorAll('.k .w').forEach(node => { const next = plain(node.textContent); if (next !== node.textContent) node.textContent = next; });
       // A lesson that continues from the previous slot is shown as a continuation, not a blank cell.
       grid.querySelectorAll('.c.used:not(.seat)').forEach(cell => {
-        if(cell.querySelector('.k,.room-cont'))return;
-        let list=[];
-        try{if(typeof items==='function')list=items(Number(cell.dataset.ri),Number(cell.dataset.si))||[];}catch(_){list=[];}
-        const lessons=list.filter(Boolean);
-        const box=document.createElement('div');box.className='room-cont';
-        if(!lessons.length){box.textContent='占用中';cell.append(box);return;}
-        for(const x of lessons){
-          const line=document.createElement('div');
-          const who=document.createElement('b');who.textContent=plain(x[0])||'课程';
-          const end=String(x[3]||'').split('-')[1];
-          line.append(who,document.createTextNode(' 接上节'+(end?' · 至 '+end.trim():'')));
+        if (cell.querySelector('.k,.room-cont')) return;
+        let list = [];
+        try { if (typeof items === 'function') list = items(Number(cell.dataset.ri), Number(cell.dataset.si)) || []; } catch (_) { list = []; }
+        const lessons = list.filter(Boolean);
+        const box = document.createElement('div'); box.className = 'room-cont';
+        if (!lessons.length) { box.textContent = '占用中'; cell.append(box); return; }
+        for (const x of lessons) {
+          const line = document.createElement('div');
+          const who = document.createElement('b'); who.textContent = plain(x[0]) || '课程';
+          const end = String(x[3] || '').split('-')[1];
+          line.append(who, document.createTextNode(' 接上节' + (end ? ' · 至 ' + end.trim() : '')));
           box.append(line);
         }
-        cell.setAttribute('aria-label','上一时段课程延续：'+lessons.map(x=>plain(x[0])).join('、'));
+        cell.setAttribute('aria-label', '上一时段课程延续：' + lessons.map(x => plain(x[0])).join('、'));
         cell.append(box);
       });
       grid.querySelectorAll('.k:not(.chip) .s').forEach(node => {
-        if(node.dataset.roomLayout)return;
-        node.dataset.roomLayout='1';const text=node.textContent,i=text.lastIndexOf('·');if(i<0)return;
-        const subject=document.createElement('span'),teacher=document.createElement('span');subject.className='room-subject';teacher.className='room-teacher';subject.textContent=text.slice(0,i);teacher.textContent=text.slice(i+1);node.replaceChildren(subject,teacher);
+        if (node.dataset.roomLayout) return;
+        node.dataset.roomLayout = '1'; const text = node.textContent, i = text.lastIndexOf('·'); if (i < 0) return;
+        const subject = document.createElement('span'), teacher = document.createElement('span');
+        subject.className = 'room-subject'; teacher.className = 'room-teacher';
+        subject.textContent = text.slice(0, i); teacher.textContent = text.slice(i + 1);
+        node.replaceChildren(subject, teacher);
       });
-      grid.querySelectorAll('.hallbox').forEach(box=>{
-        const free=box.querySelector('.seat.free');if(free&&!free.classList.contains('room-seat-add')){free.classList.add('room-seat-add');free.textContent='＋ 加座';free.title=free.getAttribute('aria-label')+'：添加自习';}
+      grid.querySelectorAll('.hallbox').forEach(box => {
+        const free = box.querySelector('.seat.free');
+        if (free && !free.classList.contains('room-seat-add')) {
+          free.classList.add('room-seat-add'); free.textContent = '＋ 加座';
+          free.title = free.getAttribute('aria-label') + '：添加自习';
+        }
       });
       // Hall notes collapse into one quiet item at the end of the legend.
-      const legend=document.getElementById('lg');
-      if(legend&&legend.querySelector('.lg-pre,.lg-ok')){
-        const notes=[...legend.children].filter(span=>span.querySelector('.lg-pre,.lg-ok'));
-        const note=document.createElement('span');note.className='lg-hall-note';note.textContent='大厅：虚线预占 · 实色已确认';note.title=notes.map(span=>span.textContent).join('；');
-        notes.forEach(span=>span.remove());legend.append(note);
+      const legend = document.getElementById('lg');
+      if (legend && legend.querySelector('.lg-pre,.lg-ok')) {
+        const notes = [...legend.children].filter(span => span.querySelector('.lg-pre,.lg-ok'));
+        const note = document.createElement('span'); note.className = 'lg-hall-note';
+        const swatch = document.createElement('i'); swatch.className = 'lg-hall-swatch'; swatch.setAttribute('aria-hidden', 'true');
+        note.append(swatch, document.createTextNode('大厅预占（点选确认）'));
+        note.title = notes.map(span => span.textContent).join('；');
+        notes.forEach(span => span.remove()); legend.append(note);
       }
-      const foot=document.getElementById('f');if(foot&&foot.textContent.includes('按住课程块'))foot.textContent=foot.textContent.split('按住课程块')[0].trim();
+      const foot = document.getElementById('f'); if (foot && foot.textContent.includes('按住课程块')) foot.textContent = foot.textContent.split('按住课程块')[0].trim();
     };
-    installTimeline(grid);
-    decorate();new MutationObserver(decorate).observe(grid,{childList:true});
+    installTimeline(grid, top);
+    decorate(); new MutationObserver(decorate).observe(grid, {childList: true});
     // Narrow screens: say that the room table scrolls sideways, and hide the hint at the end.
-    const scroller=grid.closest('.room-scroll');
-    if(scroller){
-      const hint=document.createElement('div');hint.className='room-scroll-hint';hint.setAttribute('aria-hidden','true');hint.textContent='← 左右滑动查看全部教室 →';
+    const scroller = grid.closest('.room-scroll');
+    if (scroller) {
+      const hint = document.createElement('div'); hint.className = 'room-scroll-hint'; hint.setAttribute('aria-hidden', 'true'); hint.textContent = '← 左右滑动查看全部教室 →';
       scroller.before(hint);
-      const update=()=>{const more=scroller.scrollWidth-scroller.clientWidth>4;document.body.classList.toggle('room-overflow',more);hint.style.visibility=more&&scroller.scrollLeft+scroller.clientWidth<scroller.scrollWidth-4?'visible':'hidden';};
-      scroller.addEventListener('scroll',update,{passive:true});window.addEventListener('resize',update);
-      if(typeof ResizeObserver==='function')new ResizeObserver(update).observe(scroller);
+      const update = () => { const more = scroller.scrollWidth - scroller.clientWidth > 4; document.body.classList.toggle('room-overflow', more); hint.style.visibility = more && scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4 ? 'visible' : 'hidden'; };
+      scroller.addEventListener('scroll', update, {passive: true}); window.addEventListener('resize', update);
+      if (typeof ResizeObserver === 'function') new ResizeObserver(update).observe(scroller);
       update();
     }
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup, {once: true}); else setup();
 })();

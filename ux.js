@@ -173,6 +173,925 @@
     @media(prefers-color-scheme:dark){.ux-chip[data-kind=ok],.ux-aircon[data-copied] b:after,.ux-st-row em[data-kind=ok]{color:#4ac26b}.ux-chip[data-kind=todo],.ux-st-row em[data-kind=todo]{color:#f0883e}.ux-chip[data-kind=wait],.ux-st-row em[data-kind=wait]{color:#d4a72c}}
   `;
   document.head.append(style);
+  try { document.title = 'Wayon-edu'; } catch {}
+
+  const appleStyle = make('style'); appleStyle.id = 'wayon-apple-glass'; appleStyle.textContent = `
+    :root{
+      color-scheme:light dark;
+      --apple-sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang SC","Hiragino Sans GB","Helvetica Neue",sans-serif;
+      --apple-ease:cubic-bezier(.28,.11,.32,1);
+      --apple-ease-out:cubic-bezier(.22,1,.36,1);
+      --apple-scroll-p:0;
+      --apple-canvas-light:#F5F5F7;--apple-canvas-dark:#000000;
+      --apple-surface-light:#FFFFFF;--apple-surface-dark:#1C1C1E;
+      --apple-elevated-light:#FFFFFF;--apple-elevated-dark:#242426;
+      --apple-fg-light:#1D1D1F;--apple-fg-dark:#F5F5F7;
+      --apple-fg2-light:#515154;--apple-fg2-dark:#AEAEB2;
+      --apple-muted-light:#6E6E73;--apple-muted-dark:#A1A1A6;
+      --apple-accent-light:#0071E3;--apple-accent-dark:#2997FF;
+      --apple-accent-hover-light:#0077ED;--apple-accent-hover-dark:#4CA8FF;
+      --apple-canvas:var(--apple-canvas-light);
+      --apple-surface:var(--apple-surface-light);
+      --apple-elevated:var(--apple-elevated-light);
+      --apple-glow-key:rgba(255,255,255,.95);
+      --apple-glow-sky:rgba(212,229,252,.38);
+      --apple-glow-warm:rgba(216,119,86,.055);
+      --apple-glass-rail-top:rgba(255,255,255,.72);
+      --apple-glass-rail-bot:rgba(246,248,253,.56);
+      --apple-glass-bar-top:rgba(255,255,255,.78);
+      --apple-glass-bar-bot:rgba(248,249,252,.64);
+      --apple-glass-rim-top:rgba(255,255,255,.96);
+      --apple-glass-rim-side:rgba(255,255,255,.62);
+      --apple-glass-rim-bot:rgba(0,0,0,.055);
+      --apple-glass-hairline:rgba(0,0,0,.072);
+      --apple-glass-shadow:rgba(0,0,0,.095);
+      --apple-glass-shadow-tight:rgba(0,0,0,.04);
+      --apple-lens-top:rgba(255,255,255,.98);
+      --apple-lens-bot:rgba(235,244,255,.88);
+      --apple-lens-rim:rgba(255,255,255,1);
+      --apple-lens-hairline:rgba(0,113,227,.2);
+      --apple-lens-glow:rgba(0,113,227,.16);
+      --apple-rail-hover:rgba(29,29,31,.05);
+      --apple-seg-track:rgba(118,118,128,.12);
+      --apple-seg-track-inset:rgba(0,0,0,.065);
+      --apple-seg-track-lip:rgba(255,255,255,.76);
+      --apple-seg-thumb-top:#FFFFFF;
+      --apple-seg-thumb-bot:#FAFAFC;
+      --apple-seg-thumb-shadow:rgba(0,0,0,.095);
+      --apple-seg-thumb-rim:#FFFFFF;
+      --apple-hairline:rgba(29,29,31,.08);
+      --apple-card-rim:rgba(255,255,255,.96);
+      --apple-card-ring:rgba(0,0,0,.04);
+      --apple-card-shadow-1:rgba(0,0,0,.045);
+      --apple-card-shadow-2:rgba(0,0,0,.025);
+      --apple-card-hover-1:rgba(0,0,0,.09);
+      --apple-card-hover-2:rgba(0,0,0,.04);
+      --apple-folded-bg:rgba(255,255,255,.68);
+      --apple-input-ring:rgba(0,0,0,.085);
+      --apple-ok-dot:#28CD41;
+      --apple-ok-bg:rgba(52,199,89,.14);
+      --apple-bad-bg:rgba(255,59,48,.12);
+      --bg:var(--apple-canvas-light);
+      --card:var(--apple-surface-light);
+      --card-elevated:var(--apple-elevated-light);
+      --fg:var(--apple-fg-light);
+      --fg-secondary:var(--apple-fg2-light);
+      --muted:var(--apple-muted-light);
+      --line:rgba(29,29,31,.08);
+      --line-strong:rgba(29,29,31,.15);
+      --accent:var(--apple-accent-light);
+      --accent-hover:var(--apple-accent-hover-light);
+      --accent-subtle:rgba(0,113,227,.11);
+      --accent-soft:rgba(0,113,227,.11);
+      --code-bg:#F5F5F7;
+      --bg-secondary:rgba(118,118,128,.08);
+      --done:#1B7F37;
+      --done-dark:#1B7F37;
+      --done-bg:rgba(52,199,89,.13);
+      --done-border:rgba(52,199,89,.28);
+      --bad:#D70015;
+      --bad-dark:#B3261E;
+      --bad-bg:rgba(255,59,48,.11);
+      --bad-border:rgba(255,59,48,.26);
+      --shadow-card:inset 0 1px 0 var(--apple-card-rim),0 4px 20px -4px var(--apple-card-shadow-1),0 1px 2px var(--apple-card-shadow-2),0 0 0 .5px var(--apple-card-ring);
+      accent-color:var(--accent);
+    }
+    @supports (color: light-dark(white, black)){
+      :root{
+        --apple-canvas:light-dark(#F5F5F7,#000000);
+        --apple-surface:light-dark(#FFFFFF,#1C1C1E);
+        --apple-elevated:light-dark(#FFFFFF,#242426);
+        --bg:light-dark(#F5F5F7,#000000);
+        --card:light-dark(#FFFFFF,#1C1C1E);
+        --card-elevated:light-dark(#FFFFFF,#242426);
+        --fg:light-dark(#1D1D1F,#F5F5F7);
+        --fg-secondary:light-dark(#515154,#AEAEB2);
+        --muted:light-dark(#6E6E73,#A1A1A6);
+        --accent:light-dark(#0071E3,#2997FF);
+        --accent-hover:light-dark(#0077ED,#4CA8FF);
+      }
+    }
+    @media(prefers-color-scheme:dark){
+      :root:not([data-theme="light"]){
+        color-scheme:dark;
+        --apple-canvas:var(--apple-canvas-dark);
+        --apple-surface:var(--apple-surface-dark);
+        --apple-elevated:var(--apple-elevated-dark);
+        --apple-glow-key:rgba(41,151,255,.09);
+        --apple-glow-sky:rgba(255,255,255,.035);
+        --apple-glow-warm:rgba(216,119,86,.08);
+        --apple-glass-rail-top:rgba(46,46,52,.74);
+        --apple-glass-rail-bot:rgba(24,24,28,.62);
+        --apple-glass-bar-top:rgba(46,46,52,.78);
+        --apple-glass-bar-bot:rgba(24,24,28,.66);
+        --apple-glass-rim-top:rgba(255,255,255,.22);
+        --apple-glass-rim-side:rgba(255,255,255,.1);
+        --apple-glass-rim-bot:rgba(0,0,0,.55);
+        --apple-glass-hairline:rgba(255,255,255,.14);
+        --apple-glass-shadow:rgba(0,0,0,.72);
+        --apple-glass-shadow-tight:rgba(0,0,0,.45);
+        --apple-lens-top:rgba(255,255,255,.2);
+        --apple-lens-bot:rgba(41,151,255,.2);
+        --apple-lens-rim:rgba(255,255,255,.28);
+        --apple-lens-hairline:rgba(100,180,255,.26);
+        --apple-lens-glow:rgba(0,0,0,.52);
+        --apple-rail-hover:rgba(255,255,255,.08);
+        --apple-seg-track:rgba(118,118,128,.26);
+        --apple-seg-track-inset:rgba(0,0,0,.48);
+        --apple-seg-track-lip:rgba(255,255,255,.07);
+        --apple-seg-thumb-top:rgba(99,99,102,.9);
+        --apple-seg-thumb-bot:rgba(72,72,74,.84);
+        --apple-seg-thumb-shadow:rgba(0,0,0,.46);
+        --apple-seg-thumb-rim:rgba(255,255,255,.2);
+        --apple-hairline:rgba(255,255,255,.11);
+        --apple-card-rim:rgba(255,255,255,.1);
+        --apple-card-ring:rgba(255,255,255,.07);
+        --apple-card-shadow-1:rgba(0,0,0,.55);
+        --apple-card-shadow-2:rgba(0,0,0,.38);
+        --apple-card-hover-1:rgba(0,0,0,.75);
+        --apple-card-hover-2:rgba(0,0,0,.5);
+        --apple-folded-bg:rgba(28,28,30,.72);
+        --apple-input-ring:rgba(255,255,255,.14);
+        --apple-ok-dot:#30D158;
+        --apple-ok-bg:rgba(48,209,88,.18);
+        --apple-bad-bg:rgba(255,69,58,.2);
+        --bg:var(--apple-canvas-dark);
+        --card:var(--apple-surface-dark);
+        --card-elevated:var(--apple-elevated-dark);
+        --fg:var(--apple-fg-dark);
+        --fg-secondary:var(--apple-fg2-dark);
+        --muted:var(--apple-muted-dark);
+        --line:rgba(255,255,255,.1);
+        --line-strong:rgba(255,255,255,.18);
+        --accent:var(--apple-accent-dark);
+        --accent-hover:var(--apple-accent-hover-dark);
+        --accent-subtle:rgba(41,151,255,.18);
+        --accent-soft:rgba(41,151,255,.18);
+        --code-bg:#242426;
+        --bg-secondary:rgba(255,255,255,.07);
+        --done:#32D74B;
+        --done-dark:#32D74B;
+        --done-bg:rgba(48,209,88,.18);
+        --done-border:rgba(48,209,88,.34);
+        --bad:#FF453A;
+        --bad-dark:#FF6961;
+        --bad-bg:rgba(255,69,58,.2);
+        --bad-border:rgba(255,69,58,.36);
+      }
+    }
+    :root[data-theme="dark"]{
+      color-scheme:dark;
+      --apple-canvas:var(--apple-canvas-dark);
+      --apple-surface:var(--apple-surface-dark);
+      --apple-elevated:var(--apple-elevated-dark);
+      --apple-glow-key:rgba(41,151,255,.09);
+      --apple-glow-sky:rgba(255,255,255,.035);
+      --apple-glow-warm:rgba(216,119,86,.08);
+      --apple-glass-rail-top:rgba(46,46,52,.74);
+      --apple-glass-rail-bot:rgba(24,24,28,.62);
+      --apple-glass-bar-top:rgba(46,46,52,.78);
+      --apple-glass-bar-bot:rgba(24,24,28,.66);
+      --apple-glass-rim-top:rgba(255,255,255,.22);
+      --apple-glass-rim-side:rgba(255,255,255,.1);
+      --apple-glass-rim-bot:rgba(0,0,0,.55);
+      --apple-glass-hairline:rgba(255,255,255,.14);
+      --apple-glass-shadow:rgba(0,0,0,.72);
+      --apple-glass-shadow-tight:rgba(0,0,0,.45);
+      --apple-lens-top:rgba(255,255,255,.2);
+      --apple-lens-bot:rgba(41,151,255,.2);
+      --apple-lens-rim:rgba(255,255,255,.28);
+      --apple-lens-hairline:rgba(100,180,255,.26);
+      --apple-lens-glow:rgba(0,0,0,.52);
+      --apple-rail-hover:rgba(255,255,255,.08);
+      --apple-seg-track:rgba(118,118,128,.26);
+      --apple-seg-track-inset:rgba(0,0,0,.48);
+      --apple-seg-track-lip:rgba(255,255,255,.07);
+      --apple-seg-thumb-top:rgba(99,99,102,.9);
+      --apple-seg-thumb-bot:rgba(72,72,74,.84);
+      --apple-seg-thumb-shadow:rgba(0,0,0,.46);
+      --apple-seg-thumb-rim:rgba(255,255,255,.2);
+      --apple-hairline:rgba(255,255,255,.11);
+      --apple-card-rim:rgba(255,255,255,.1);
+      --apple-card-ring:rgba(255,255,255,.07);
+      --apple-card-shadow-1:rgba(0,0,0,.55);
+      --apple-card-shadow-2:rgba(0,0,0,.38);
+      --apple-card-hover-1:rgba(0,0,0,.75);
+      --apple-card-hover-2:rgba(0,0,0,.5);
+      --apple-folded-bg:rgba(28,28,30,.72);
+      --apple-input-ring:rgba(255,255,255,.14);
+      --apple-ok-dot:#30D158;
+      --apple-ok-bg:rgba(48,209,88,.18);
+      --apple-bad-bg:rgba(255,69,58,.2);
+      --bg:var(--apple-canvas-dark);
+      --card:var(--apple-surface-dark);
+      --card-elevated:var(--apple-elevated-dark);
+      --fg:var(--apple-fg-dark);
+      --fg-secondary:var(--apple-fg2-dark);
+      --muted:var(--apple-muted-dark);
+      --line:rgba(255,255,255,.1);
+      --line-strong:rgba(255,255,255,.18);
+      --accent:var(--apple-accent-dark);
+      --accent-hover:var(--apple-accent-hover-dark);
+      --accent-subtle:rgba(41,151,255,.18);
+      --accent-soft:rgba(41,151,255,.18);
+      --code-bg:#242426;
+      --bg-secondary:rgba(255,255,255,.07);
+      --done:#32D74B;
+      --done-dark:#32D74B;
+      --done-bg:rgba(48,209,88,.18);
+      --done-border:rgba(48,209,88,.34);
+      --bad:#FF453A;
+      --bad-dark:#FF6961;
+      --bad-bg:rgba(255,69,58,.2);
+      --bad-border:rgba(255,69,58,.36);
+    }
+    html{scroll-padding-top:76px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+    body.wayon-workbench{
+      font-family:var(--apple-sans)!important;
+      background-color:var(--apple-canvas)!important;
+      background-image:
+        radial-gradient(1240px 480px at 20% -10%,var(--apple-glow-key) 0%,transparent 66%),
+        radial-gradient(920px 440px at 88% -8%,var(--apple-glow-sky) 0%,transparent 62%),
+        radial-gradient(620px 340px at 6% 8%,var(--apple-glow-warm) 0%,transparent 60%)!important;
+      background-attachment:fixed!important;
+      color:var(--fg)!important;
+    }
+
+    /* ---- Desktop >= 1024px: Fixed Floating macOS Tahoe Liquid Glass Rail + 60fps Shrinking Topbar ---- */
+    @media(min-width:1024px){
+      body.wayon-workbench .app-layout{
+        display:block!important;
+        padding-inline-start:98px!important;
+        min-height:100dvh;
+      }
+      body.wayon-workbench .sidebar{
+        position:fixed!important;
+        inset-block:12px!important;
+        inset-inline-start:12px!important;
+        width:74px!important;
+        min-width:74px!important;
+        height:calc(100dvh - 24px)!important;
+        padding:10px 7px 12px!important;
+        border:0!important;
+        border-radius:24px!important;
+        background:transparent!important;
+        box-shadow:none!important;
+        overflow:visible!important;
+        z-index:45!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        gap:6px!important;
+        user-select:none;
+      }
+      body.wayon-workbench .sidebar::before{
+        content:'';
+        position:absolute;
+        inset:0;
+        border-radius:24px;
+        z-index:-1;
+        pointer-events:none;
+        background:linear-gradient(168deg,var(--apple-glass-rail-top) 0%,var(--apple-glass-rail-bot) 100%);
+        backdrop-filter:blur(28px) saturate(210%);
+        -webkit-backdrop-filter:blur(28px) saturate(210%);
+        box-shadow:
+          inset 0 1px .5px var(--apple-glass-rim-top),
+          inset 1px 0 0 var(--apple-glass-rim-side),
+          inset 0 -.5px 0 var(--apple-glass-rim-bot),
+          0 10px 34px -8px var(--apple-glass-shadow),
+          0 2px 6px var(--apple-glass-shadow-tight),
+          0 0 0 .5px var(--apple-glass-hairline);
+      }
+      body.wayon-workbench .sidebar .nav-section{
+        flex:1 1 auto!important;
+        min-height:0!important;
+        width:100%!important;
+        overflow-y:auto!important;
+        overflow-x:visible!important;
+        scrollbar-width:none;
+        padding:0!important;
+      }
+      body.wayon-workbench .sidebar .nav-section::-webkit-scrollbar{display:none}
+      body.wayon-workbench #tabs{
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        gap:4px!important;
+        width:100%!important;
+        padding:0!important;
+      }
+      body.wayon-workbench #tabs button,
+      body.wayon-workbench #tabs button.ux-labelled{
+        width:60px!important;
+        min-width:60px!important;
+        height:52px!important;
+        min-height:52px!important;
+        padding:6px 2px!important;
+        border:0!important;
+        border-radius:16px!important;
+        background:transparent!important;
+        color:var(--muted)!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:3px!important;
+        box-shadow:none!important;
+        transition:color .18s var(--apple-ease),background-color .18s var(--apple-ease),box-shadow .22s var(--apple-ease),transform .16s var(--apple-ease);
+      }
+      body.wayon-workbench #tabs button svg{width:20px!important;height:20px!important;stroke-width:1.78!important}
+      body.wayon-workbench #tabs button .ux-label{font-size:10.5px!important;font-weight:500!important;margin-top:0!important;opacity:1!important}
+      body.wayon-workbench #tabs button:hover{background:var(--apple-rail-hover)!important;color:var(--fg)!important}
+      body.wayon-workbench #tabs button:active{transform:scale(.95)}
+      body.wayon-workbench #tabs #nav-aircon,
+      body.wayon-workbench #subtabs #tab-assigned{display:none!important}
+      body.wayon-workbench #tabs button.on,
+      body.wayon-workbench[data-feedback-open] #tabs #nav-feedback,
+      body.wayon-workbench[data-memo-open] #tabs #nav-memo,
+      body.wayon-workbench[data-mocks-open] #tabs #nav-mocks,
+      body.wayon-workbench[data-aircon-open] #tabs #nav-notice{
+        background:linear-gradient(180deg,var(--apple-lens-top) 0%,var(--apple-lens-bot) 100%)!important;
+        color:var(--accent)!important;
+        font-weight:600!important;
+        box-shadow:
+          inset 0 1px .5px var(--apple-lens-rim),
+          inset 0 -.5px 0 rgba(0,113,227,.08),
+          0 4px 14px -3px var(--apple-lens-glow),
+          0 1px 2px var(--apple-glass-shadow-tight),
+          0 0 0 .5px var(--apple-lens-hairline)!important;
+      }
+      body.wayon-workbench #tabs button.on .ux-label,
+      body.wayon-workbench[data-feedback-open] #tabs #nav-feedback .ux-label,
+      body.wayon-workbench[data-memo-open] #tabs #nav-memo .ux-label,
+      body.wayon-workbench[data-mocks-open] #tabs #nav-mocks .ux-label,
+      body.wayon-workbench[data-aircon-open] #tabs #nav-notice .ux-label{font-weight:600!important}
+      body.wayon-workbench[data-feedback-open] #tabs button:not(#nav-feedback),
+      body.wayon-workbench[data-memo-open] #tabs button:not(#nav-memo),
+      body.wayon-workbench[data-mocks-open] #tabs button:not(#nav-mocks),
+      body.wayon-workbench[data-aircon-open] #tabs button:not(#nav-notice){
+        background:transparent!important;
+        color:var(--muted)!important;
+        box-shadow:none!important;
+      }
+      body.wayon-workbench #tabs button .ux-badge,
+      body.wayon-workbench #tabs #nav-feedback[data-todo]:after{
+        top:3px!important;
+        right:5px!important;
+        box-shadow:0 0 0 1.5px var(--apple-surface);
+      }
+      body.wayon-workbench .sidebar-footer{
+        position:static!important;
+        left:auto!important;
+        bottom:auto!important;
+        margin-top:auto!important;
+        width:100%!important;
+        padding:10px 0 0!important;
+        border-top:.5px solid var(--apple-hairline)!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        gap:4px!important;
+        z-index:auto!important;
+      }
+      body.wayon-workbench .sidebar #sync{
+        width:36px!important;
+        max-width:36px!important;
+        height:28px!important;
+        min-height:28px!important;
+        border-radius:999px!important;
+        display:grid!important;
+        place-items:center!important;
+        cursor:pointer!important;
+        transition:background-color .16s var(--apple-ease);
+      }
+      body.wayon-workbench .sidebar #sync:hover{background:var(--apple-rail-hover)!important}
+      body.wayon-workbench .sidebar #sync:before{
+        width:7px!important;
+        height:7px!important;
+        box-shadow:0 0 0 3px var(--apple-seg-track);
+      }
+      body.wayon-workbench .sidebar #sync[data-connection='saved']:before{
+        background:var(--apple-ok-dot)!important;
+        box-shadow:0 0 0 3px var(--apple-ok-bg)!important;
+      }
+      body.wayon-workbench .sidebar #sync[data-connection='error']:before{
+        background:var(--bad)!important;
+        box-shadow:0 0 0 3px var(--apple-bad-bg)!important;
+      }
+      body.wayon-workbench .sidebar #wayon-rules-btn,
+      body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled,
+      body.wayon-workbench .sidebar #account-settings>summary,
+      body.wayon-workbench .sidebar #account-settings>summary.wayon-icon-control{
+        width:60px!important;
+        min-width:60px!important;
+        height:44px!important;
+        min-height:44px!important;
+        padding:4px 2px!important;
+        border:0!important;
+        border-radius:14px!important;
+        background:transparent!important;
+        color:var(--muted)!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:2px!important;
+        box-shadow:none!important;
+        transition:background-color .16s var(--apple-ease),color .16s var(--apple-ease);
+      }
+      body.wayon-workbench .sidebar #wayon-rules-btn:hover,
+      body.wayon-workbench .sidebar #account-settings>summary:hover{
+        background:var(--apple-rail-hover)!important;
+        color:var(--fg)!important;
+      }
+      body.wayon-workbench .sidebar #wayon-rules-btn svg,
+      body.wayon-workbench .sidebar #account-settings>summary svg{width:17px!important;height:17px!important}
+      body.wayon-workbench .sidebar #wayon-rules-btn .ux-label,
+      body.wayon-workbench .sidebar #account-settings>summary .ux-label{font-size:10px!important;font-weight:500!important;margin-top:0!important;opacity:1!important}
+      body.wayon-workbench .sidebar #account-settings{width:60px!important;min-width:60px!important;padding:0!important;margin:0!important}
+      body.wayon-workbench .sidebar #account-settings[open]{
+        position:fixed!important;
+        left:96px!important;
+        bottom:16px!important;
+        width:min(400px,calc(100vw - 116px))!important;
+        padding:18px!important;
+        z-index:100!important;
+        border:0!important;
+        border-radius:24px!important;
+        background:var(--apple-surface)!important;
+        box-shadow:0 24px 64px -12px rgba(0,0,0,.28),0 0 0 .5px var(--apple-glass-hairline)!important;
+      }
+      body.wayon-workbench .sidebar #workflow-tools{flex-direction:column!important;align-items:center!important;gap:6px!important;margin:4px 0 0!important}
+      body.wayon-workbench .sidebar #workflow-checks-panel{position:fixed!important;left:96px!important;bottom:80px!important;right:auto!important;top:auto!important;z-index:60!important}
+
+      /* ---- Floating Liquid Glass Topbar & 60fps GPU-Shrinking Wayon Wordmark ---- */
+      body.wayon-workbench .app-brand{
+        position:fixed!important;
+        top:10px!important;
+        left:98px!important;
+        right:0!important;
+        height:54px!important;
+        padding:0 clamp(20px,3vw,40px)!important;
+        margin:0!important;
+        border:0!important;
+        border-radius:0!important;
+        background:transparent!important;
+        box-shadow:none!important;
+        overflow:visible!important;
+        display:flex!important;
+        align-items:flex-start!important;
+        justify-content:flex-start!important;
+        pointer-events:none!important;
+        z-index:40!important;
+      }
+      body.wayon-workbench .app-brand::before{
+        content:'';
+        position:fixed;
+        top:0;
+        left:98px;
+        right:0;
+        height:22px;
+        background:linear-gradient(180deg,var(--apple-canvas) 0%,var(--apple-canvas) 50%,transparent 100%);
+        opacity:var(--apple-scroll-p,0);
+        pointer-events:none;
+        z-index:0;
+        will-change:opacity;
+      }
+      body.wayon-workbench .app-brand::after{
+        content:'';
+        position:absolute;
+        top:0;
+        bottom:0;
+        left:clamp(8px,1.8vw,24px);
+        right:clamp(8px,1.8vw,24px);
+        border-radius:27px;
+        background:linear-gradient(180deg,var(--apple-glass-bar-top) 0%,var(--apple-glass-bar-bot) 100%);
+        backdrop-filter:blur(28px) saturate(210%);
+        -webkit-backdrop-filter:blur(28px) saturate(210%);
+        box-shadow:
+          inset 0 1px .5px var(--apple-glass-rim-top),
+          inset 0 -.5px 0 var(--apple-glass-rim-bot),
+          0 12px 32px -10px var(--apple-glass-shadow),
+          0 2px 6px var(--apple-glass-shadow-tight),
+          0 0 0 .5px var(--apple-glass-hairline);
+        opacity:var(--apple-scroll-p,0);
+        transform:translate3d(0,calc(-4px * (1 - var(--apple-scroll-p,0))),0) scale(calc(.985 + .015 * var(--apple-scroll-p,0)));
+        pointer-events:none;
+        z-index:1;
+        will-change:transform,opacity;
+      }
+      body.wayon-workbench .app-brand .brand-title{
+        position:relative!important;
+        z-index:2!important;
+        font-size:56px!important;
+        line-height:1!important;
+        padding:0!important;
+        margin:0!important;
+        pointer-events:auto!important;
+        transform-origin:0 0!important;
+        transform:translate3d(calc(4px * var(--apple-scroll-p,0)),calc(8px + 5px * var(--apple-scroll-p,0)),0) scale(calc(1 - .55 * var(--apple-scroll-p,0)));
+        will-change:transform;
+      }
+      body.wayon-workbench .ux-topbar-crumb{
+        position:absolute;
+        left:calc(clamp(20px,3vw,40px) + 74px);
+        top:0;
+        height:54px;
+        display:inline-flex;
+        align-items:center;
+        gap:7px;
+        z-index:2;
+        font-size:13.5px;
+        font-weight:600;
+        letter-spacing:-.015em;
+        color:var(--fg);
+        opacity:max(0,calc((var(--apple-scroll-p,0) - .5) / .5));
+        transform:translate3d(calc(-6px * (1 - var(--apple-scroll-p,0))),0,0);
+        pointer-events:none;
+        user-select:none;
+        white-space:nowrap;
+        will-change:transform,opacity;
+      }
+      body.wayon-workbench .ux-topbar-crumb-sep{color:var(--muted);font-weight:400;opacity:.65}
+      @supports ((animation-timeline: scroll()) and (animation-range: 0% 100%)){
+        @media(prefers-reduced-motion:no-preference){
+          @keyframes wayon-brand-dock{
+            from{transform:translate3d(0,8px,0) scale(1)}
+            to{transform:translate3d(4px,13px,0) scale(.45)}
+          }
+          @keyframes wayon-bar-scrim{
+            from{opacity:0}
+            to{opacity:1}
+          }
+          @keyframes wayon-bar-glass{
+            from{opacity:0;transform:translate3d(0,-4px,0) scale(.985)}
+            to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+          }
+          @keyframes wayon-crumb-in{
+            from{opacity:0;transform:translate3d(-6px,0,0)}
+            to{opacity:1;transform:translate3d(0,0,0)}
+          }
+          body.wayon-workbench:not(:has(#classroom-frame)) .app-brand .brand-title{
+            animation:wayon-brand-dock auto linear both;
+            animation-timeline:scroll(block root);
+            animation-range:0px 64px;
+          }
+          body.wayon-workbench:not(:has(#classroom-frame)) .app-brand::before{
+            animation:wayon-bar-scrim auto linear both;
+            animation-timeline:scroll(block root);
+            animation-range:8px 58px;
+          }
+          body.wayon-workbench:not(:has(#classroom-frame)) .app-brand::after{
+            animation:wayon-bar-glass auto linear both;
+            animation-timeline:scroll(block root);
+            animation-range:8px 64px;
+          }
+          body.wayon-workbench:not(:has(#classroom-frame)) .ux-topbar-crumb{
+            animation:wayon-crumb-in auto linear both;
+            animation-timeline:scroll(block root);
+            animation-range:34px 64px;
+          }
+        }
+      }
+      @media(prefers-reduced-motion:reduce){
+        body.wayon-workbench .app-brand .brand-title{transform:translate3d(0,8px,0) scale(1)}
+        body.wayon-workbench .app-brand::before,
+        body.wayon-workbench .app-brand::after,
+        body.wayon-workbench .ux-topbar-crumb{opacity:0;transform:none}
+        html[data-scrolled="true"] body.wayon-workbench .app-brand .brand-title{transform:translate3d(4px,13px,0) scale(.45)}
+        html[data-scrolled="true"] body.wayon-workbench .app-brand::before,
+        html[data-scrolled="true"] body.wayon-workbench .app-brand::after,
+        html[data-scrolled="true"] body.wayon-workbench .ux-topbar-crumb{opacity:1;transform:none}
+      }
+      /* Classroom view docks topbar compact immediately for maximum calendar height */
+      body.wayon-workbench:has(#classroom-frame) .app-brand .brand-title{
+        animation:none!important;
+        transform:translate3d(4px,13px,0) scale(.45)!important;
+      }
+      body.wayon-workbench:has(#classroom-frame) .app-brand::before,
+      body.wayon-workbench:has(#classroom-frame) .app-brand::after,
+      body.wayon-workbench:has(#classroom-frame) .ux-topbar-crumb{
+        animation:none!important;
+        opacity:1!important;
+        transform:none!important;
+      }
+      body.wayon-workbench .main-content{
+        padding:92px clamp(20px,3vw,40px) 64px!important;
+        max-width:none!important;
+      }
+      body.wayon-workbench:has(#classroom-frame) .main-content{
+        padding:70px clamp(16px,2.4vw,32px) 16px!important;
+      }
+      body.wayon-workbench[data-mocks-open] .main-content{
+        padding:88px clamp(20px,3vw,40px) 28px!important;
+      }
+    }
+
+    /* ---- Mobile & Tablet < 1024px (zero horizontal overflow at 390px) ---- */
+    @media(max-width:1023px){
+      body.wayon-workbench .app-layout{display:block!important;padding-inline-start:0!important}
+      body.wayon-workbench .app-brand{
+        position:static!important;
+        height:auto!important;
+        padding:10px 16px 4px!important;
+        margin:0!important;
+        border:0!important;
+        border-radius:0!important;
+        background:transparent!important;
+        box-shadow:none!important;
+        overflow:visible!important;
+      }
+      body.wayon-workbench .app-brand::before,
+      body.wayon-workbench .app-brand::after,
+      body.wayon-workbench .ux-topbar-crumb{display:none!important}
+      body.wayon-workbench .app-brand .brand-title{
+        font-size:38px!important;
+        line-height:1!important;
+        padding:0!important;
+        margin:0!important;
+        transform:none!important;
+        animation:none!important;
+      }
+      body.wayon-workbench .sidebar{
+        position:sticky!important;
+        top:0!important;
+        z-index:45!important;
+        width:100%!important;
+        height:auto!important;
+        border:0!important;
+        border-bottom:.5px solid var(--apple-hairline)!important;
+        border-radius:0!important;
+        background:transparent!important;
+        box-shadow:none!important;
+        padding:6px 10px!important;
+        overflow:visible!important;
+      }
+      body.wayon-workbench .sidebar::before{
+        content:'';
+        position:absolute;
+        inset:0;
+        z-index:-1;
+        pointer-events:none;
+        background:linear-gradient(180deg,var(--apple-glass-bar-top) 0%,var(--apple-glass-bar-bot) 100%);
+        backdrop-filter:blur(24px) saturate(200%);
+        -webkit-backdrop-filter:blur(24px) saturate(200%);
+      }
+      body.wayon-workbench #tabs button.on,
+      body.wayon-workbench[data-feedback-open] #tabs #nav-feedback,
+      body.wayon-workbench[data-memo-open] #tabs #nav-memo,
+      body.wayon-workbench[data-mocks-open] #tabs #nav-mocks,
+      body.wayon-workbench[data-aircon-open] #tabs #nav-notice{
+        background:var(--accent-subtle)!important;
+        color:var(--accent)!important;
+        border-radius:12px!important;
+      }
+      body.wayon-workbench .sidebar #wayon-rules-btn,
+      body.wayon-workbench .sidebar #account-settings>summary{
+        border:0!important;
+        background:transparent!important;
+        color:var(--muted)!important;
+        border-radius:12px!important;
+      }
+      body.wayon-workbench .sidebar #account-settings>summary .ux-label{display:block;font-size:10px;margin-top:2px;opacity:.85}
+      body.wayon-workbench .sidebar #account-settings>summary{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;height:48px!important;min-height:48px!important}
+      body.wayon-workbench .main-content{padding:12px 14px 40px!important}
+    }
+
+    /* ---- Apple Sliding Segmented Control (#subtabs: 安排 / 完成 / 抽背 / 待催) ---- */
+    body.wayon-workbench #subtabs.view-switch{
+      display:inline-flex!important;
+      align-items:center!important;
+      gap:2px!important;
+      padding:3px!important;
+      border-radius:999px!important;
+      background:var(--apple-seg-track)!important;
+      box-shadow:inset 0 .5px 1.5px var(--apple-seg-track-inset),inset 0 -.5px 0 var(--apple-seg-track-lip)!important;
+      border:0!important;
+    }
+    body.wayon-workbench #subtabs button,
+    body.wayon-workbench #subtabs button.ux-labelled{
+      height:32px!important;
+      min-height:32px!important;
+      padding:0 15px!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:transparent!important;
+      color:var(--muted)!important;
+      font-size:13px!important;
+      font-weight:500!important;
+      letter-spacing:-.01em!important;
+      box-shadow:none!important;
+      transition:color .18s var(--apple-ease),background-color .18s var(--apple-ease),box-shadow .22s var(--apple-ease);
+    }
+    body.wayon-workbench #subtabs button.ux-labelled>span[aria-hidden]:not(.ux-badge){display:none!important}
+    body.wayon-workbench #subtabs button:hover{color:var(--fg)!important}
+    body.wayon-workbench #subtabs button.on{
+      background:linear-gradient(180deg,var(--apple-seg-thumb-top) 0%,var(--apple-seg-thumb-bot) 100%)!important;
+      color:var(--fg)!important;
+      font-weight:600!important;
+      box-shadow:inset 0 1px .5px var(--apple-seg-thumb-rim),0 2px 8px -1px var(--apple-seg-thumb-shadow),0 .5px 1.5px var(--apple-glass-shadow-tight)!important;
+    }
+    body.wayon-workbench #subtabs .ux-badge{
+      min-width:17px!important;
+      height:17px!important;
+      line-height:17px!important;
+      padding:0 5px!important;
+      border-radius:999px!important;
+      font-size:10.5px!important;
+      margin-left:2px!important;
+    }
+    @media(max-width:599px){
+      body.wayon-workbench #subtabs.view-switch{display:flex!important;width:100%!important}
+      body.wayon-workbench #subtabs button.ux-labelled{padding:0 6px!important;height:36px!important;min-height:36px!important}
+    }
+
+    /* ---- Apple Cupertino Controls & Borderless Soft-Shadow Cards Across All Views ---- */
+    body.wayon-workbench #day-picker{
+      height:36px!important;
+      min-height:36px!important;
+      border:0!important;
+      border-radius:999px!important;
+      background-color:var(--apple-surface)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+      padding-left:36px!important;
+      padding-right:32px!important;
+      font-weight:500!important;
+    }
+    body.wayon-workbench #day-picker:focus{
+      box-shadow:0 0 0 2.5px var(--accent-subtle),0 0 0 .5px var(--accent)!important;
+    }
+    body.wayon-workbench #days .home-btn,
+    body.wayon-workbench #study-add,
+    body.wayon-workbench .schedule-refresh-btn{
+      height:36px!important;
+      min-height:36px!important;
+      padding:0 15px!important;
+      border:0!important;
+      border-radius:999px!important;
+      font-weight:500!important;
+    }
+    body.wayon-workbench #study-add{
+      background:var(--apple-surface)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+    }
+    body.wayon-workbench #study-add:hover{background:var(--accent-subtle)!important;color:var(--accent)!important}
+    body.wayon-workbench .workflow-icon{
+      width:36px!important;
+      height:36px!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--apple-surface)!important;
+      color:var(--muted)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+      transition:color .16s var(--apple-ease),background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease);
+    }
+    body.wayon-workbench .workflow-icon:hover:not(:disabled){color:var(--accent)!important;background:var(--accent-subtle)!important}
+    body.wayon-workbench #workflow-checks-panel{
+      border:0!important;
+      border-radius:18px!important;
+      background:linear-gradient(168deg,var(--apple-glass-bar-top) 0%,var(--apple-glass-bar-bot) 100%)!important;
+      backdrop-filter:blur(28px) saturate(200%)!important;
+      -webkit-backdrop-filter:blur(28px) saturate(200%)!important;
+      box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 18px 44px -10px var(--apple-glass-shadow),0 0 0 .5px var(--apple-glass-hairline)!important;
+    }
+    body.wayon-workbench #list .item:not(.folded),
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup,
+    body.wayon-workbench .ux-aircon,
+    body.wayon-workbench #aircon-panel .aircon-card:not(.folded),
+    body.wayon-workbench #aircon-panel .aircon-empty,
+    body.wayon-workbench #memo-panel .memo-add,
+    body.wayon-workbench #memo-panel .memo-list{
+      border:0!important;
+      border-radius:20px!important;
+      background:var(--apple-surface)!important;
+      box-shadow:var(--shadow-card)!important;
+      transition:transform .28s var(--apple-ease-out),box-shadow .28s var(--apple-ease-out);
+    }
+    @media(hover:hover) and (prefers-reduced-motion:no-preference){
+      body.wayon-workbench #list .item:not(.folded):hover,
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:hover{
+        transform:translateY(-2px);
+        box-shadow:inset 0 1px 0 var(--apple-card-rim),0 14px 32px -10px var(--apple-card-hover-1),0 2px 6px var(--apple-card-hover-2),0 0 0 .5px var(--apple-card-ring)!important;
+      }
+    }
+    body.wayon-workbench #list .item.folded,
+    body.wayon-workbench #aircon-panel .aircon-card.folded{
+      border:0!important;
+      border-radius:16px!important;
+      background:var(--apple-folded-bg)!important;
+      box-shadow:0 0 0 .5px var(--apple-card-ring)!important;
+    }
+    body.wayon-workbench .head>.name{
+      font-size:20px!important;
+      font-weight:600!important;
+      letter-spacing:-.022em!important;
+      line-height:1.35!important;
+    }
+    body.wayon-workbench .copy{
+      background:var(--accent)!important;
+      color:#fff!important;
+      border:0!important;
+      border-radius:999px!important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 8px rgba(0,113,227,.22);
+    }
+    body.wayon-workbench .copy:hover{background:var(--accent-hover)!important}
+    body.wayon-workbench .item.copied .copy{
+      background:var(--done-bg)!important;
+      color:var(--done)!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench .head .small{
+      border-radius:12px!important;
+      border:0!important;
+      background:var(--apple-seg-track)!important;
+      color:var(--fg-secondary)!important;
+    }
+    body.wayon-workbench .head .small:hover{background:var(--apple-rail-hover)!important;color:var(--fg)!important}
+    body.wayon-workbench .state{
+      border-radius:999px!important;
+      padding:3px 10px!important;
+      font-weight:500!important;
+    }
+    body.wayon-workbench pre{
+      border:0!important;
+      border-radius:14px!important;
+      background:var(--code-bg)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench .ux-chip{
+      border-radius:999px!important;
+      border:0!important;
+      padding:3px 11px!important;
+    }
+    body.wayon-workbench .ux-aircon button{
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--accent)!important;
+      color:#fff!important;
+      font-weight:500!important;
+      padding:0 16px!important;
+    }
+    body.wayon-workbench .ux-aircon[data-copied] button{
+      background:var(--apple-seg-track)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench .ux-past{
+      border:0!important;
+      border-radius:18px!important;
+      background:var(--apple-folded-bg)!important;
+      box-shadow:0 0 0 .5px var(--apple-card-ring)!important;
+      padding:6px 14px!important;
+    }
+    body.wayon-workbench .memo-head h2,
+    body.wayon-workbench .aircon-heading h2,
+    body.wayon-workbench .fb-head h2{font-size:18px!important;font-weight:600!important;letter-spacing:-.02em!important}
+    body.wayon-workbench #memo-panel .memo-add button{border-radius:999px!important}
+    body.wayon-workbench #feedback-panel .fb-tabs{
+      border:0!important;
+      border-radius:999px!important;
+      padding:3px!important;
+      background:var(--apple-seg-track)!important;
+      box-shadow:inset 0 .5px 1.5px var(--apple-seg-track-inset),inset 0 -.5px 0 var(--apple-seg-track-lip)!important;
+    }
+    body.wayon-workbench #feedback-panel .fb-tabs button{border-radius:999px!important;min-height:32px!important}
+    body.wayon-workbench #feedback-panel .fb-tabs button.on{
+      background:linear-gradient(180deg,var(--apple-seg-thumb-top) 0%,var(--apple-seg-thumb-bot) 100%)!important;
+      box-shadow:inset 0 1px .5px var(--apple-seg-thumb-rim),0 2px 8px -1px var(--apple-seg-thumb-shadow)!important;
+    }
+    body.wayon-workbench #feedback-panel .fb-card,
+    body.wayon-workbench #feedback-panel .fb-collect,
+    body.wayon-workbench #feedback-panel .fb-learner,
+    body.wayon-workbench #feedback-panel .fb-lesson{
+      border:0!important;
+      border-radius:18px!important;
+      background:var(--apple-surface)!important;
+      box-shadow:var(--shadow-card)!important;
+    }
+    body.wayon-workbench #feedback-panel .fb-btn{border-radius:999px!important}
+    body.wayon-workbench #ux-student,
+    body.wayon-workbench #workflow-guide{
+      border:0!important;
+      border-radius:26px!important;
+      background:var(--apple-surface)!important;
+      box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 32px 72px -16px rgba(0,0,0,.32),0 0 0 .5px var(--apple-glass-hairline)!important;
+    }
+    body.wayon-workbench #ux-student::backdrop,
+    body.wayon-workbench #workflow-guide::backdrop{
+      background:rgba(0,0,0,.32)!important;
+      backdrop-filter:blur(10px)!important;
+      -webkit-backdrop-filter:blur(10px)!important;
+    }
+    body.wayon-workbench #wayon-rules-dialog[open]{
+      border:0!important;
+      border-radius:26px!important;
+      background:var(--apple-canvas)!important;
+      box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 32px 84px -16px rgba(0,0,0,.36),0 0 0 .5px var(--apple-glass-hairline)!important;
+    }
+    body.wayon-workbench #tabs #nav-aircon,
+    body.wayon-workbench #subtabs #tab-assigned{display:none!important}
+  `;
+  document.head.append(appleStyle);
 
   // ---- still-to-do counts: computed in-memory without redrawing views ---------------
   const left = {};
@@ -407,6 +1326,28 @@
       const n = hold ? undefined : left[id.slice(4)];
       label(b, text, n); badge(b, n);
     }
+    const accSum = $('#account-settings > summary');
+    if (accSum && accSum.dataset?.iconAction && !$(':scope > .ux-label', accSum)) {
+      accSum.append(make('span', 'ux-label', '设置'));
+      accSum.classList?.add('ux-labelled');
+    }
+    const brand = $('.app-brand');
+    if (brand) {
+      const ds = document.body?.dataset || {};
+      const sectionName = ds.feedbackOpen ? '反馈' : ds.memoOpen ? '备忘' : ds.mocksOpen ? '模考'
+        : ds.airconOpen ? '空调加时' : page.mode === 'notice' ? '通知' : page.mode === 'classroom' ? '教室' : '今天';
+      let crumb = $(':scope > .ux-topbar-crumb', brand);
+      if (!crumb) {
+        crumb = make('span', 'ux-topbar-crumb');
+        crumb.setAttribute('aria-hidden', 'true');
+        crumb.append(make('span', 'ux-topbar-crumb-sep', '/'), make('span', 'ux-topbar-crumb-text', sectionName));
+        brand.append(crumb);
+      } else {
+        const textNode = $('.ux-topbar-crumb-text', crumb);
+        if (textNode && textNode.textContent !== sectionName) textNode.textContent = sectionName;
+      }
+    }
+    try { if (document.title !== 'Wayon-edu') document.title = 'Wayon-edu'; } catch {}
   }
 
   // ---- has the system work gone out: one word per card ----------------------------
@@ -699,8 +1640,29 @@
     if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen) readCount(page.mode);
     try { decorateNav(); decorateCards(); decorateNotice(); decorateChasing(); reopen(); brandMark(); } catch (e) { console.warn('ux:', e); }
   }
+  function initScrollDock() {
+    const docEl = document.documentElement;
+    if (!docEl || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    const supportsSDA = typeof globalThis.CSS?.supports === 'function'
+      && globalThis.CSS.supports('(animation-timeline: scroll()) and (animation-range: 0% 100%)');
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let rafId = 0;
+    const syncScroll = () => {
+      rafId = 0;
+      const y = Math.max(0, Number(window.scrollY) || 0);
+      const p = Math.min(1, y / 64);
+      if (!supportsSDA || reduced) docEl.style?.setProperty?.('--apple-scroll-p', p.toFixed(4));
+      const docked = y > 28 ? 'true' : 'false';
+      if (docEl.dataset && docEl.dataset.scrolled !== docked) docEl.dataset.scrolled = docked;
+    };
+    syncScroll();
+    window.addEventListener('scroll', () => {
+      if (!rafId) rafId = requestAnimationFrame(syncScroll);
+    }, {passive: true});
+  }
   const schedule = () => { if (!queued && !probing) { queued = true; requestAnimationFrame(apply); } };
   function start() {
+    initScrollDock();
     // A count read for a view you are not on goes stale when marks change underneath it — the cloud copy arriving
     // after the first count, or another device. When the list redraws on its own (not right after a tap or a key),
     // count every view again once it has settled.
