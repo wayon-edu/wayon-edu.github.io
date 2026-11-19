@@ -664,6 +664,23 @@
     finally { backupRunning.delete(owner); }
   }
   const draftKey = (owner, day, student, phase) => 'draft:' + JSON.stringify([owner, student, phase]);
+  const suppHistoryKey = (owner, day, student) => 'results:' + JSON.stringify([owner, day, student, '补充']);
+  const sessionKey = r => r?.session_id || r?.payload?.session_id || r?.id || '';
+  const sessionTime = r => String(r?.payload?.saved_at || r?.created_at || '');
+  function mergeCompletedSessions(localList, singleLocal, cloudRows, day) {
+    const byKey = new Map();
+    const put = r => {
+      if (!r || r.state !== 'completed' || r.payload?.day !== day || r.payload?.re_quiz) return;
+      const k = sessionKey(r); if (!k) return;
+      const prev = byKey.get(k);
+      if (!prev || sessionTime(r) > sessionTime(prev) || ((r.payload?.items?.length || 0) > (prev.payload?.items?.length || 0))) byKey.set(k, r);
+    };
+    (Array.isArray(localList) ? localList : []).forEach(put);
+    put(singleLocal);
+    (Array.isArray(cloudRows) ? cloudRows : []).forEach(put);
+    return [...byKey.values()].sort((a, b) => sessionTime(a).localeCompare(sessionTime(b)));
+  }
+  const suppCloudCache = new Map(), freshSuppLists = new Set();
   async function retireDraft(key) {
     if (!key) return;
     try {
@@ -2451,14 +2468,19 @@
     await ready();
     if (mode !== 'cloud' && mode !== 'preview') { vq.textContent = ''; vq.append(make('div', 'vq-empty', '登录工作台后可选词和抽背')); return; }
     const day = curDay();
-    const localKey = activeOwner ? draftKey(activeOwner, day, student, vqTab.get(student) || '课前') : null;
-    let localDraft = null, previousResult = null;
-    try { if (localKey) { localDraft = await localRecord(localKey); previousResult = await localRecord('result:' + localKey); } } catch (e) { flash(e.message, true); }
+    const phase = vqTab.get(student) || '课前';
+    const localKey = activeOwner ? draftKey(activeOwner, day, student, phase) : null;
+    const suppKey = activeOwner ? suppHistoryKey(activeOwner, day, student) : null;
+    let localDraft = null, previousResult = null, localSuppHistory = null;
+    try {
+      if (localKey) { localDraft = await localRecord(localKey); previousResult = await localRecord('result:' + localKey); }
+      if (suppKey) localSuppHistory = await localRecord(suppKey);
+    } catch (e) { flash(e.message, true); }
     let lists = cachedLists, learners;
     if (!lists) {
       try { await lessonIndex(); lists = await getLists(day, student); learners = learnersFor(student, allLearners()); }
       catch (e) {
-        if (!localDraft && !previousResult) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取失败：' + (e.message || e))); return; }
+        if (!localDraft && !previousResult && !localSuppHistory?.value?.length) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取失败：' + (e.message || e))); return; }
         lists = {课前: [], 课后: [], 补充: []}; learners = [];
         if (localDraft?.value?.state === 'draft') lists[localDraft.value.phase] = localDraft.value.payload.items;
       }
@@ -2467,7 +2489,7 @@
     }
     if (!lists._hydrated) Object.defineProperty(lists, '_hydrated', {value: new Set(), enumerable: false});
     const hydrated = lists._hydrated;
-    const phase = vqTab.get(student) || '课前', items = lists[phase];
+    const items = lists[phase];
     // Repair the display of lists saved by older clients without a cloud write.
     // Supplemental pasted words keep the user's own input order.
     if (!hydrated.has(phase) && phase !== '补充') {
@@ -2483,22 +2505,39 @@
       catch (e) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取反馈词序失败：' + (e.message || e))); return; }
     }
     const redraw = () => fillLists(vq, student), keep = () => { hydrated.delete(phase); saveList(day, student, phase); redraw(); };
-    vq.textContent = '';
-    const bar = make('div', 'vq-bar'), tabs = make('div', 'vq-tabs');
-    tabs.title = learners.length ? '单词库：' + learners.map(l => l.replace(/\//g, '、')).join('，') : '还没有单词库（收集反馈后自动生成）';
-    ['课前', '课后', '补充'].forEach(p => tabs.append(btn(p === phase ? 'on' : '', p + ' ' + lists[p].length, () => { vqTab.set(student, p); fillLists(vq, student, lists); })));
     let finished = previousResult?.value?.state === 'completed' && previousResult.value.payload?.day === day && !previousResult.value.payload?.re_quiz ? previousResult.value : null;
-    if (!finished && mode === 'cloud') {
+    const suppCacheKey = day + '|' + student;
+    let cloudSuppRows = suppCloudCache.get(suppCacheKey) || [];
+    if (mode === 'cloud' && (!finished || phase === '补充')) {
       try {
-        const {data} = await client().from('wayon_vocab_sessions').select('id,state,payload,created_at').eq('day', day).eq('student', student).eq('phase', phase).eq('state', 'completed').order('created_at', {ascending: false}).limit(10);
-        const full = (data || []).find(r => !r.payload?.re_quiz);
-        if (full) finished = full;
+        const {data} = await client().from('wayon_vocab_sessions').select('id,session_id,phase,state,payload,created_at').eq('day', day).eq('student', student).eq('state', 'completed').order('created_at', {ascending: false}).limit(50);
+        const rows = data || [];
+        if (!finished) finished = rows.find(r => (r.phase || r.payload?.phase) === phase && !r.payload?.re_quiz) || null;
+        cloudSuppRows = rows.filter(r => (r.phase || r.payload?.phase) === '补充' && !r.payload?.re_quiz);
+        suppCloudCache.set(suppCacheKey, cloudSuppRows);
       } catch {}
     }
     const wordsOf = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()));
+    const suppCompleted = mergeCompletedSessions(localSuppHistory?.value, phase === '补充' ? previousResult?.value : null, cloudSuppRows, day);
+    const draft = localDraft?.value?.state === 'draft' ? localDraft.value : null;
+    const legacyDoneSupp = !!(suppCompleted.length && lists['补充'].length && !freshSuppLists.has(suppCacheKey)
+      && !(phase === '补充' && draft) && suppCompleted.some(r => wordsOf(r.payload?.items) === wordsOf(lists['补充'])));
     // Finished today and the list is unchanged since: the card shows the result instead of 「开始抽背」.
-    const doneNow = !!(finished?.state === 'completed' && finished.payload?.day === day && items.length && wordsOf(finished.payload?.items) === wordsOf(items));
-    if (doneNow && localDraft?.value?.state !== 'draft') {
+    const doneNow = phase === '补充'
+      ? (suppCompleted.length > 0 && (!lists['补充'].length || legacyDoneSupp))
+      : !!(finished?.state === 'completed' && finished.payload?.day === day && items.length && wordsOf(finished.payload?.items) === wordsOf(items));
+    vq.textContent = '';
+    const bar = make('div', 'vq-bar'), tabs = make('div', 'vq-tabs');
+    tabs.title = learners.length ? '单词库：' + learners.map(l => l.replace(/\//g, '、')).join('，') : '还没有单词库（收集反馈后自动生成）';
+    ['课前', '课后', '补充'].forEach(p => {
+      let label = p + ' ' + lists[p].length;
+      if (p === '补充' && suppCompleted.length) {
+        const pendingCnt = legacyDoneSupp ? 0 : lists[p].length;
+        label = pendingCnt ? '补充 ' + pendingCnt + ' · 已抽' + suppCompleted.length : '补充 已抽' + suppCompleted.length;
+      }
+      tabs.append(btn(p === phase ? 'on' : '', label, () => { vqTab.set(student, p); fillLists(vq, student, lists); }));
+    });
+    if (doneNow && !draft && phase !== '补充') {
       globalThis._wayonSuppressRender = true;
       try {
         markChecked(student, phase, finished);
@@ -2508,14 +2547,16 @@
     }
     const extraCard = vq.closest?.('.vq-card');
     if (extraCard?.classList?.contains('vq-extra')) {
+      const badgeDone = phase === '补充' ? (suppCompleted.length > 0) : (doneNow || (suppCompleted.length > 0 && !items.length));
+      const multiSupp = suppCompleted.length > 1 && (phase === '补充' || !doneNow);
       const stPill = extraCard.querySelector('.vq-extra-status');
-      const nextSt = doneNow ? '✓ 今日已抽' : '复习待抽';
+      const nextSt = badgeDone ? (multiSupp ? '✓ 已抽 ' + suppCompleted.length + ' 份' : '✓ 今日已抽') : '复习待抽';
       if (stPill) {
-        stPill.classList.toggle('on', doneNow);
+        stPill.classList.toggle('on', badgeDone);
         if (stPill.textContent !== nextSt) stPill.textContent = nextSt;
       }
       const foldNote = extraCard.querySelector('.vq-fold-note');
-      const nextNote = doneNow ? '· 今日已抽' : '· 未抽背';
+      const nextNote = badgeDone ? (multiSupp ? '· 已抽 ' + suppCompleted.length + ' 份' : '· 今日已抽') : '· 未抽背';
       if (foldNote && foldNote.textContent !== nextNote) foldNote.textContent = nextNote;
     }
     const showResult = res => {
@@ -2523,11 +2564,27 @@
       last.foot.append(btn('fb-btn pri', '复制结果', async () => { try { await navigator.clipboard.writeText(resultText(res.payload)); flash('已复制'); } catch { flash('复制失败，请手动选中文字复制', true); } }), btn('fb-btn', '关闭', last.close));
     };
     const actions = make('div', 'vq-actions');
-    if (previousResult && !doneNow) actions.append(btn('', '上次结果', () => {
+    const prevShownInSupp = phase === '补充' && previousResult?.value && suppCompleted.some(r => sessionKey(r) === sessionKey(previousResult.value));
+    if (previousResult && !(phase === '补充' ? prevShownInSupp : doneNow)) actions.append(btn('', '上次结果', () => {
       const last = overlay('上次抽背结果'); last.body.append(make('pre', 'fb-body', resultText(previousResult.value.payload)));
       last.foot.append(btn('fb-btn pri', '复制结果', async () => { try { await navigator.clipboard.writeText(resultText(previousResult.value.payload)); flash('已复制'); } catch { flash('复制失败，请手动选中文字复制', true); } }), btn('fb-btn', '关闭', last.close));
     }));
-    actions.append(btn('', '选词', () => openPicker(student, learners, items, keep)));
+    actions.append(btn('', '选词', () => {
+      if (phase === '补充' && legacyDoneSupp) {
+        const nextItems = [];
+        openPicker(student, learners, nextItems, () => {
+          if (!nextItems.length) return;
+          items.splice(0, items.length, ...nextItems);
+          freshSuppLists.add(suppCacheKey);
+          keep();
+        });
+        return;
+      }
+      openPicker(student, learners, items, () => {
+        if (phase === '补充' && items.length) freshSuppLists.add(suppCacheKey);
+        keep();
+      });
+    }));
     if (phase === '课前') actions.append(btn('', '推荐', async () => { try { const lib = await vocabFor(learners); (await recommend(lib, learners, day, todaysCourse(student))).forEach(r => { if (!items.some(x => wordKey(x.word) === wordKey(r.word))) items.push(fromRow(r, r._from)); }); await materializeItems(items); keep(); } catch (e) { flash('推荐未能保存：' + (e.message || e), true); } }, '推荐：今天这门课上一节的全部生词，再补错过的和到期复习的'));
     if (phase === '课后') actions.append(btn('', '本节全部内容', async () => {
       try {
@@ -2549,10 +2606,13 @@
       } catch (e) { flash('读取本节生词失败：' + (e.message || e), true); }
     }));
     bar.append(tabs, actions); vq.append(bar);
+    const hasPendingSupp = phase === '补充' && !legacyDoneSupp && (items.length > 0 || !!draft);
     if (phase === '补充') {
-      const add = make('div', 'vq-paste'), ta = make('textarea'); ta.rows = 2; ta.placeholder = '粘贴单词，一行一个（可带中文），例如：resilient 有韧性的';
+      const add = make('div', 'vq-paste'), ta = make('textarea'); ta.rows = 2;
+      ta.placeholder = suppCompleted.length && !hasPendingSupp ? '继续粘贴下一份补充单词，一行一个（可带中文）' : '粘贴单词，一行一个（可带中文），例如：resilient 有韧性的';
       const go = btn('', '加入', async () => {
         const lines = ta.value.split('\n').map(x => x.trim()).filter(Boolean); if (!lines.length) { ta.focus(); return; }
+        if (legacyDoneSupp) items.splice(0);
         const lib = await vocabFor(learners), byWord = new Map(lib.map(r => [r.word.trim().toLowerCase(), r])), unknown = [];
         lines.forEach(line => {
           const parsed = parseFeedback(line)[0] || {word: line.replace(/[一-鿿].*$/, '').trim() || line, meaning: (line.match(/[一-鿿].*$/) || [''])[0]};
@@ -2563,26 +2623,31 @@
         if (unknown.length) {   // new words join the student's own library so their results are kept
           try { const rows = await addVocab(learners.find(l => keyOf(l) === student) || learners[0] || student, unknown); rows.forEach((r, i) => { unknown[i].vocab_id = r.id; unknown[i].learner = r.learner; }); } catch (e) { flash('新词未能加入单词库：' + (e.message || e), true); }
         }
+        freshSuppLists.add(suppCacheKey);
         keep();
       });
       add.append(ta, go); vq.append(add);
     }
-    const draft = localDraft?.value?.state === 'draft' ? localDraft.value : null;
-    if (doneNow && !draft) {
-      const marks = finished.payload.marks || [], right = marks.filter(m => m.result === 'right').length, wrong = marks.filter(m => m.result === 'wrong').length, unmarked = items.length - marks.length;
+    const renderDoneRow = (res, labelText, fallbackItems) => {
+      const batchItems = res.payload?.items || fallbackItems || [];
+      const marks = res.payload?.marks || [], right = marks.filter(m => m.result === 'right').length, wrong = marks.filter(m => m.result === 'wrong').length, unmarked = Math.max(0, batchItems.length - marks.length);
       const row = make('div', 'vq-ready vq-done');
       const tally = make('span', 'vq-tally'); tally.append(make('span', 'ok', '对 ' + right), make('span', 'bad', '错 ' + wrong)); if (unmarked > 0) tally.append(make('span', '', '未标 ' + unmarked));
-      const info = make('div', 'vq-result-info'), actions = make('div', 'vq-result-actions');
-      info.append(make('span', 'vq-done-mark', '✓ 已完成'), make('span', 'vq-label', listLabel(items, phase)), tally);
-      actions.append(btn('fb-btn vq-again', '再抽一次', () => startQuiz(student, phase, items, redraw)),
-        btn('fb-btn', '查看', () => showResult(finished)),
-        btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(finished.payload)); if (ok) flash('已复制'); else showResult(finished); }));
-      row.append(info, actions);
-      vq.append(row);
-    } else if (items.length || draft) {   // no word chips: one line naming the lesson, copy action, and the start button
+      const info = make('div', 'vq-result-info'), rowActions = make('div', 'vq-result-actions');
+      info.append(make('span', 'vq-done-mark', '✓ 已完成'), make('span', 'vq-label', labelText), tally);
+      rowActions.append(btn('fb-btn vq-again', '再抽一次', () => startQuiz(student, phase, JSON.parse(JSON.stringify(batchItems)), redraw, phase === '补充' && draft ? {keepDraft: true} : {})),
+        btn('fb-btn', '查看', () => showResult(res)),
+        btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(res.payload)); if (ok) flash('已复制'); else showResult(res); }));
+      row.append(info, rowActions);
+      return row;
+    };
+    const renderReadyRow = async () => {
       const sourceItems = draft?.payload?.items?.length ? draft.payload.items : items;
       const ready = make('div', 'vq-ready');
-      ready.append(make('span', 'vq-label', draft ? '已暂存 · ' + (draft.payload.course || phase) + (draft.payload.course_no ? 'L' + draft.payload.course_no : '') : listLabel(items, phase)), make('span', 'vq-n', sourceItems.length + ' 项'));
+      const pendingLabel = draft
+        ? '已暂存 · ' + (draft.payload.course || phase) + (draft.payload.course_no ? 'L' + draft.payload.course_no : '')
+        : (phase === '补充' && suppCompleted.length ? '补充 #' + (suppCompleted.length + 1) : listLabel(items, phase));
+      ready.append(make('span', 'vq-label', pendingLabel), make('span', 'vq-n', sourceItems.length + ' 项'));
       if (draft && items.length) {
         ready.append(btn('vq-clear vq-drop-draft', '放弃暂存', async () => {
           if (confirm('放弃这次暂存的抽背进度？（已选单词清单保留）')) { await retireDraft(localKey); redraw(); }
@@ -2611,7 +2676,7 @@
       ready.append(
         btn('vq-clear', '清空', async () => {
           const msg = draft ? '清空这个清单并放弃暂存进度？（单词库里的词不受影响）' : '清空这个清单？（单词库里的词不受影响）';
-          if (confirm(msg)) { await retireDraft(localKey); if (items.length) { items.splice(0); keep(); } else redraw(); }
+          if (confirm(msg)) { await retireDraft(localKey); freshSuppLists.delete(suppCacheKey); if (items.length) { items.splice(0); keep(); } else redraw(); }
         }),
         copyBtn,
         btn('fb-btn pri vq-start', draft ? '▶ 继续抽背' : '▶ 开始抽背', () => startQuiz(student, phase, items, redraw)));
@@ -2621,6 +2686,19 @@
         backupListeners.set(pendingKey, value => { if (status.isConnected) status.textContent = value; }); ready.append(status);
       }
       vq.append(ready);
+    };
+    if (phase === '补充') {
+      if (hasPendingSupp) await renderReadyRow();
+      for (let i = suppCompleted.length - 1; i >= 0; i--) {
+        const res = suppCompleted[i], cnt = (res.payload?.items || []).length;
+        const row = renderDoneRow(res, '补充 #' + (i + 1) + ' · ' + cnt + ' 项', res.payload?.items || []);
+        vq.append(row);
+      }
+    } else if (doneNow && !draft) {
+      const row = renderDoneRow(finished, listLabel(items, phase), items);
+      vq.append(row);
+    } else if (items.length || draft) {   // no word chips: one line naming the lesson, copy action, and the start button
+      await renderReadyRow();
     }
   }
   const selectedListCopyText = (student, phase, sourceItems) => wordsCopyText('【' + displayStudent(student) + '】' + listLabel(sourceItems, phase), sourceItems);
@@ -2887,12 +2965,12 @@
   // A scrolling list: read the Chinese (or English), tap ✗ on the ones the student gets wrong, then 完成.
   // Only explicit marks count. Drafts and completed results are committed locally first.
   async function startQuiz(student, phase, items, done, opts = {}) {
-    const reQuiz = !!opts?.reQuiz;
+    const reQuiz = !!opts?.reQuiz, keepDraft = !!opts?.keepDraft;
     const owner = activeOwner || (mode === 'preview' ? 'preview' : null);
     if (!owner) { flash('请先登录工作台', true); return; }
     const key = draftKey(owner, curDay(), student, phase);
     let stored = null;
-    if (!reQuiz) {
+    if (!reQuiz && !keepDraft) {
       try { stored = await localRecord(key); } catch (e) { flash(e.message, true); return; }
     }
     const resume = stored?.value?.state === 'draft' ? stored.value : null;
@@ -2950,7 +3028,7 @@
       row.append(no, text, ok, x, reasons); list.append(row); paintRow();
     });
     paintTools(); recount();
-    o.foot.append(tally, ...(reQuiz ? [] : [btn('fb-btn', '暂存', () => finish('draft'))]), btn('fb-btn pri', '完成并保存', () => finish('completed')));
+    o.foot.append(tally, ...(reQuiz || keepDraft ? [] : [btn('fb-btn', '暂存', () => finish('draft'))]), btn('fb-btn pri', '完成并保存', () => finish('completed')));
     if (resume) { requestAnimationFrame(() => { o.body.scrollTop = resume.payload.scroll_top || 0; }); flash('已恢复暂存，可继续抽背'); }
     async function finish(state) {
       if (finishing) return;
@@ -2972,10 +3050,18 @@
       try {
         snapshot = {id: snapshotKey.split(':').at(-1), owner_id: owner, session_id: sessionId, revision: revision + 1, state, day, student, phase,
           payload, payload_hash: await sha256(JSON.stringify(payload))};
-        const records = reQuiz
+        const records = (reQuiz || keepDraft)
           ? [{key: snapshotKey, owner, status: 'pending', value: snapshot}]
           : [{key, owner, status: state, value: snapshot}, {key: snapshotKey, owner, status: 'pending', value: snapshot}];
-        if (state === 'completed' && !reQuiz) records.push({key: 'result:' + key, owner, status: 'completed', value: snapshot});
+        if (state === 'completed' && !reQuiz) {
+          records.push({key: 'result:' + key, owner, status: 'completed', value: snapshot});
+          if (phase === '补充') {
+            const hKey = suppHistoryKey(owner, day, student);
+            const prevH = await localRecord(hKey);
+            const merged = mergeCompletedSessions(prevH?.value, snapshot, [], day);
+            records.push({key: hKey, owner, status: 'completed', value: merged});
+          }
+        }
         await localRecords(records); revision++;
       } catch (e) { finishing = false; o.ov.querySelectorAll('button').forEach(b => { b.disabled = false; }); flash('本机未能保存，请保留当前窗口重试', true); return; }
       setTimeout(() => void flushVocabBackups(owner), 0);
@@ -2983,10 +3069,21 @@
       finishing = false; summaryShown = true;
       allRight.remove(); tools.remove(); Object.assign(o.head.querySelector('.vx-close'), {disabled: false, onclick: () => o.requestClose()});
       marks.forEach((m, i) => { items[i].wrong = m.result === 'wrong'; });
+      const totalCount = items.length;
+      if (phase === '补充' && !reQuiz) {
+        const suppCacheKey = listDay + '|' + student;
+        freshSuppLists.delete(suppCacheKey);
+        const cachedSupp = listCache.get(suppCacheKey)?.['补充'];
+        const sig = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()));
+        if (Array.isArray(cachedSupp) && cachedSupp.length && sig(cachedSupp) === sig(items)) {
+          cachedSupp.splice(0);
+          saveList(listDay, student, '补充');
+        }
+      }
       // 完成并保存 means the check happened, whether or not every word got a mark; an empty session ticks nothing.
       if (!reQuiz) markChecked(student, phase, snapshot);
       list.textContent = ''; o.foot.textContent = '';
-      const sum = make('div', 'vx-summary'); sum.append(make('div', 'fb-meta', '✅ ' + right + ' · ❌ ' + wrong.length + ' · 未标 ' + (items.length - marks.size)), make('pre', '', text));
+      const sum = make('div', 'vx-summary'); sum.append(make('div', 'fb-meta', '✅ ' + right + ' · ❌ ' + wrong.length + ' · 未标 ' + (totalCount - marks.size)), make('pre', '', text));
       list.append(sum);
       const status = make('span', 'fb-meta', owner === 'preview' ? '已保存本机' : '已保存本机 · 正在备份');
       backupListeners.set(snapshotKey, value => { if (status.isConnected) status.textContent = value; });
