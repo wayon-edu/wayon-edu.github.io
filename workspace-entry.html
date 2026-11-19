@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png"><link rel="apple-touch-icon" href="./favicon-180.png">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Wayon-edu</title>
+<style>:root{color-scheme:light dark}body{margin:48px;font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;color:#1d1d1f;background:#f5f5f7}h1{margin:0 0 12px;font-size:44px;font-weight:600;letter-spacing:-.045em}p{color:#6e6e73}button{padding:10px 20px;border:0;border-radius:999px;background:#0071e3;color:#fff;font:500 14px/1 inherit;cursor:pointer}@media(prefers-color-scheme:dark){body{color:#f5f5f7;background:#000}p{color:#98989d}button{background:#2997ff}}</style>
+<h1>Wayon-edu</h1><p id="loading" role="status">正在加载工作台…</p>
+<button id="retry" hidden>重试</button>
+<script>
+// Data-free entry point: retrieve the existing same-origin page and version its shared module.
+// No credentials, teaching data or saved state are embedded or transmitted to another host.
+(() => {
+  const load=async()=>{
+    try {
+      const response=await fetch('./workspace-source.html?release='+Date.now(),{cache:'no-store'});
+      if(!response.ok)throw Error('PAGE_UNAVAILABLE');
+      const source=await response.text();
+      const stamp='20261119-04';
+      const pattern=/import\(\s*(['"])\.\/checks-sync(?:-\d{8}-\d{2})?\.mjs(?:\?[^'"]*)?\1\s*\)/g;
+      let replacements=0;
+      let next=source.replace(pattern,()=>{replacements++;return "import('./checks-sync-20261024-02.mjs?v="+stamp+"')";});
+      if(replacements!==1)throw Error('ENTRY_CHANGED');
+      next=next.replace(/(<script\b[^>]*\bsrc=(['"])\.\/[A-Za-z0-9._-]+\.(?:m?js))(?:\?[^'"]*)?\2/g,'$1?v='+stamp+'$2');
+      next=next.replace(/<title>[\s\S]*?<\/title>/i,'<title>Wayon-edu</title>');
+      const colorMeta=!/<meta\b[^>]*name=['"]color-scheme['"]/i.test(next)?'<meta name="color-scheme" content="light dark">':'';
+      // Critical spacing and subtitle styles apply even when the cloud SDK is unavailable.
+      const polish='<style id="wayon-entry-polish">.wayon-workbench .brand-meta{display:none!important}.wayon-workbench .brand-title{padding-bottom:.13em!important}.wayon-workbench #schedule-health:empty{display:none!important}.wayon-workbench:has(#classroom-frame) .workspace-top-bar,.wayon-workbench:has(#classroom-frame) .workspace-sub-bar{display:none!important}</style>';
+      const roomLayout=!/src=['"]\.\/room-layout\.js\b/.test(next)?'<script src="./room-layout.js?v='+stamp+'"><'+'/script>':'';
+      const planView=!/src=['"]\.\/plan-presentation\.mjs\b/.test(next)?'<script type="module" src="./plan-presentation.mjs?v='+stamp+'"><'+'/script>':'';
+      const rulesEntry=!(/src=['"]\.\/rules-entry\.js\b/.test(next)||next.includes('wayonRulesEntryMounted'))?'<script src="./rules-entry.js?v='+stamp+'"><'+'/script>':'';
+      next=next.replace('</head>',colorMeta+polish+roomLayout+rulesEntry+planView+'</head>');
+      document.open();document.write(next);document.close();
+    } catch {
+      document.getElementById('loading').textContent='Could not load the workspace. Your saved records are unchanged.';
+      document.getElementById('retry').hidden=false;
+    }
+  };
+  document.getElementById('retry').onclick=load;void load();
+})();
+</script>
+</html>
+
+
+
