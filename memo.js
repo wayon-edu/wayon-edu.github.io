@@ -2,7 +2,7 @@
 // and is uploaded (by its own id) once the cloud is reachable. Nothing here touches schedules or homework.
 (() => {
   if (globalThis.wayonMemo || typeof document === 'undefined') return;
-  globalThis.wayonMemo = true;
+  globalThis.wayonMemo = {close: () => close(), isOpen: () => open};
   const CACHE = 'wayon-memos-v1', GONE = 'wayon-memos-deleted-v1';
   const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const today = () => {
@@ -98,7 +98,7 @@
   const style = make('style'); style.id = 'wayon-memo-style'; style.textContent = `
     #nav-memo:before{display:none!important}#nav-memo svg{width:19px;height:19px;flex:none}
     body[data-memo-open] #tabs button:not(#nav-memo){background:transparent!important;color:var(--fg-secondary)!important}
-    body[data-memo-open] #list,body[data-memo-open] .workspace-top-bar,body[data-memo-open] .workspace-sub-bar,body[data-memo-open] #aircon-panel,body[data-memo-open] .sidebar-footer .bar{display:none!important}
+    body[data-memo-open] #list,body[data-memo-open] .workspace-top-bar,body[data-memo-open] .workspace-sub-bar,body[data-memo-open] #aircon-panel,body[data-memo-open] #feedback-panel,body[data-memo-open] #mocks-panel,body[data-memo-open] #ledger-panel,body[data-memo-open] .sidebar-footer .bar{display:none!important}
     #memo-panel{width:100%;max-width:880px}#memo-panel[hidden]{display:none!important}
     .memo-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
     .memo-head h2{font-size:24px;letter-spacing:-.025em;margin:0}.memo-count{font-size:13px;color:var(--muted)}
@@ -266,6 +266,10 @@
     addEventListener('blur', clearPointer);
     document.addEventListener('click', e => { const nav = e.target.closest?.('#tabs button'); if (open && nav && nav.id !== 'nav-memo') close(); }, true);
     new MutationObserver(mount).observe(document.body, {childList: true, subtree: true});
+    new MutationObserver(() => {
+      const ds = document.body.dataset || {};
+      if (open && (ds.airconOpen || ds.feedbackOpen || ds.mocksOpen || ds.ledgerOpen)) close();
+    }).observe(document.body, {attributes: true, attributeFilter: ['data-aircon-open', 'data-feedback-open', 'data-mocks-open', 'data-ledger-open']});
     // The workspace publishes its Supabase client after login; sync once it appears and on auth/focus/online.
     let tries = 0; const wait = setInterval(() => { if (bindAuth() || ++tries > 60) { clearInterval(wait); void sync(); } }, 1000);
     addEventListener('wayon-refresh-ready', () => { bindAuth(); void sync(); });

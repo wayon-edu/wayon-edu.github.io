@@ -282,6 +282,7 @@
         else hasUndated = true;
       }
       tokens.push(...unnumberedDates);
+      if (hasUndated && tokens.length) tokens.push('其他');
       if (tokens.length) partsOut.push(subj + tokens.join('+'));
       else if (hasUndated || subj) partsOut.push(subj);
     }
@@ -292,6 +293,34 @@
     if (Number.isFinite(l?.no)) return (subj || '课程') + 'L' + l.no;
     if (l?.lesson_date) return (subj || '课程') + ' ' + md(l.lesson_date);
     return subj || '其他';
+  }
+  function groupItemsByLesson(items, opts = {}) {
+    const list = Array.isArray(items) ? items : [];
+    const lessons = opts?.groupByLesson === false || opts?.phase === '补充' ? [] : resolveLessons(list, opts);
+    if (lessons.length < 2) {
+      return {
+        grouped: false,
+        lessons,
+        groups: [{lesson: lessons[0] || null, tag: lessons[0] ? lessonTag(lessons[0]) : '', entries: list.map((it, origIdx) => ({it, origIdx}))}],
+      };
+    }
+    const buckets = new Map(lessons.map(l => [l.lesson_id, {lesson: l, tag: lessonTag(l), entries: []}]));
+    const other = [];
+    list.forEach((it, origIdx) => {
+      const b = it?.lesson_id && buckets.get(it.lesson_id);
+      if (b) b.entries.push({it, origIdx});
+      else other.push({it, origIdx});
+    });
+    const groups = [...buckets.values()].filter(g => g.entries.length);
+    if (other.length) groups.push({lesson: null, tag: '其他', entries: other});
+    return {grouped: true, lessons, groups};
+  }
+  function flattenGroupedItems(items, opts = {}) {
+    const {grouped, groups} = groupItemsByLesson(items, opts);
+    if (!grouped) return Array.isArray(items) ? items.slice() : [];
+    const out = [];
+    for (const g of groups) for (const {it} of g.entries) out.push(it);
+    return out;
   }
   function formatItemLine(it) {
     const meta = entryMeta(it);
@@ -304,8 +333,8 @@
     const name = displayStudent(student).replace(/^([A-Za-z][A-Za-z0-9 .’'-]*?)[\u4e00-\u9fff]+$/, '$1').trim();
     const short = {拼写: '拼', 意思: '意', 发音: '音'};
     const dateTail = day.slice(5).replace('-', '') + '抽背情况👇';
-    const lessons = resolveLessons(items, opts);
-    if (lessons.length >= 2) {
+    const {grouped, lessons, groups} = groupItemsByLesson(items, opts);
+    if (grouped) {
       const total = items.length;
       let right = 0, wrong = 0;
       marks.forEach(m => { if (m?.result === 'right') right++; else if (m?.result === 'wrong') wrong++; });
@@ -316,17 +345,9 @@
           ? '共 ' + total + ' 项：✅' + right + ' · ❌' + wrong
           : '共 ' + total + ' 项：✅' + right + ' · ❌' + wrong + ' · 未标' + unmarked;
       const lines = [[name, formatLessonsTitle(lessons), dateTail].filter(Boolean).join('_'), summary, ''];
-      const buckets = new Map(lessons.map(l => [l.lesson_id, {lesson: l, entries: []}]));
-      const other = [];
-      items.forEach((it, origIdx) => {
-        const b = it?.lesson_id && buckets.get(it.lesson_id);
-        if (b) b.entries.push({it, origIdx}); else other.push({it, origIdx});
-      });
-      const groups = [...buckets.values()].filter(g => g.entries.length);
-      if (other.length) groups.push({lesson: null, entries: other});
       for (const group of groups) {
         if (lines[lines.length - 1] !== '') lines.push('');
-        const grpHead = '【' + (group.lesson ? lessonTag(group.lesson) : '其他') + '】';
+        const grpHead = '【' + (group.tag || '其他') + '】';
         lines.push(grpHead);
         let previous = '';
         for (const {it, origIdx} of group.entries) {
@@ -368,19 +389,14 @@
   function wordsCopyText(title, ws, opts = {}) {
     const line = w => { const m = entryMeta(w); return m && m.word === w.word && m.pos === (w.pos || '') && m.meaning === (w.meaning || '') ? m.line : [w.word, (w.pos ? normPos(w.pos) + '.' : '') + (w.meaning || '')].filter(Boolean).join(' '); };
     const lines = [title, ''];
-    const lessons = opts?.groupByLesson === false ? [] : resolveLessons(ws, opts);
-    if (lessons.length >= 2) {
-      const buckets = new Map(lessons.map(l => [l.lesson_id, {lesson: l, entries: []}]));
-      const other = [];
-      ws.forEach(w => { const b = w?.lesson_id && buckets.get(w.lesson_id); if (b) b.entries.push(w); else other.push(w); });
-      const groups = [...buckets.values()].filter(g => g.entries.length);
-      if (other.length) groups.push({lesson: null, entries: other});
+    const {grouped, groups} = groupItemsByLesson(ws, opts);
+    if (grouped) {
       for (const group of groups) {
         if (lines[lines.length - 1] !== '') lines.push('');
-        const grpHead = '【' + (group.lesson ? lessonTag(group.lesson) : '其他') + '】';
+        const grpHead = '【' + (group.tag || '其他') + '】';
         lines.push(grpHead);
         let previous = '';
-        for (const w of group.entries) {
+        for (const {it: w} of group.entries) {
           const heading = entryHeading(w);
           if (heading && heading !== previous) {
             if (lines[lines.length - 1] !== '' && lines[lines.length - 1] !== grpHead) lines.push('');
@@ -1312,7 +1328,7 @@
   const style = make('style'); style.id = 'wayon-vocab-style'; style.textContent = `
     #nav-feedback:before{display:none!important}#nav-feedback{position:relative}#nav-feedback[data-todo]:after{content:attr(data-todo);position:absolute;top:-3px;right:-5px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bad,#d93025);color:#fff;font:600 10px/16px -apple-system,BlinkMacSystemFont,sans-serif;text-align:center;pointer-events:none}#nav-feedback svg{width:19px;height:19px;flex:none}
     body[data-feedback-open] #tabs button:not(#nav-feedback){background:transparent!important;color:var(--fg-secondary)!important}
-    body[data-feedback-open] #list,body[data-feedback-open] .workspace-top-bar,body[data-feedback-open] .workspace-sub-bar,body[data-feedback-open] #aircon-panel,body[data-feedback-open] #memo-panel,body[data-feedback-open] .sidebar-footer .bar{display:none!important}
+    body[data-feedback-open] #list,body[data-feedback-open] .workspace-top-bar,body[data-feedback-open] .workspace-sub-bar,body[data-feedback-open] #aircon-panel,body[data-feedback-open] #memo-panel,body[data-feedback-open] #mocks-panel,body[data-feedback-open] #ledger-panel,body[data-feedback-open] .sidebar-footer .bar{display:none!important}
     #feedback-panel{width:100%}#feedback-panel[hidden]{display:none!important}
     .fb-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}.fb-head h2{font-size:24px;letter-spacing:-.025em;margin:0}
     .fb-tabs{display:inline-flex;gap:2px;padding:3px;border-radius:10px;background:var(--code-bg);border:1px solid var(--line)}
@@ -1570,9 +1586,12 @@
     .vx-quizov .vx-head .vx-allright{margin-left:0}.vx-quizov .vx-head .vx-close{margin-left:12px}
     .vx-quizov .vx-body{padding:6px 16px 14px}
     .vx-quizov .vx-list{display:block;columns:2 420px;column-gap:28px}
+    .vx-quizov .vx-lesson-head{column-span:all;margin:20px 0 6px;padding:7px 10px;border-radius:10px;background:var(--code-bg);font-size:14px;font-weight:650;color:var(--fg);letter-spacing:.01em}
+    .vx-quizov .vx-lesson-head:first-child{margin-top:4px}
     .vx-quizov .vx-section{column-span:all;margin:14px 0 4px;padding:0 4px 6px}
+    .vx-quizov .vx-lesson-head+.vx-section{margin-top:6px}
     .vx-quizov .vx-q{break-inside:avoid;grid-template-columns:22px minmax(0,1fr) 34px 34px;gap:2px 8px;padding:7px 6px;border-radius:0;border-bottom:0;border-top:1px solid var(--line)}
-    .vx-quizov :is(.vx-section,.vx-list>:first-child)+.vx-q,.vx-quizov .vx-list>.vx-q:first-child{border-top-color:transparent}
+    .vx-quizov :is(.vx-lesson-head,.vx-section,.vx-list>:first-child)+.vx-q,.vx-quizov .vx-list>.vx-q:first-child{border-top-color:transparent}
     .vx-quizov .vx-q:is(.right,.wrong){border-radius:9px;border-top-color:transparent}.vx-quizov .vx-q:is(.right,.wrong)+.vx-q{border-top-color:transparent}
     .vx-quizov .vx-text{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:12px;row-gap:1px}
     .vx-quizov .vx-text .vx-en{margin:0}.vx-quizov .vx-en b{font-size:16.5px;font-weight:620}.vx-quizov .vx-en small{font-size:11.5px}
@@ -2968,7 +2987,19 @@
       }
       catch (e) { if (!staleDay()) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取反馈词序失败：' + (e.message || e))); } return; }
     }
-    const redraw = () => fillLists(vq, student), keep = () => { hydrated.delete(phase); saveList(day, student, phase); redraw(); };
+    const wordsOf = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()));
+    const wordSetSig = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()).sort());
+    const sameList = (a, b) => phase === '补充' ? wordsOf(a) === wordsOf(b) : wordSetSig(a) === wordSetSig(b);
+    const draft = localDraft?.value?.state === 'draft' ? localDraft.value : null;
+    const redraw = () => fillLists(vq, student);
+    const keep = async () => {
+      hydrated.delete(phase);
+      saveList(day, student, phase);
+      if (draft && localKey && !sameList(draft.payload?.items, items)) {
+        try { await retireDraft(localKey); flash('清单已更新，已清除旧抽背暂存'); } catch {}
+      }
+      redraw();
+    };
     let finished = previousResult?.value?.state === 'completed' && previousResult.value.payload?.day === day && !previousResult.value.payload?.re_quiz ? previousResult.value : null;
     const suppCacheKey = day + '|' + student;
     let cloudSuppRows = suppCloudCache.get(suppCacheKey) || [];
@@ -2987,15 +3018,13 @@
       } catch {}
       if (staleDay()) return;
     }
-    const wordsOf = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()));
     const suppCompleted = mergeCompletedSessions(localSuppHistory?.value, phase === '补充' ? previousResult?.value : null, cloudSuppRows, day);
-    const draft = localDraft?.value?.state === 'draft' ? localDraft.value : null;
     const legacyDoneSupp = !!(suppCompleted.length && lists['补充'].length && !freshSuppLists.has(suppCacheKey)
       && !(phase === '补充' && draft) && suppCompleted.some(r => wordsOf(r.payload?.items) === wordsOf(lists['补充'])));
     // Finished today and the list is unchanged since: the card shows the result instead of 「开始抽背」.
     const doneNow = phase === '补充'
       ? (suppCompleted.length > 0 && (!lists['补充'].length || legacyDoneSupp))
-      : !!(finished?.state === 'completed' && finished.payload?.day === day && items.length && wordsOf(finished.payload?.items) === wordsOf(items));
+      : !!(finished?.state === 'completed' && finished.payload?.day === day && items.length && sameList(finished.payload?.items, items));
     const extraCard = vq.closest?.('.vq-card');
     let anyPhaseDone = doneNow || suppCompleted.length > 0;
     if (!anyPhaseDone && extraCard?.classList?.contains('vq-extra')) {
@@ -3061,14 +3090,14 @@
           if (!nextItems.length) return;
           items.splice(0, items.length, ...nextItems);
           freshSuppLists.add(suppCacheKey);
-          keep();
-        });
+          void keep();
+        }, {phase});
         return;
       }
       openPicker(student, learners, items, () => {
         if (phase === '补充' && items.length) freshSuppLists.add(suppCacheKey);
-        keep();
-      });
+        void keep();
+      }, {phase});
     }));
     if (phase === '课前') {
       const recBtn = btn('', '推荐', async () => {
@@ -3084,9 +3113,10 @@
             staged.push(fromRow(r, r._from));
           }
           await materializeItems(staged);
+          const ordered = flattenGroupedItems(await feedbackOrder(staged), {phase});
           if (capped) flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，已截取前 ' + MAX_QUIZ_ITEMS + ' 项', true);
-          items.splice(0, items.length, ...staged);
-          keep();
+          items.splice(0, items.length, ...ordered);
+          await keep();
         } catch (e) { flash('推荐未能保存：' + (e.message || e), true); }
         finally { recBtn.disabled = false; }
       }, '推荐：今天这门课上一节的全部生词，再补错过的和到期复习的');
@@ -3113,9 +3143,9 @@
           }
           if (!count) { flash('今天这节的反馈还没收集，先到「课堂反馈 › 今日收集」粘贴'); return; }
           await materializeItems(staged);
-          const ordered = await feedbackOrder(staged);
+          const ordered = flattenGroupedItems(await feedbackOrder(staged), {phase});
           if (capped) flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，已截取前 ' + MAX_QUIZ_ITEMS + ' 项', true);
-          items.splice(0, items.length, ...ordered); keep();
+          items.splice(0, items.length, ...ordered); await keep();
         } catch (e) { flash('读取本节生词失败：' + (e.message || e), true); }
         finally { allBtn.disabled = false; }
       });
@@ -3170,7 +3200,7 @@
           if (capped) flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，已截取前 ' + MAX_QUIZ_ITEMS + ' 项', true);
           items.splice(0, items.length, ...next);
           freshSuppLists.add(suppCacheKey);
-          keep();
+          await keep();
         } catch (e) { flash('加入失败：' + (e.message || e), true); }
         finally { go.disabled = false; }
       });
@@ -3225,7 +3255,7 @@
       ready.append(
         btn('vq-clear', '清空', async () => {
           const msg = draft ? '清空这个清单并放弃暂存进度？（单词库里的词不受影响）' : '清空这个清单？（单词库里的词不受影响）';
-          if (confirm(msg)) { await retireDraft(localKey); freshSuppLists.delete(suppCacheKey); if (items.length) { items.splice(0); keep(); } else redraw(); }
+          if (confirm(msg)) { await retireDraft(localKey); freshSuppLists.delete(suppCacheKey); if (items.length) { items.splice(0); await keep(); } else redraw(); }
         }),
         copyBtn,
         btn('fb-btn pri vq-start', draft ? '▶ 继续抽背' : '▶ 开始抽背', () => startQuiz(student, phase, items, redraw)));
@@ -3312,7 +3342,7 @@
     o.body.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save.click(); } };
     word.focus();
   }
-  async function openPicker(student, learners, items, done) {
+  async function openPicker(student, learners, items, done, opts = {}) {
     const o = overlay('选抽背单词 · ' + displayStudent(student));
     o.body.append(make('div', 'vq-empty', '读取单词库…'));
     let all = [], matched = [], extraBanks = [], lib = [];
@@ -3407,7 +3437,7 @@
         cb.disabled = true;
         try {
           const ws = await wordsOf(l), validIds = new Set(ws.map(r => r.id));
-          ws.forEach(r => { if (want) { chosen.add(r.id); chosenRow.set(r.id, r); if (!l.pseudo) chosenFrom.set(r.id, l.id); } else { chosen.delete(r.id); chosenRow.delete(r.id); chosenFrom.delete(r.id); } });
+          ws.forEach(r => { if (want) { chosen.delete(r.id); chosen.add(r.id); chosenRow.set(r.id, r); if (!l.pseudo) chosenFrom.set(r.id, l.id); } else { chosen.delete(r.id); chosenRow.delete(r.id); chosenFrom.delete(r.id); } });
           if (!l.pseudo) items.forEach(x => { if (x.lesson_id === l.id && x.vocab_id && (!want || !validIds.has(x.vocab_id))) { chosen.delete(x.vocab_id); chosenRow.delete(x.vocab_id); chosenFrom.delete(x.vocab_id); } });
           recount(); sync(ws);
           body.querySelectorAll('input[data-id]').forEach(i => { i.checked = chosen.has(i.dataset.id); });
@@ -3555,7 +3585,12 @@
         if (merged.length > MAX_QUIZ_ITEMS) { flash('单份抽背清单最多 ' + MAX_QUIZ_ITEMS + ' 项，请精简后再加入', true); return; }
         try { await materializeItems(merged); }
         catch (e) { flash('保存新词到单词库失败：' + (e.message || e), true); return; }
-        items.splice(0, items.length, ...merged); o.close(); done();
+        let finalMerged = merged;
+        if (opts?.phase !== '补充') {
+          try { finalMerged = flattenGroupedItems(await feedbackOrder(merged), {phase: opts?.phase}); }
+          catch (e) { flash('读取反馈词序失败：' + (e.message || e), true); return; }
+        }
+        items.splice(0, items.length, ...finalMerged); o.close(); done();
       } finally {
         applying = false; addBtn.disabled = false;
       }
@@ -3577,8 +3612,13 @@
     }
     const resume = stored?.value?.state === 'draft' ? stored.value : null;
     if (resume) items = JSON.parse(JSON.stringify(resume.payload.items));
+    else if (Array.isArray(items) && items.length && phase !== '补充') items = flattenGroupedItems(items, {phase});
     if (!Array.isArray(items) || !items.length) { flash('当前清单没有可抽背的单词', true); return; }
     if (items.length > MAX_QUIZ_ITEMS) { flash('单次抽背最多 ' + MAX_QUIZ_ITEMS + ' 项，请先删减清单后再开始', true); return; }
+    const quizGrouping = groupItemsByLesson(items, {
+      phase,
+      ...(Array.isArray(resume?.payload?.course_lessons) && resume.payload.course_lessons.length ? {lessons: resume.payload.course_lessons} : {}),
+    });
     const marks = new Map((resume?.payload?.marks || []).map(m => [m.index, {result: m.result, reason: m.reason || ''}]));
     const sessionId = resume?.session_id || uuid(), listDay = resume?.payload?.list_day || curDay();
     let revision = resume?.revision || 0;
@@ -3605,32 +3645,39 @@
       const w = [...marks.values()].filter(m => m.result === 'wrong').length, r = [...marks.values()].filter(m => m.result === 'right').length, left = items.length - w - r;
       tally.textContent = '✅ ' + r + ' · ❌ ' + w + (left ? ' · 未标 ' + left : '');
     };
-    let previousHeading = '';
-    items.forEach((it, i) => {
-      const heading = entryHeading(it); if (heading && heading !== previousHeading) list.append(make('h4', 'vx-section', heading)); previousHeading = heading;
-      const row = make('div', 'vx-q' + (it.wrong ? ' was-wrong' : ''));
-      if (entrySection(it) === '句子背诵') row.dataset.kind = 'sentence';
-      const no = make('span', 'vx-no', String(i + 1));
-      const text = make('div', 'vx-text');
-      const en = make('div', 'vx-en'), zh = make('div', 'vx-zh');
-      const paintText = () => { en.textContent = ''; en.append(make('b', '', it.word)); const np = normPos(it.pos); if (np) en.append(make('small', '', ' ' + np)); zh.textContent = it.meaning || ''; zh.hidden = !it.meaning; };
-      paintText(); text.title = '双击修改';
-      text.ondblclick = e => { e.preventDefault(); getSelection()?.removeAllRanges(); row.classList.remove('peek'); editItem(it, paintText, {day: listDay, student, phase}); };
-      text.append(en, zh); entryNotes(it).forEach(t => text.append(make('div', 'vx-note', t)));
-      const ok = btn('vx-ok', '✓', () => { if (marks.get(i)?.result === 'right') marks.delete(i); else marks.set(i, {result: 'right'}); paintRow(); recount(); }, '答对：' + it.word);
-      const x = btn('vx-x', '✗', () => { if (marks.get(i)?.result === 'wrong') marks.delete(i); else marks.set(i, {result: 'wrong', reason: ''}); paintRow(); recount(); }, '答错：' + it.word);
-      const reasons = make('div', 'vx-why');
-      const paintRow = () => {
-        const m = marks.get(i);
-        row.classList.toggle('wrong', m?.result === 'wrong'); row.classList.toggle('right', m?.result === 'right');
-        ok.setAttribute('aria-pressed', String(m?.result === 'right')); x.setAttribute('aria-pressed', String(m?.result === 'wrong'));
-        reasons.textContent = '';
-        if (m?.result === 'wrong') ['拼写', '意思', '发音'].forEach(r => reasons.append(btn(m.reason === r ? 'on' : '', r, () => { m.reason = m.reason === r ? '' : r; paintRow(); })));
-      };
-      painters.push(paintRow);
-      text.onclick = () => row.classList.toggle('peek');
-      row.append(no, text, ok, x, reasons); list.append(row); paintRow();
-    });
+    let displayNo = 0;
+    for (const group of quizGrouping.groups) {
+      if (quizGrouping.grouped) {
+        list.append(make('h3', 'vx-lesson-head', '【' + (group.tag || '其他') + '】'));
+      }
+      let previousHeading = '';
+      for (const {it, origIdx: i} of group.entries) {
+        displayNo++;
+        const heading = entryHeading(it); if (heading && heading !== previousHeading) list.append(make('h4', 'vx-section', heading)); previousHeading = heading;
+        const row = make('div', 'vx-q' + (it.wrong ? ' was-wrong' : ''));
+        if (entrySection(it) === '句子背诵') row.dataset.kind = 'sentence';
+        const no = make('span', 'vx-no', String(displayNo));
+        const text = make('div', 'vx-text');
+        const en = make('div', 'vx-en'), zh = make('div', 'vx-zh');
+        const paintText = () => { en.textContent = ''; en.append(make('b', '', it.word)); const np = normPos(it.pos); if (np) en.append(make('small', '', ' ' + np)); zh.textContent = it.meaning || ''; zh.hidden = !it.meaning; };
+        paintText(); text.title = '双击修改';
+        text.ondblclick = e => { e.preventDefault(); getSelection()?.removeAllRanges(); row.classList.remove('peek'); editItem(it, paintText, {day: listDay, student, phase}); };
+        text.append(en, zh); entryNotes(it).forEach(t => text.append(make('div', 'vx-note', t)));
+        const ok = btn('vx-ok', '✓', () => { if (marks.get(i)?.result === 'right') marks.delete(i); else marks.set(i, {result: 'right'}); paintRow(); recount(); }, '答对：' + it.word);
+        const x = btn('vx-x', '✗', () => { if (marks.get(i)?.result === 'wrong') marks.delete(i); else marks.set(i, {result: 'wrong', reason: ''}); paintRow(); recount(); }, '答错：' + it.word);
+        const reasons = make('div', 'vx-why');
+        const paintRow = () => {
+          const m = marks.get(i);
+          row.classList.toggle('wrong', m?.result === 'wrong'); row.classList.toggle('right', m?.result === 'right');
+          ok.setAttribute('aria-pressed', String(m?.result === 'right')); x.setAttribute('aria-pressed', String(m?.result === 'wrong'));
+          reasons.textContent = '';
+          if (m?.result === 'wrong') ['拼写', '意思', '发音'].forEach(r => reasons.append(btn(m.reason === r ? 'on' : '', r, () => { m.reason = m.reason === r ? '' : r; paintRow(); })));
+        };
+        painters.push(paintRow);
+        text.onclick = () => row.classList.toggle('peek');
+        row.append(no, text, ok, x, reasons); list.append(row); paintRow();
+      }
+    }
     paintTools(); recount();
     const finishClick = async () => {
       if (finishing || choosingFinish) return;
@@ -3792,6 +3839,10 @@
     document.addEventListener('click', e => { const nav = e.target.closest?.('#tabs button'); if (open && nav && nav.id !== 'nav-feedback') close(); }, true);
     mountObserver = new MutationObserver(mount);
     mountObserver.observe(document.body, {childList: true, subtree: true});
+    new MutationObserver(() => {
+      const ds = document.body.dataset || {};
+      if (open && (ds.airconOpen || ds.memoOpen || ds.mocksOpen || ds.ledgerOpen)) close();
+    }).observe(document.body, {attributes: true, attributeFilter: ['data-aircon-open', 'data-memo-open', 'data-mocks-open', 'data-ledger-open']});
     window.addEventListener('online', () => void flushVocabBackups(activeOwner));
     let wait = 0;
     const isEditingFeedback = () => open && root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit');
@@ -3832,6 +3883,6 @@
     }, 1000);
   }
   globalThis.wayonVocab = {parseFeedback, lessonNo, subjectOf, learnersFor};
-  Object.assign(globalThis.wayonVocab, {captureQuizExtra, applyQuizExtra, extraQuizStudents, openAddQuizStudent, decorateQuiz, pinyinInitials, buildLearnerSearchEntry, matchStudentSearch, matchLessonQuery, matchWordQuery});
+  Object.assign(globalThis.wayonVocab, {close, captureQuizExtra, applyQuizExtra, extraQuizStudents, openAddQuizStudent, decorateQuiz, pinyinInitials, buildLearnerSearchEntry, matchStudentSearch, matchLessonQuery, matchWordQuery});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, {once: true}); else start();
 })();

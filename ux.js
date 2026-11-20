@@ -29,7 +29,7 @@
   const md = d => { const p = String(d).split('-'); return Number(p[1]) + '月' + Number(p[2]) + '日'; };
 
   const NAV = {'nav-today': ['今天', '今天的任务'], 'nav-notice': ['通知', '课程通知与空调加时'], 'nav-rooms': ['教室', '教室使用'],
-    'nav-feedback': ['反馈', '课堂反馈'], 'nav-memo': ['备忘', '备忘录'], 'nav-mocks': ['模考', '模考链接'], 'wayon-rules-btn': ['规则', '任务规则']};
+    'nav-feedback': ['反馈', '课堂反馈'], 'nav-memo': ['备忘', '备忘录'], 'nav-mocks': ['模考', '模考链接'], 'nav-ledger': ['台账', '个人台账与月度课时'], 'wayon-rules-btn': ['规则', '任务规则']};
   const TAB = {'tab-plan': ['安排', '任务安排：复制发群'], 'tab-done': ['完成', '完成记录：勾选完成情况'],
     'tab-quiz': ['抽背', '课前 / 课后抽背'], 'tab-chasing': ['待催', '待催作业']};
   const STATE = {sent: ['已布置', 'ok'], waiting: ['上批未完成', 'wait'], not_sent: ['未布置', 'todo'], decision: ['待老师安排', 'wait'], check: ['需核对', 'bad']};
@@ -510,6 +510,7 @@
       body.wayon-workbench[data-feedback-open] #tabs #nav-feedback,
       body.wayon-workbench[data-memo-open] #tabs #nav-memo,
       body.wayon-workbench[data-mocks-open] #tabs #nav-mocks,
+      body.wayon-workbench[data-ledger-open] #tabs #nav-ledger,
       body.wayon-workbench[data-aircon-open] #tabs #nav-notice{
         background:linear-gradient(180deg,var(--apple-lens-top) 0%,var(--apple-lens-bot) 100%)!important;
         color:var(--accent)!important;
@@ -525,10 +526,12 @@
       body.wayon-workbench[data-feedback-open] #tabs #nav-feedback .ux-label,
       body.wayon-workbench[data-memo-open] #tabs #nav-memo .ux-label,
       body.wayon-workbench[data-mocks-open] #tabs #nav-mocks .ux-label,
+      body.wayon-workbench[data-ledger-open] #tabs #nav-ledger .ux-label,
       body.wayon-workbench[data-aircon-open] #tabs #nav-notice .ux-label{font-weight:600!important}
       body.wayon-workbench[data-feedback-open] #tabs button:not(#nav-feedback),
       body.wayon-workbench[data-memo-open] #tabs button:not(#nav-memo),
       body.wayon-workbench[data-mocks-open] #tabs button:not(#nav-mocks),
+      body.wayon-workbench[data-ledger-open] #tabs button:not(#nav-ledger),
       body.wayon-workbench[data-aircon-open] #tabs button:not(#nav-notice){
         background:transparent!important;
         color:var(--muted)!important;
@@ -841,6 +844,7 @@
       body.wayon-workbench[data-feedback-open] #tabs #nav-feedback,
       body.wayon-workbench[data-memo-open] #tabs #nav-memo,
       body.wayon-workbench[data-mocks-open] #tabs #nav-mocks,
+      body.wayon-workbench[data-ledger-open] #tabs #nav-ledger,
       body.wayon-workbench[data-aircon-open] #tabs #nav-notice{
         background:var(--accent-subtle)!important;
         color:var(--accent)!important;
@@ -1270,7 +1274,7 @@
   function probe() {
     const active = document.activeElement;
     if (probing || !page.mode || page.mode === 'classroom' || document.body.dataset.airconOpen || document.body.dataset.memoOpen
-        || document.body.dataset.feedbackOpen || document.body.dataset.mocksOpen || $('dialog[open], .vx-overlay') || (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return;
+        || document.body.dataset.feedbackOpen || document.body.dataset.mocksOpen || document.body.dataset.ledgerOpen || $('dialog[open], .vx-overlay') || (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return;
     probing = true;
     // 待催 is counted by its own rule without drawing the view.
     const views = ['plan', 'done', 'quiz', ...(typeof globalThis.wayonChasingDue === 'function' ? [] : ['chasing']), 'notice'];
@@ -1337,7 +1341,7 @@
     const brand = $('.app-brand');
     if (brand) {
       const ds = document.body?.dataset || {};
-      const sectionName = ds.feedbackOpen ? '反馈' : ds.memoOpen ? '备忘' : ds.mocksOpen ? '模考'
+      const sectionName = ds.feedbackOpen ? '反馈' : ds.memoOpen ? '备忘' : ds.mocksOpen ? '模考' : ds.ledgerOpen ? '台账'
         : ds.airconOpen ? '空调加时' : page.mode === 'notice' ? '通知' : page.mode === 'classroom' ? '教室' : '今天';
       let crumb = $(':scope > .ux-topbar-crumb', brand);
       if (!crumb) {
@@ -1640,7 +1644,7 @@
     if (probing) return;
     // The cloud copy has just been applied: count every view once on it, then let the numbers show.
     if (!cloudCounted && cloudReady()) { readyAt ||= Date.now(); if (cloudComplete()) { probe(); cloudCounted = probed > 0 && Date.now() - probed < 50; } }
-    if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen) readCount(page.mode);
+    if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen && !document.body.dataset.ledgerOpen) readCount(page.mode);
     try { decorateNav(); decorateCards(); decorateNotice(); decorateChasing(); reopen(); brandMark(); } catch (e) { console.warn('ux:', e); }
   }
   function initScrollDock() {
@@ -1676,7 +1680,7 @@
     new MutationObserver(records => {
       if (records.some(r => inNav(r.target))) {
         try {
-          if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen) readCount(page.mode);
+          if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen && !document.body.dataset.ledgerOpen) readCount(page.mode);
           decorateNav();
         } catch (e) { console.warn('ux nav:', e); }
       }

@@ -36,8 +36,8 @@
     :root[data-theme="dark"]{color-scheme:dark;--mocks-accent:#2997ff;--mocks-accent-hover:#4ca8ff;--mocks-ok-bg:rgba(48,209,88,.2);--mocks-ok-fg:#32d74b;--mocks-bad-bg:rgba(255,69,58,.2);--mocks-bad-fg:#ff453a;--mocks-sheet:rgba(28,28,30,.92);--mocks-ring:rgba(255,255,255,.14);--mocks-input:rgba(118,118,128,.24)}
     #nav-mocks:before{display:none!important}#nav-mocks svg{width:19px;height:19px;flex:none}
     body[data-mocks-open] #tabs button:not(#nav-mocks){background:transparent!important;color:var(--fg-secondary)!important}
-    body[data-mocks-open] #list,body[data-mocks-open] .workspace-top-bar,body[data-mocks-open] .workspace-sub-bar,body[data-mocks-open] #aircon-panel,body[data-mocks-open] #memo-panel,body[data-mocks-open] #feedback-panel,body[data-mocks-open] .sidebar-footer .bar{display:none!important}
-    body[data-aircon-open] #mocks-panel,body[data-memo-open] #mocks-panel,body[data-feedback-open] #mocks-panel{display:none!important}
+    body[data-mocks-open] #list,body[data-mocks-open] .workspace-top-bar,body[data-mocks-open] .workspace-sub-bar,body[data-mocks-open] #aircon-panel,body[data-mocks-open] #memo-panel,body[data-mocks-open] #feedback-panel,body[data-mocks-open] #ledger-panel,body[data-mocks-open] .sidebar-footer .bar{display:none!important}
+    body[data-aircon-open] #mocks-panel,body[data-memo-open] #mocks-panel,body[data-feedback-open] #mocks-panel,body[data-ledger-open] #mocks-panel{display:none!important}
     body[data-mocks-open] .main-content{padding-bottom:24px}
     #mocks-panel{display:flex;flex-direction:column;gap:6px;width:100%;min-width:0}
     #mocks-panel[hidden]{display:none!important}
@@ -390,8 +390,8 @@
       mountObserver.observe(document.body, {childList: true, subtree: true});
       new MutationObserver(() => {
         const ds = document.body.dataset || {};
-        if (open && (ds.airconOpen || ds.memoOpen || ds.feedbackOpen)) close();
-      }).observe(document.body, {attributes: true, attributeFilter: ['data-aircon-open', 'data-memo-open', 'data-feedback-open']});
+        if (open && (ds.airconOpen || ds.memoOpen || ds.feedbackOpen || ds.ledgerOpen)) close();
+      }).observe(document.body, {attributes: true, attributeFilter: ['data-aircon-open', 'data-memo-open', 'data-feedback-open', 'data-ledger-open']});
       if (document.documentElement) {
         new MutationObserver(() => syncFrameTheme(true)).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
       }

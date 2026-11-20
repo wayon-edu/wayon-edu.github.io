@@ -542,6 +542,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
     }
     notice.append(panel);panel.open=true;notice.hidden=false;syncDialogState();email.focus();
   };
+  globalThis.wayonOpenAccount=showAccount;
   const reconnect=async()=>{if(engine)await controller.open(currentDay());else await initialize();};
   const noticeActions=document.createElement('span');noticeActions.className='wayon-sync-actions';
   const loginAction=button('登录同步',showAccount,'wayon-sync-cta'),retryAction=button('重新连接',reconnect,'wayon-sync-retry');
@@ -809,7 +810,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
   `;document.head.append(style);
   const refresh=()=>{
     for(const e of document.querySelectorAll('button,summary')){
-      if(e.closest?.('#wayon-rules-dialog, #feedback-panel, .vx-overlay, #tlsh, #tlhall, #memo-panel, #mocks-panel, .cloud-panel, .cloud-auth, .wayon-sync-notice, #wayon-cloud-dialog, .vq-card, .vq') || e.id==='reset')continue;
+      if(e.closest?.('#wayon-rules-dialog, #feedback-panel, .vx-overlay, #tlsh, #tlhall, #memo-panel, #mocks-panel, #ledger-panel, .ldg-dialog, .cloud-panel, .cloud-auth, .wayon-sync-notice, #wayon-cloud-dialog, .vq-card, .vq') || e.id==='reset')continue;
       // Source renderers replace text when an action changes; reapply only to known action labels.
       const raw=e.textContent.trim();
       const quiz=/^(?:Before Class|After Class)(?: ✓)?$/.test(raw)?[raw.startsWith('Before')?'before':'after',raw]:null;
