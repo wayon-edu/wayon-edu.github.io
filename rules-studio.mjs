@@ -12,6 +12,210 @@ const EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 const FILTERS = [['all', '全部'], ['on', '打卡中'], ['off', '打卡暂停']];
 const VIEWS = [['person', '按学员'], ['attendance', '全部随课'], ['checkin', '全部打卡']];
 const ONE_TASK = '一项任务只填一条；多项任务请分别添加。';
+const DEFAULT_SAVE_HINT = '保存规则仅更新后续计划，不影响今天已发作业；今天如需补发，请用「指定学员补布置」。';
+function infoTip(text, ariaLabel = '说明') {
+  const safe = escape(text);
+  return `<span class="rs-tip-wrap"><button type="button" class="rs-info-tip" aria-label="${escape(ariaLabel)}" title="${safe}"><span aria-hidden="true">ⓘ</span></button><span class="rs-tip-pop" role="tooltip">${safe}</span></span>`;
+}
+const STUDIO_REFINED_STYLE = String.raw`
+@keyframes rs-tip-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rules-studio.app { padding: 14px 20px 0; }
+.rules-studio .topbar { gap: 12px; min-height: 36px; padding-bottom: 11px; }
+.rules-studio .studio-body { grid-template-columns: 248px minmax(0, 1fr); gap: 16px; }
+
+/* ---- Roster compact polish */
+.rules-studio .roster-pane { gap: 8px; }
+.rules-studio .search input { min-height: 36px; padding: 7px 13px; font-size: 13.5px; }
+.rules-studio .filter-chips { gap: 5px; }
+.rules-studio .chip { padding: 4px 10px; min-height: 27px; font-size: 11.5px; }
+.rules-studio .roster-list { padding: 5px; border-radius: 18px; }
+.rules-studio .roster-item { min-height: 37px; padding: 6px 10px; border-radius: 10px; }
+.rules-studio .roster-name { font-size: 13.5px; }
+
+/* ---- Detail head & clean status strip */
+.rules-studio .detail-pane { padding: 0 4px 20px 0; }
+.rules-studio .detail-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px 14px; margin: 0 0 12px; min-height: 34px;
+}
+.rules-studio .detail-head-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rules-studio .detail-title { font-size: 20px; font-weight: 650; letter-spacing: -.028em; gap: 8px; }
+.rules-studio .detail-meta { display: inline-flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap; }
+.rules-studio .detail-stat {
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+  background: var(--seg-track); color: var(--secondary); font-size: 11.5px; font-weight: 550;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.rules-studio .detail-badge {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.rules-studio .detail-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.rules-studio .detail-badge.is-on { color: var(--green); background: var(--green-soft); }
+.rules-studio .detail-badge.is-mixed { color: var(--orange); background: var(--orange-soft); }
+.rules-studio .detail-badge.is-off { color: var(--muted); background: var(--seg-track); }
+
+/* ---- Unified edit cards: Attendance -> Checkin -> Specials */
+.rules-studio .rule-block {
+  border-radius: 18px; padding: 14px 18px 11px; margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 var(--card-rim), 0 2px 12px -4px var(--shadow1), 0 1px 2px var(--shadow2), 0 0 0 .5px var(--card-ring);
+}
+.rules-studio .block-head { align-items: center; padding-bottom: 6px; min-height: 30px; gap: 10px; }
+.rules-studio .block-title-row { position: relative; display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.rules-studio .block-head h3 {
+  font-size: 15px; font-weight: 650; letter-spacing: -.018em;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.rules-studio .count-badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px;
+  padding: 0 6px; border-radius: 999px; background: var(--seg-track); color: var(--secondary);
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.rules-studio .status-switch { min-height: 28px; padding: 2px 0; gap: 7px; font-size: 12px; }
+.rules-studio .switch-track { width: 38px; height: 22px; }
+.rules-studio .switch-knob { width: 18px; height: 18px; transform: translate3d(16px, 0, 0); }
+.rules-studio .status-switch.is-off .switch-knob { transform: translate3d(0, 0, 0); }
+
+/* ---- Minimal hover/focus info tips (zero edge clipping) */
+.rules-studio .rs-tip-wrap { position: static; display: inline-flex; align-items: center; vertical-align: middle; flex: none; }
+.rules-studio .rs-info-tip {
+  display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+  padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--muted);
+  opacity: .68; font-size: 12.5px; line-height: 1; cursor: help;
+  transition: opacity .15s ease, color .15s ease, background-color .15s ease;
+}
+.rules-studio .rs-info-tip:hover,
+.rules-studio .rs-info-tip:focus-visible { opacity: 1; color: var(--blue); background: var(--blue-soft); }
+.rules-studio .rs-tip-pop {
+  display: none; position: absolute; left: 0; top: calc(100% + 6px); z-index: 80;
+  width: max-content; max-width: min(296px, calc(100vw - 68px)); padding: 7px 11px;
+  border-radius: 10px; background: var(--island-bg); color: #F5F5F7;
+  font-size: 12px; font-weight: 450; line-height: 1.5; white-space: normal; text-align: left;
+  box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .16), 0 10px 26px -6px rgba(0, 0, 0, .32);
+  pointer-events: none;
+}
+.rules-studio .rs-tip-wrap:not(.rs-gear-wrap):hover .rs-tip-pop,
+.rules-studio .rs-tip-wrap:not(.rs-gear-wrap):focus-within .rs-tip-pop,
+.rules-studio .rs-gear-wrap .freq-gear-btn:hover + .rs-tip-pop,
+.rules-studio .rs-gear-wrap .freq-gear-btn:focus-visible + .rs-tip-pop { display: block; animation: rs-tip-in .14s ease-out both; }
+.rules-studio .rs-gear-wrap { position: relative; }
+.rules-studio .rs-gear-wrap .rs-tip-pop {
+  left: auto; right: 0; top: auto; bottom: calc(100% + 6px);
+  max-width: 180px; white-space: nowrap;
+}
+.rules-studio .footer-status .rs-tip-pop {
+  left: 0; right: auto; top: auto; bottom: calc(100% + 8px);
+  max-width: min(360px, calc(100vw - 48px));
+}
+@media (prefers-reduced-motion: reduce) {
+  .rules-studio .rs-tip-wrap:not(.rs-gear-wrap):hover .rs-tip-pop,
+  .rules-studio .rs-tip-wrap:not(.rs-gear-wrap):focus-within .rs-tip-pop,
+  .rules-studio .rs-gear-wrap .freq-gear-btn:hover + .rs-tip-pop,
+  .rules-studio .rs-gear-wrap .freq-gear-btn:focus-visible + .rs-tip-pop { animation: none; }
+}
+
+/* ---- Clean task groups & check-in frequency pills */
+.rules-studio .task-group { padding-top: 5px; }
+.rules-studio .task-group + .task-group { margin-top: 6px; padding-top: 7px; border-top: .5px solid var(--line); }
+.rules-studio .group-caption { margin: 0 0 3px; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .015em; }
+.rules-studio .freq-group { margin-top: 7px; padding-top: 7px; border-top: .5px solid var(--line); }
+.rules-studio .freq-group:first-of-type { margin-top: 2px; padding-top: 0; border-top: 0; }
+.rules-studio .freq-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  flex-wrap: nowrap; margin-bottom: 2px; min-height: 28px;
+}
+.rules-studio .freq-summary {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 3px;
+  padding: 2px 9px; border-radius: 10px; background: var(--well); color: var(--secondary);
+  font-size: 11.5px; font-weight: 500; line-height: 1.5; min-width: 0;
+}
+.rules-studio .freq-gear-btn {
+  width: 28px; height: 28px; padding: 0; font-size: 16px; line-height: 1;
+  color: var(--muted); opacity: .72; border-radius: 999px; flex: none;
+}
+.rules-studio .freq-gear-btn:hover,
+.rules-studio .freq-gear-btn:focus-visible { opacity: 1; color: var(--ink); background: var(--hover); }
+.rules-studio .freq-gear-btn.is-open { opacity: 1; color: var(--blue); background: var(--blue-soft); }
+.rules-studio .row-settings { gap: 8px 10px; margin: 6px 0 8px; padding: 12px; border-radius: 12px; }
+
+/* ---- Task rows: task text as visual hero */
+.rules-studio .task-row {
+  gap: 10px; padding: 4px 0;
+  border-bottom: .5px solid color-mix(in oklab, var(--line) 65%, transparent);
+}
+.rules-studio .task-row:last-child { border-bottom: 0; }
+.rules-studio .task-input { min-height: 32px; padding: 5px 9px; border-radius: 9px; font-size: 14px; line-height: 1.48; }
+.rules-studio .task-actions { gap: 5px; padding-top: 2px; }
+.rules-studio .task-kind { font-size: 10.5px; padding: 2px 7px; }
+.rules-studio .handler-select { min-height: 27px; padding: 2px 20px 2px 9px; font-size: 11.5px; font-weight: 550; }
+.rules-studio .handler-fixed { font-size: 11.5px; padding: 4px 9px; }
+.rules-studio .task-row .delete-btn { width: 28px; height: 28px; padding: 6px; opacity: .38; }
+.rules-studio .task-row:hover .delete-btn,
+.rules-studio .task-row:focus-within .delete-btn,
+.rules-studio .task-row.is-new .delete-btn { opacity: 1; }
+@media (hover: none) {
+  .rules-studio .task-row .delete-btn { opacity: .74; }
+}
+.rules-studio .empty-line { margin: 2px 0; padding: 4px 9px; font-size: 12.5px; }
+.rules-studio .block-actions { padding: 6px 0 0; gap: 4px 14px; }
+.rules-studio .add-btn { font-size: 12.5px; min-height: 28px; padding: 4px 2px; }
+.rules-studio .add-inline { font-size: 12px; padding: 3px 9px; min-height: 26px; }
+.rules-studio .special-note { margin: 5px 0; padding: 8px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.55; }
+
+/* ---- Read-only plan preview card at bottom */
+.rules-studio .plan-block {
+  margin-top: 16px; margin-bottom: 6px;
+  background: color-mix(in oklab, var(--surface) 74%, var(--well));
+  box-shadow: inset 0 1px 0 var(--card-rim), 0 1px 4px var(--shadow2), 0 0 0 .5px var(--line);
+}
+.rules-studio .plan-head-meta {
+  display: inline-flex; align-items: center; gap: 8px; flex: none;
+  flex-wrap: wrap; justify-content: flex-end;
+}
+.rules-studio .plan-stamp { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rules-studio .rs-subtle-btn {
+  display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 999px;
+  background: var(--surface); color: var(--secondary); padding: 4px 10px; min-height: 26px;
+  font-size: 11.5px; font-weight: 550; box-shadow: 0 0 0 .5px var(--line-strong);
+  transition: background-color .15s ease, color .15s ease; white-space: nowrap;
+}
+.rules-studio .rs-subtle-btn:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+.rules-studio .plan-days { gap: 10px; padding: 4px 0 2px; }
+.rules-studio .plan-day { background: var(--surface); border-radius: 13px; padding: 10px 13px; box-shadow: 0 0 0 .5px var(--line); }
+.rules-studio .plan-day h4 { margin: 0 0 5px; font-size: 12.5px; font-weight: 650; color: var(--secondary); font-variant-numeric: tabular-nums; }
+.rules-studio .plan-when { font-size: 11.5px; }
+.rules-studio .plan-visit ul { margin: 3px 0 0; padding-left: 16px; font-size: 12.5px; line-height: 1.6; }
+.rules-studio .plan-note { margin: 2px 0 8px; padding: 7px 11px; border-radius: 10px; font-size: 12px; line-height: 1.45; }
+.rules-studio .plan-note.is-rebuilding { background: var(--blue-soft); color: var(--blue); }
+
+/* ---- Crisp non-truncating footer */
+.rules-studio .footer { min-height: 54px; padding: 10px 0; gap: 12px; }
+.rules-studio .footer-status { position: relative; display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1; }
+.rules-studio .save-state { font-size: 12.5px; line-height: 1.45; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.rules-studio .footer-actions { gap: 6px; }
+.rules-studio .footer-actions .button { min-height: 34px; padding: 6px 14px; font-size: 12.5px; }
+.rules-studio .ov-card .rule-block { margin-bottom: 10px; }
+
+@media (forced-colors: active) {
+  .rules-studio .rs-tip-pop { border: 1px solid CanvasText; }
+}
+@media (max-width: 760px) {
+  .rules-studio.app { padding: 12px 14px 0; }
+  .rules-studio .studio-body { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .rules-studio .detail-pane { padding: 0 0 20px; scrollbar-gutter: auto; }
+  .rules-studio .detail-head { gap: 6px 10px; }
+  .rules-studio .detail-title { font-size: 19px; }
+  .rules-studio .detail-meta { width: 100%; }
+  .rules-studio .rule-block { padding: 12px 13px 10px; border-radius: 16px; margin-bottom: 10px; }
+  .rules-studio .freq-gear-btn { width: 34px; height: 34px; }
+  .rules-studio .task-row .delete-btn { width: 36px; height: 36px; padding: 9px; opacity: .76; }
+  .rules-studio .plan-head-meta { gap: 6px; }
+  .rules-studio .footer-status { width: 100%; }
+}
+`;
 const PERSON_ALIAS_GROUPS = [
   ['卢泰戈', 'Tiger', '泰戈'],
   ['郭璟', 'Jack', 'guojing'],
@@ -230,13 +434,13 @@ export function planFor(data, entity, day) {
 
 export async function mountRules({ document, client, container, onClose }) {
   if (!document.getElementById('wayon-rules-studio-style')) {
-    const style = document.createElement('style'); style.id = 'wayon-rules-studio-style'; style.textContent = STYLE;
+    const style = document.createElement('style'); style.id = 'wayon-rules-studio-style'; style.textContent = STYLE + '\n' + STUDIO_REFINED_STYLE;
     document.head.append(style);
   }
   const host = container || document.getElementById('rules') || document.body;
   const root = document.createElement('div'); root.className = 'rules-studio app'; host.replaceChildren(root);
   const q = selector => root.querySelector(selector);
-  const state = { owner: null, email: '', nonOwner: false, base: null, draft: null, selected: null, query: '', filter: 'all', busy: false, message: '正在读取规则…', error: false, editor: null, known: [], pending: null, settings: new Set(), rowErrors: new Map(), showDetail: false, view: 'person', plan: { status: 'idle', data: null, modified: null, rebuilding: false } };
+  const state = { owner: null, email: '', nonOwner: false, base: null, draft: null, selected: null, query: '', filter: 'all', busy: false, message: '正在读取规则…', messageHint: '', error: false, editor: null, known: [], pending: null, settings: new Set(), rowErrors: new Map(), showDetail: false, view: 'person', plan: { status: 'idle', data: null, modified: null, rebuilding: false } };
   let dialog, toastTimer, pointerActive = false, deferred = null;
   const dirty = () => !!state.base && !!state.draft && !same(state.base.payload, state.draft);
   const entities = () => buildRuleEntities(state.draft || {});
@@ -279,16 +483,23 @@ export async function mountRules({ document, client, container, onClose }) {
   root.addEventListener('contextmenu', clearPointer, true);
   const later = fn => { if (pointerActive) deferred = fn; else fn(); };
 
-  function setMessage(text, error = false) { state.message = text; state.error = error; footer(); }
+  function setMessage(text, error = false, hint = '') { state.message = text; state.error = error; state.messageHint = hint; footer(); }
   function footer() {
     const status = q('.save-state');
     if (!status) return;
     const count = changeCount(), live = liveInputDirty(), effective = count || (live ? 1 : 0);
     status.textContent = state.error || !effective ? (state.message || '已读取最新规则') : effective + ' 处修改未保存';
     status.classList.toggle('dirty', !!effective); status.classList.toggle('error', state.error);
+    const tipWrap = q('.footer-tip-wrap'), tipBtn = q('[data-role="footer-tip-btn"]'), tipPop = q('[data-role="footer-tip-pop"]');
+    if (tipWrap && tipBtn && tipPop) {
+      const hint = !effective && !state.error && state.messageHint ? state.messageHint : DEFAULT_SAVE_HINT;
+      tipWrap.hidden = !state.owner || !state.draft;
+      tipBtn.title = hint;
+      tipPop.textContent = hint;
+    }
     for (const action of ['save', 'discard', 'diff']) { const button = q(`.footer [data-action="${action}"]`); if (button) button.disabled = state.busy || !effective; }
   }
-  function modified() { state.error = false; state.message = ''; footer(); renderRoster(); }
+  function modified() { state.error = false; state.message = ''; state.messageHint = ''; footer(); renderRoster(); }
   function toast(text) {
     const element = q('.toast'); if (!element) return;
     element.textContent = text; element.hidden = false;
@@ -355,7 +566,7 @@ export async function mountRules({ document, client, container, onClose }) {
     const hint = pending.message || (inspected && ['unknown', 'invalid'].includes(inspected.mode) ? inspected.label : '');
     return `<div class="task-row is-new ${pending.message ? 'has-error' : ''}" data-task="new" data-scope="${scope}" data-person="${escape(entity.key)}"><div class="task-main"><textarea class="task-input" data-field="task-text" rows="${inputRows(pending.text)}" aria-label="新任务内容" placeholder="写清具体任务与数量，回车确认，Esc 取消" spellcheck="false">${escape(pending.text)}</textarea>${hint ? `<div class="task-hint warn">${escape(hint)}</div>` : ''}</div><div class="task-actions">${handler(pending.text, entity.system, pending.manual)}<button type="button" class="icon-btn delete-btn" data-action="cancel-new" aria-label="取消新任务" title="取消">${CLOSE}</button></div></div>`;
   }
-  function attendanceBlock(entity, head = '<div><h3>随课任务</h3><p class="block-sub">有课当天，课后布置</p></div>') {
+  function attendanceBlock(entity, head = `<div class="block-title-row"><h3>随课任务</h3>${infoTip('有课当天，课后布置', '随课任务说明')}</div>`) {
     const list = items(entity, 'attendance');
     const pendingHere = state.pending?.entityKey === entity.key && state.pending.scope === 'attendance' && !state.pending.choosingSubject;
     const subjects = [...new Set(['通用', ...list.map(item => item.subject), ...(pendingHere ? [state.pending.subject] : [])])];
@@ -387,7 +598,7 @@ export async function mountRules({ document, client, container, onClose }) {
       <label class="field wide"><span>备注</span><textarea data-field="row-note" data-row="${id}" rows="2">${escape(row['备注'] || '')}</textarea></label>
       ${completed(row) ? '<p class="small-note wide">本次已人工确认完成；此记录保留。</p>' : ''}</div>`;
   }
-  function checkinBlock(entity, head = '<div><h3>打卡任务</h3><p class="block-sub">按下面的频率布置</p></div>') {
+  function checkinBlock(entity, head = `<div class="block-title-row"><h3>打卡任务</h3>${infoTip('按下面的频率布置', '打卡任务说明')}</div>`) {
     const list = items(entity, 'checkin');
     const rows = (state.draft.frequency_rows || []).filter(row => entity.frequencyIds.includes(row.id));
     const mixed = entityStatus(entity, state.draft) === 'mixed';
@@ -395,7 +606,8 @@ export async function mountRules({ document, client, container, onClose }) {
       const open = state.settings.has(String(row.id));
       const units = list.filter(item => item.rowId === row.id).map(item => taskRow(entity, 'checkin', item)).join('');
       const own = mixed ? ` · <span class="${row['状态'] === '进行中' ? 'on' : 'off'}">${row['状态'] === '进行中' ? '本安排进行中' : '本安排暂停'}</span>` : '';
-      return `<div class="freq-group" data-row="${escape(row.id)}"><div class="freq-head"><span class="freq-summary">${escape(rowSummary(row))}${own}</span><button type="button" class="link-btn" data-action="toggle-settings" data-row="${escape(row.id)}" aria-expanded="${open}">${open ? '收起设置' : '频率与更多设置'}</button></div>${open ? rowSettings(row) : ''}${units}</div>`;
+      const gearTip = open ? '收起设置' : '频率与更多设置';
+      return `<div class="freq-group" data-row="${escape(row.id)}"><div class="freq-head"><span class="freq-summary">${escape(rowSummary(row))}${own}</span><span class="rs-tip-wrap rs-gear-wrap"><button type="button" class="icon-btn freq-gear-btn ${open ? 'is-open' : ''}" data-action="toggle-settings" data-row="${escape(row.id)}" aria-expanded="${open}" aria-label="${gearTip}" title="${gearTip}"><span aria-hidden="true">⚙&#xFE0E;</span></button><span class="rs-tip-pop" role="tooltip">${gearTip}</span></span></div>${open ? rowSettings(row) : ''}${units}</div>`;
     }).join('');
     const pendingHere = state.pending?.scope === 'checkin' && state.pending.entityKey === entity.key;
     return `<section class="rule-block" data-scope="checkin" data-person="${escape(entity.key)}"><header class="block-head">${head}${statusSwitch(entity)}</header>${groups || (pendingHere ? '' : '<p class="empty-line">还没有打卡任务</p>')}${pendingRow(entity, 'checkin')}<div class="block-actions"><button type="button" class="add-btn" data-action="add-task" data-scope="checkin">＋ 添加打卡任务</button></div></section>`;
@@ -405,7 +617,7 @@ export async function mountRules({ document, client, container, onClose }) {
   }
   function specialsBlock(entity) {
     const list = relatedOverrides(entity);
-    return `<section class="rule-block specials" data-scope="specials"><header class="block-head"><div><h3>特殊安排${list.length ? '（' + list.length + '）' : ''}</h3><p class="block-sub">某段时间暂停或改交老师处理</p></div></header>${list.map(({ rule, index }) => `<div class="special-note"><span>${escape((rule.subject || (rule.kind === 'vocab' ? '单词' : '自动任务')) + ' · ' + (rule.action === 'pause' ? '暂停' : '交老师处理') + ' · ' + (rule.start || '立即') + ' 至 ' + (rule.end || '另行恢复'))}${rule.reason ? '<br>' + escape(rule.reason) : ''}</span><button type="button" class="icon-btn" data-action="edit-override" data-index="${index}" aria-label="编辑特殊安排">${EDIT}</button></div>`).join('')}<div class="block-actions"><button type="button" class="add-btn" data-action="new-override" data-person="${escape(entity.key)}">＋ 添加特殊安排</button></div></section>`;
+    return `<section class="rule-block specials" data-scope="specials"><header class="block-head"><div class="block-title-row"><h3>特殊安排${list.length ? `<span class="count-badge">${list.length}</span>` : ''}</h3>${infoTip('某段时间暂停或改交老师处理', '特殊安排说明')}</div></header>${list.map(({ rule, index }) => `<div class="special-note"><span>${escape((rule.subject || (rule.kind === 'vocab' ? '单词' : '自动任务')) + ' · ' + (rule.action === 'pause' ? '暂停' : '交老师处理') + ' · ' + (rule.start || '立即') + ' 至 ' + (rule.end || '另行恢复'))}${rule.reason ? '<br>' + escape(rule.reason) : ''}</span><button type="button" class="icon-btn" data-action="edit-override" data-index="${index}" aria-label="编辑特殊安排">${EDIT}</button></div>`).join('')}<div class="block-actions"><button type="button" class="add-btn" data-action="new-override" data-person="${escape(entity.key)}">＋ 添加特殊安排</button></div></section>`;
   }
   const dayLabel = day => { const date = new Date(day + 'T12:00:00Z'); return (date.getUTCMonth() + 1) + '月' + date.getUTCDate() + '日 ' + ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getUTCDay()]; };
   const timeLabel = value => { const date = new Date(value); return Number.isFinite(date.valueOf()) ? date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : ''; };
@@ -424,10 +636,10 @@ export async function mountRules({ document, client, container, onClose }) {
     else if (!plan.data) body = '';
     else body = `<div class="plan-days">${planDay(entity, today, '今天')}${planDay(entity, addDays(today, 1), '明天')}</div>`;
     const notes = [];
-    if (plan.rebuilding) notes.push('<p class="plan-note">规则已保存，正在按新规则重编；完成后这里自动更新。</p>');
-    else if (dirty()) notes.push('<p class="plan-note">下面是修改前的计划。保存规则后会重编今天和明天的计划。</p>');
-    const stamp = plan.modified ? '工作台数据 ' + timeLabel(plan.modified) + ' 更新' : '';
-    return `<section class="rule-block plan-block" data-scope="plan"><header class="block-head"><div><h3>今天和明天的计划</h3><p class="block-sub">按规则排出的结果，计划不等于已布置${stamp ? ' · ' + escape(stamp) : ''}</p></div><button type="button" class="link-btn" data-action="reload-plan" ${plan.status === 'loading' ? 'disabled' : ''}>${plan.status === 'loading' ? '读取中…' : '重新读取'}</button></header>${notes.join('')}${body}</section>`;
+    if (plan.rebuilding) notes.push('<p class="plan-note is-rebuilding">规则已保存，正在按新规则重编…</p>');
+    else if (dirty()) notes.push('<p class="plan-note">下面是修改前的计划，保存后将按新规则重编。</p>');
+    const stamp = plan.modified ? timeLabel(plan.modified) + ' 更新' : '';
+    return `<section class="rule-block plan-block" data-scope="plan"><header class="block-head"><div class="block-title-row"><h3>今天和明天的计划</h3>${infoTip('按规则排出的结果，计划不等于已布置', '计划说明')}</div><div class="plan-head-meta">${stamp ? `<span class="plan-stamp">${escape(stamp)}</span>` : ''}<button type="button" class="rs-subtle-btn" data-action="reload-plan" ${plan.status === 'loading' ? 'disabled' : ''}>${plan.status === 'loading' ? '读取中…' : '↻ 重新读取'}</button></div></header>${notes.join('')}${body}</section>`;
   }
   async function loadPlan() {
     if (state.plan.status === 'loading') return;
@@ -470,6 +682,19 @@ export async function mountRules({ document, client, container, onClose }) {
     const kind = scope === 'attendance' ? '随课' : '打卡';
     return `<div class="detail-head"><button type="button" class="back-btn" data-action="back">‹ 名单</button><h2 class="detail-title">全部${kind}任务<span class="system-pill">${shown.length} 个</span></h2></div>${cards || `<div class="empty-state">没有符合条件的${kind}任务</div>`}${hidden > 0 ? `<p class="ov-hidden">另有 ${hidden} 个学员或班级没有${kind}任务，未列出；在「按学员」里可以为他们添加。</p>` : ''}`;
   }
+  function detailSummary(entity) {
+    const attCount = items(entity, 'attendance').length;
+    const chkCount = items(entity, 'checkin').length;
+    const status = entityStatus(entity, state.draft);
+    const parts = [
+      `<span class="detail-stat">随课 ${attCount}</span>`,
+      `<span class="detail-stat">打卡 ${chkCount}</span>`,
+    ];
+    if (status === 'on') parts.push('<span class="detail-badge is-on">打卡中</span>');
+    else if (status === 'mixed') parts.push('<span class="detail-badge is-mixed">部分暂停</span>');
+    else if (status === 'off') parts.push('<span class="detail-badge is-off">打卡暂停</span>');
+    return `<div class="detail-meta" aria-label="规则概览">${parts.join('')}</div>`;
+  }
   function renderDetail() {
     const pane = q('.detail-pane'); if (!pane || !state.draft) return;
     const scroll = pane.scrollTop, focus = focusKey(document.activeElement);
@@ -483,7 +708,7 @@ export async function mountRules({ document, client, container, onClose }) {
     }
     const entity = state.selected && selectedEntity(state.selected);
     if (!entity) { pane.innerHTML = '<div class="empty-state">在左侧选择一个学员或班级</div>'; return; }
-    pane.innerHTML = `<div class="detail-head"><button type="button" class="back-btn" data-action="back">‹ 名单</button><h2 class="detail-title">${escape(entity.name)}<span class="system-pill">${escape(entity.systemLabel)}</span></h2></div>${attendanceBlock(entity)}${checkinBlock(entity)}${planBlock(entity)}${specialsBlock(entity)}`;
+    pane.innerHTML = `<div class="detail-head"><div class="detail-head-main"><button type="button" class="back-btn" data-action="back">‹ 名单</button><h2 class="detail-title">${escape(entity.name)}<span class="system-pill">${escape(entity.systemLabel)}</span></h2></div>${detailSummary(entity)}</div>${attendanceBlock(entity)}${checkinBlock(entity)}${specialsBlock(entity)}${planBlock(entity)}`;
     pane.scrollTop = scroll;
     restoreFocus(focus);
     const fresh = pane.querySelector('[data-task="new"] textarea');
@@ -518,7 +743,7 @@ export async function mountRules({ document, client, container, onClose }) {
     root.innerHTML = `<header class="topbar"><span class="brand">Wayon</span><h1 class="page-title">任务规则</h1>${ready ? `<div class="view-seg" role="group" aria-label="视图">${VIEWS.map(([key, text]) => `<button type="button" class="${state.view === key ? 'active' : ''}" data-action="view" data-view="${key}" aria-pressed="${state.view === key}">${text}</button>`).join('')}</div>` : ''}<div class="header-actions"><button type="button" class="icon-btn" data-action="reload" title="重新读取规则" aria-label="重新读取规则">↻</button>${ready ? '<button type="button" class="icon-btn" data-action="specials" title="全部特殊安排" aria-label="管理全部特殊安排">⋯</button>' : ''}<button type="button" class="icon-btn" data-action="close" aria-label="关闭任务规则">${CLOSE}</button></div></header>
       ${ready ? `<div class="studio-body ${state.showDetail ? 'show-detail' : ''}"><aside class="roster-pane" aria-label="学员和班级"><label class="search"><span class="sr-only">搜索</span><input type="search" data-field="search" aria-label="搜索姓名或任务" placeholder="搜索姓名、拼音或任务" autocorrect="off" autocapitalize="none" autocomplete="off" spellcheck="false" value="${escape(state.query)}"></label><div class="filter-chips" role="group" aria-label="筛选">${FILTERS.map(([key, text]) => `<button type="button" class="chip ${state.filter === key ? 'active' : ''}" data-action="filter" data-filter="${key}" aria-pressed="${state.filter === key}">${text}</button>`).join('')}</div><div class="roster-count" aria-live="polite"></div><ul class="roster-list"></ul></aside><main class="detail-pane content" aria-label="规则内容"></main></div>`
         : `<main class="content" aria-label="规则内容">${state.owner ? `<div class="empty-state"><p>${state.nonOwner ? `当前账号${state.email ? '（' + escape(state.email) + '）' : ''}没有本人规则库权限，请退出后用本人账号登录。` : '规则未能读取。'}</p><div style="display:inline-flex;gap:8px;margin-top:8px;justify-content:center"><button type="button" class="button" data-action="reload">重试读取</button><button type="button" class="button ghost" data-action="signout">退出登录</button></div></div>` : '<form class="login-form"><h2>登录后查看任务规则</h2><label class="field">邮箱<input name="email" type="email" autocomplete="username" required></label><label class="field">密码<input name="password" type="password" autocomplete="current-password" required></label><button type="submit" class="button primary">登录</button></form>'}</main>`}
-      <footer class="footer"><div class="save-state" role="status" aria-live="polite"></div><div class="footer-actions">${ready ? '<button type="button" class="button ghost" data-action="diff">查看变更</button><button type="button" class="button ghost" data-action="discard">放弃</button><button type="button" class="button primary" data-action="save">保存修改</button>' : ''}</div></footer><dialog class="drawer-backdrop" aria-labelledby="rules-drawer-title"></dialog><div class="toast" role="status" aria-live="polite" hidden></div>`;
+      <footer class="footer"><div class="footer-status"><span class="save-state" role="status" aria-live="polite"></span><span class="rs-tip-wrap footer-tip-wrap" ${ready ? '' : 'hidden'}><button type="button" class="rs-info-tip" data-role="footer-tip-btn" aria-label="保存说明" title="${escape(DEFAULT_SAVE_HINT)}"><span aria-hidden="true">ⓘ</span></button><span class="rs-tip-pop" data-role="footer-tip-pop" role="tooltip">${escape(DEFAULT_SAVE_HINT)}</span></span></div><div class="footer-actions">${ready ? '<button type="button" class="button ghost" data-action="diff">查看变更</button><button type="button" class="button ghost" data-action="discard">放弃</button><button type="button" class="button primary" data-action="save">保存修改</button>' : ''}</div></footer><dialog class="drawer-backdrop" aria-labelledby="rules-drawer-title"></dialog><div class="toast" role="status" aria-live="polite" hidden></div>`;
     dialog = q('dialog');
     dialog.addEventListener('close', () => { state.editor = null; });
     dialog.addEventListener('click', event => { if (event.target === dialog) closeDrawer(); });
@@ -713,8 +938,13 @@ export async function mountRules({ document, client, container, onClose }) {
     if (errors.length) { setMessage('规则尚未保存，请核对提示。', true); showDrawer('请先完善规则', `<div class="error-copy">${errors.map(error => '<p>' + escape(error) + '</p>').join('')}</div>`); return; }
     setBusy(true); setMessage('正在保存规则…');
     try { const result = await saveCatalog(client, state.owner, state.base, submitted); state.base = clone(result); state.draft = clone(result.payload); state.known = entities(); state.pending = null; const refreshing = globalThis.wayonRefreshAPI?.enabled === true;
-      setMessage(refreshing ? '规则已保存，正在重编今天和明天的计划。保存不等于已布置：今天已发的作业不变；今天需要补发的，用「指定学员补布置」。'
-        : '规则已保存。保存不等于已布置：今天的计划要在工作台点「刷新」后才更新；今天需要补发的，用「指定学员补布置」。');
+      setMessage(
+        refreshing ? '规则已保存，正在重编计划 · 保存不等于已布置' : '规则已保存 · 保存不等于已布置',
+        false,
+        refreshing
+          ? '正在按新规则重编今天和明天的计划；今天已发的作业不变，需要补发请用「指定学员补布置」。'
+          : '今天的计划要在工作台点「刷新」后才更新；今天已发的作业不变，需要补发请用「指定学员补布置」。'
+      );
       state.plan.rebuilding = refreshing; try { globalThis.dispatchEvent?.(new Event('wayon-rules-saved')); } catch {} setBusy(false); renderAll(); toast('规则已保存'); }
     catch (error) { setMessage(error.message === 'CONFLICT' ? '版本冲突，修改已保留。请核对最新规则后再保存。' : error.message === 'READBACK_FAILED' ? '保存结果尚未核实，修改已保留。请重新读取核对。' : '保存未成功，修改已保留，请稍后重试。', true); }
     finally { setBusy(false); }
@@ -731,7 +961,7 @@ export async function mountRules({ document, client, container, onClose }) {
       if (read.error) throw Error('READ_FAILED');
       if (!read.data) { state.nonOwner = true; state.base = null; state.draft = null; setMessage('当前账号没有本人规则库权限，请退出后用本人账号登录。', true); render(); return; }
       state.nonOwner = false;
-      state.base = clone(read.data); state.draft = clone(read.data.payload); state.known = entities(); state.pending = null; state.rowErrors.clear(); state.error = false; state.message = '已读取最新规则。'; render();
+      state.base = clone(read.data); state.draft = clone(read.data.payload); state.known = entities(); state.pending = null; state.rowErrors.clear(); state.error = false; state.message = '已读取最新规则。'; state.messageHint = ''; render();
       void loadPlan();
     } catch { state.nonOwner = false; setMessage('规则未能读取，当前修改已保留，请稍后重试。', true); if (!state.draft) render(); }
     finally { setBusy(false); }
@@ -780,14 +1010,14 @@ export async function mountRules({ document, client, container, onClose }) {
     else if (action === 'discard') {
       const active = document.activeElement;
       if (active?.dataset?.field === 'task-text' && root.contains(active)) { active.dataset.cancelled = '1'; active.blur?.(); }
-      state.draft = clone(state.base.payload); state.pending = null; state.rowErrors.clear(); state.error = false; state.message = '已恢复到上次读取或保存的规则。'; closeDrawer(); renderAll();
+      state.draft = clone(state.base.payload); state.pending = null; state.rowErrors.clear(); state.error = false; state.message = '已恢复到上次读取或保存的规则。'; state.messageHint = ''; closeDrawer(); renderAll();
     }
     else if (action === 'save') void save();
     else if (action === 'signout') {
       void (async () => {
         setBusy(true);
         try { await client.auth?.signOut?.(); } catch {}
-        state.owner = null; state.email = ''; state.nonOwner = false; state.base = null; state.draft = null; state.known = []; state.selected = null; state.pending = null; state.rowErrors.clear(); state.error = false; state.message = '已退出登录，请用本人账号登录。';
+        state.owner = null; state.email = ''; state.nonOwner = false; state.base = null; state.draft = null; state.known = []; state.selected = null; state.pending = null; state.rowErrors.clear(); state.error = false; state.message = '已退出登录，请用本人账号登录。'; state.messageHint = '';
         setBusy(false); render();
       })();
     }

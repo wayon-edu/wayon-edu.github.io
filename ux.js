@@ -29,15 +29,15 @@
   const md = d => { const p = String(d).split('-'); return Number(p[1]) + '月' + Number(p[2]) + '日'; };
 
   const NAV = {'nav-today': ['今天', '今天的任务'], 'nav-notice': ['通知', '课程通知与空调加时'], 'nav-rooms': ['教室', '教室使用'],
-    'nav-feedback': ['反馈', '课堂反馈'], 'nav-memo': ['备忘', '备忘录'], 'nav-mocks': ['模考', '模考链接'], 'wayon-rules-btn': ['规则', '任务规则']};
+    'nav-feedback': ['反馈', '课堂反馈'], 'nav-memo': ['备忘', '备忘录'], 'nav-mocks': ['模考', '模考链接'], 'nav-ledger': ['教务', '教务管理'], 'wayon-rules-btn': ['规则', '任务规则']};
   const TAB = {'tab-plan': ['安排', '任务安排：复制发群'], 'tab-done': ['完成', '完成记录：勾选完成情况'],
     'tab-quiz': ['抽背', '课前 / 课后抽背'], 'tab-chasing': ['待催', '待催作业']};
   const STATE = {sent: ['已布置', 'ok'], waiting: ['上批未完成', 'wait'], not_sent: ['未布置', 'todo'], decision: ['待老师安排', 'wait'], check: ['需核对', 'bad']};
 
   const style = make('style'); style.id = 'wayon-ux-style'; style.textContent = `
     .ux-label{display:block;font-size:10px;line-height:1.1;letter-spacing:0;font-weight:500;color:inherit;opacity:.85;margin-top:2px;pointer-events:none}
-    #tabs button,#wayon-rules-btn{position:relative}
-    .wayon-workbench #tabs button.ux-labelled,.wayon-workbench #wayon-rules-btn.ux-labelled{display:flex!important;flex-direction:column;align-items:center;justify-content:center;height:48px!important;min-height:48px;padding-top:4px;padding-bottom:3px}
+    #tabs button,#wayon-rules-btn,#nav-ledger{position:relative}
+    .wayon-workbench #tabs button.ux-labelled,.wayon-workbench #wayon-rules-btn.ux-labelled,.wayon-workbench #nav-ledger.ux-labelled{display:flex!important;flex-direction:column;align-items:center;justify-content:center;height:48px!important;min-height:48px;padding-top:4px;padding-bottom:3px}
     .wayon-workbench #subtabs button.ux-labelled{display:inline-flex!important;align-items:center;gap:6px;width:auto!important;min-width:44px;padding:0 12px!important;position:relative}
     #subtabs .ux-label{display:inline;font-size:13px;margin:0;opacity:1}
     .ux-badge{position:absolute;top:-3px;right:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--bad,#d93025);color:#fff;font:600 10px/16px -apple-system,BlinkMacSystemFont,sans-serif;text-align:center;pointer-events:none;box-sizing:border-box}
@@ -102,7 +102,7 @@
       body.wayon-workbench .sidebar .nav-section{flex:1 1 auto!important;min-width:0!important;max-width:100%!important}
       body.wayon-workbench #tabs{gap:1px!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding:4px 0 0!important;margin-top:-4px}
       body.wayon-workbench .sidebar-footer{flex:0 0 auto!important;gap:4px!important}
-      body.wayon-workbench #tabs button.ux-labelled,body.wayon-workbench #wayon-rules-btn.ux-labelled{flex:0 0 auto;scroll-snap-align:start;width:44px!important;min-width:44px!important;position:relative!important;left:auto!important;right:auto!important}
+      body.wayon-workbench #tabs button.ux-labelled,body.wayon-workbench #wayon-rules-btn.ux-labelled,body.wayon-workbench #nav-ledger.ux-labelled{flex:0 0 auto;scroll-snap-align:start;width:44px!important;min-width:44px!important;position:relative!important;left:auto!important;right:auto!important}
       .wayon-workbench .main-content{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
       .wayon-workbench .main-content>*{flex:0 0 100%;min-width:0;box-sizing:border-box}
       .wayon-workbench .main-content>.workspace-top-bar,.wayon-workbench .main-content>.workspace-sub-bar{display:contents}
@@ -529,7 +529,7 @@
       body.wayon-workbench[data-feedback-open] #tabs button:not(#nav-feedback),
       body.wayon-workbench[data-memo-open] #tabs button:not(#nav-memo),
       body.wayon-workbench[data-mocks-open] #tabs button:not(#nav-mocks),
-      body.wayon-workbench[data-ledger-open] #tabs button,
+      body.wayon-workbench[data-ledger-open] #tabs button:not(#nav-ledger),
       body.wayon-workbench[data-aircon-open] #tabs button:not(#nav-notice){
         background:transparent!important;
         color:var(--muted)!important;
@@ -580,6 +580,8 @@
         background:var(--bad)!important;
         box-shadow:0 0 0 3px var(--apple-bad-bg)!important;
       }
+      body.wayon-workbench .sidebar #nav-ledger,
+      body.wayon-workbench .sidebar #nav-ledger.ux-labelled,
       body.wayon-workbench .sidebar #wayon-rules-btn,
       body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled,
       body.wayon-workbench .sidebar #account-settings>summary,
@@ -599,15 +601,33 @@
         justify-content:center!important;
         gap:2px!important;
         box-shadow:none!important;
-        transition:background-color .16s var(--apple-ease),color .16s var(--apple-ease);
+        cursor:pointer!important;
+        transition:background-color .16s var(--apple-ease),color .16s var(--apple-ease),box-shadow .22s var(--apple-ease),transform .16s var(--apple-ease);
       }
+      body.wayon-workbench .sidebar #nav-ledger:hover,
       body.wayon-workbench .sidebar #wayon-rules-btn:hover,
       body.wayon-workbench .sidebar #account-settings>summary:hover{
         background:var(--apple-rail-hover)!important;
         color:var(--fg)!important;
       }
+      body.wayon-workbench .sidebar #nav-ledger:active{transform:scale(.95)}
+      body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger,
+      body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger.ux-labelled{
+        background:linear-gradient(180deg,var(--apple-lens-top) 0%,var(--apple-lens-bot) 100%)!important;
+        color:var(--accent)!important;
+        font-weight:600!important;
+        box-shadow:
+          inset 0 1px .5px var(--apple-lens-rim),
+          inset 0 -.5px 0 rgba(0,113,227,.08),
+          0 4px 14px -3px var(--apple-lens-glow),
+          0 1px 2px var(--apple-glass-shadow-tight),
+          0 0 0 .5px var(--apple-lens-hairline)!important;
+      }
+      body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger .ux-label{font-weight:600!important}
+      body.wayon-workbench .sidebar #nav-ledger svg,
       body.wayon-workbench .sidebar #wayon-rules-btn svg,
-      body.wayon-workbench .sidebar #account-settings>summary svg{width:17px!important;height:17px!important}
+      body.wayon-workbench .sidebar #account-settings>summary svg{width:17px!important;height:17px!important;flex:none}
+      body.wayon-workbench .sidebar #nav-ledger .ux-label,
       body.wayon-workbench .sidebar #wayon-rules-btn .ux-label,
       body.wayon-workbench .sidebar #account-settings>summary .ux-label{font-size:10px!important;font-weight:500!important;margin-top:0!important;opacity:1!important}
       body.wayon-workbench .sidebar #account-settings{width:60px!important;min-width:60px!important;padding:0!important;margin:0!important}
@@ -847,10 +867,11 @@
         color:var(--accent)!important;
         border-radius:12px!important;
       }
-      body.wayon-workbench[data-ledger-open] #tabs button{
+      body.wayon-workbench[data-ledger-open] #tabs button:not(#nav-ledger){
         background:transparent!important;
         color:var(--muted)!important;
       }
+      body.wayon-workbench .sidebar #nav-ledger,
       body.wayon-workbench .sidebar #wayon-rules-btn,
       body.wayon-workbench .sidebar #account-settings>summary{
         border:0!important;
@@ -858,6 +879,12 @@
         color:var(--muted)!important;
         border-radius:12px!important;
       }
+      body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger{
+        background:var(--accent-subtle)!important;
+        color:var(--accent)!important;
+        border-radius:12px!important;
+      }
+      body.wayon-workbench .sidebar #nav-ledger svg{width:18px!important;height:18px!important;flex:none}
       body.wayon-workbench .sidebar #account-settings>summary .ux-label{display:block;font-size:10px;margin-top:2px;opacity:.85}
       body.wayon-workbench .sidebar #account-settings>summary{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;height:48px!important;min-height:48px!important}
       body.wayon-workbench .main-content{padding:12px 14px 40px!important}
@@ -961,6 +988,13 @@
       -webkit-backdrop-filter:blur(28px) saturate(200%)!important;
       box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 18px 44px -10px var(--apple-glass-shadow),0 0 0 .5px var(--apple-glass-hairline)!important;
     }
+    /* Notice page topbar: keep only single schedule-refresh button + date selector; hide redundant circle buttons while preserving status popover when refresh runs */
+    body.wayon-workbench[data-mode="notice"] #workflow-checks:not([open]),
+    body.wayon-workbench[data-mode="notice"] #workflow-checks>summary,
+    body.wayon-workbench[data-mode="notice"] #workflow-guide-open,
+    body.wayon-workbench[data-mode="notice"] #completion-refresh{display:none!important}
+    body.wayon-workbench[data-mode="notice"] #workflow-checks[open]{position:absolute!important;inset:0!important;pointer-events:none!important}
+    body.wayon-workbench[data-mode="notice"] #workflow-checks[open]>#workflow-checks-panel{pointer-events:auto!important}
     body.wayon-workbench #list .item:not(.folded),
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed),
     body.wayon-workbench .ux-aircon,
@@ -1342,7 +1376,7 @@
     const brand = $('.app-brand');
     if (brand) {
       const ds = document.body?.dataset || {};
-      const sectionName = ds.feedbackOpen ? '反馈' : ds.memoOpen ? '备忘' : ds.mocksOpen ? '模考' : ds.ledgerOpen ? '台账'
+      const sectionName = ds.feedbackOpen ? '反馈' : ds.memoOpen ? '备忘' : ds.mocksOpen ? '模考' : ds.ledgerOpen ? (ds.ledgerSpace === 'private' ? '个人私密' : '教务')
         : ds.airconOpen ? '空调加时' : page.mode === 'notice' ? '通知' : page.mode === 'classroom' ? '教室' : '今天';
       let crumb = $(':scope > .ux-topbar-crumb', brand);
       if (!crumb) {

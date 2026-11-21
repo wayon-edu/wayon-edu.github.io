@@ -453,7 +453,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
   const syncMount=document.getElementById('sync'),settings=document.getElementById('account-settings');
   const list=document.getElementById('list');
   if(list)list.before(notice);else if(syncMount)syncMount.after(notice);else document.body.append(notice);
-  let client=null,engine=null,user=null,userEmail='',hasSessionNoPerm=false,initializing=null,connecting=null,authEpoch=0,lastAttempt=0,lastStatusText='',cloudDialog=null,resetSlot=null,form=null,signedInBox=null,switchWrap=null,conflictRow=null,ledgerRow=null;
+  let client=null,engine=null,user=null,userEmail='',isOwner=false,hasSessionNoPerm=false,initializing=null,connecting=null,authEpoch=0,lastAttempt=0,lastStatusText='',cloudDialog=null,resetSlot=null,form=null,signedInBox=null,switchWrap=null,conflictRow=null,ledgerRow=null;
   const hero=document.createElement('div');hero.className='cloud-hero';
   const emblem=document.createElement('div');emblem.className='cloud-emblem';emblem.innerHTML=ICON_CLOUD;
   const titleEl=document.createElement('h2');titleEl.id='wayon-cloud-title';titleEl.className='cloud-title';titleEl.textContent='登录 Wayon-edu 云端同步';
@@ -486,7 +486,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
     pillEl.textContent=signedIn?(lastStatusText||'已连接云端同步'):lastStatusText;
     const hasConflict=/冲突/.test(lastStatusText);
     conflictRow.hidden=!hasConflict;
-    if(ledgerRow)ledgerRow.hidden=document.body.classList.contains('wayon-room')||typeof globalThis.wayonLedger?.open!=='function';
+    if(ledgerRow)ledgerRow.hidden=document.body.classList.contains('wayon-room')||!isOwner;
     if(cloudDialog?.open&&!panel.open)panel.open=true;
     if(resetSlot)resetSlot.hidden=!signedIn;
   };
@@ -525,7 +525,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
     return d;
   };
   const showAccount=()=>{
-    if(ledgerRow)ledgerRow.hidden=document.body.classList.contains('wayon-room')||typeof globalThis.wayonLedger?.open!=='function';
+    if(ledgerRow)ledgerRow.hidden=document.body.classList.contains('wayon-room')||!isOwner;
     const d=ensureCloudDialog();
     if(d&&typeof d.showModal==='function'){
       if(settings)settings.open=false;
@@ -649,13 +649,14 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
     const a=document.createElement('a'),url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.href=url;a.download=`wayon-local-backup-${day}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     status('已导出本机备份');
   });
-  ledgerRow=makeRow(ICON_LOCK,'个人台账',()=>{
+  ledgerRow=makeRow(ICON_LOCK,'个人私密',()=>{
     closeCloudDialog();
     if(settings)settings.open=false;
-    globalThis.wayonLedger?.open?.();
+    if(typeof globalThis.wayonLedger?.openPrivate==='function')globalThis.wayonLedger.openPrivate();
+    else globalThis.wayonLedger?.open?.('private');
   });
   ledgerRow.id='wayon-account-ledger-btn';
-  ledgerRow.hidden=document.body.classList.contains('wayon-room');
+  ledgerRow.hidden=true;
   group.append(syncRow,conflictRow,pwRow,pwChangeWrap,legacyRow,ledgerRow);
   const signoutWrap=document.createElement('div');signoutWrap.className='cloud-signout-wrap';
   const logout=button('退出登录',async()=>{if(client)await client.auth.signOut();location.reload();},'cloud-signout-btn');
@@ -673,16 +674,16 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
     }
   }else if(!document.body.classList.contains('wayon-room')){if(syncMount)syncMount.after(panel);else document.body.append(panel);}
   async function connect(session){
-    if(!session){authEpoch++;engine=null;user=null;userEmail='';hasSessionNoPerm=false;delete globalThis.wayonRefreshAPI;window.dispatchEvent(new Event('wayon-refresh-ready'));email.hidden=password.hidden=login.hidden=false;status('请登录以保存云端记录；现有本机记录保留');return false;}
+    if(!session){authEpoch++;engine=null;user=null;userEmail='';isOwner=false;hasSessionNoPerm=false;delete globalThis.wayonRefreshAPI;window.dispatchEvent(new Event('wayon-refresh-ready'));email.hidden=password.hidden=login.hidden=false;status('请登录以保存云端记录；现有本机记录保留');return false;}
     if(connecting)return connecting;
     const epoch=authEpoch;
     connecting=(async()=>{
       if(engine&&user===session.user.id){userEmail=session.user.email||userEmail;hasSessionNoPerm=false;await controller.open(currentDay());syncDialogState();return true;}
       const {data,error}=await withCloudTimeout(client.from('wayon_owner').select('user_id'));
       if(epoch!==authEpoch)return false;
-      if(error||data?.length!==1||data[0].user_id!==session.user.id){hasSessionNoPerm=true;status('此账号没有工作台权限');return false;}
+      if(error||data?.length!==1||data[0].user_id!==session.user.id){isOwner=false;hasSessionNoPerm=true;status('此账号没有工作台权限');return false;}
       if(user&&user!==session.user.id){location.reload();return false;}
-      user=session.user.id;userEmail=session.user.email||'';hasSessionNoPerm=false;
+      user=session.user.id;userEmail=session.user.email||'';isOwner=true;hasSessionNoPerm=false;
       remember(currentDay());
       const hydrateDays=[...initialViews.keys()];
       const beforeHydrate=new Map(hydrateDays.map(d=>[d,structuredClone(capture(d))]));
