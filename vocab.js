@@ -118,7 +118,7 @@
   const HAS_SECOND_POS_IN_WORD = new RegExp('[/=＝;；]\\s*[A-Za-z][^/=＝;；]*?\\s+' + POS_TOKEN + '(?:\\s*$|\\s*[/=＝;；])');
   const PAIRED_MEANING_POS = new RegExp('^(' + POS_TOKEN + '(?:\\s*[/=＝;；]\\s*[A-Za-z][A-Za-z\'‘’\\-]*\\s+' + POS_TOKEN + ')+)\\s+(.+)$');
   const DANGLING_POS = /^(.*?[A-Za-z].*?\s(?:n|v|vt|vi|adj|adv|j|prep|pp|conj|pron|phr|ad))\.?\s*\/$/;   // "repair v/" — a slash with nothing after it
-  const PLUS_TAIL = /^([\u4e00-\u9fff]{1,6})(?:\s+(?![\/／])(.*))?$/;   // "it's a shame that+" + "句子 ...很可惜": 句子 belongs to the pattern
+  const PLUS_TAIL = /^([\u4e00-\u9fff]{1,6})[.。]?(?:\s+(?![\/／])(.*))?$/;   // "it's a shame that+" + "句子 ...很可惜": 句子 belongs to the pattern
   const SECOND_POS = /^((?=.*?[\u4e00-\u9fff]).*?[\u4e00-\u9fff）)】」』》〉"”’…])[\s；;，,]*(n|v|vt|vi|adj|j|adv|prep)\.\s*(\S.*)$/;
   function splitPos(word, pos, meaning) {   // same rule as split_pos in Manager/vocab_import.py
     const rawPos = String(pos || '').trim();
@@ -422,27 +422,76 @@
     return lines.join('\n').trim();
   }
 
-  // Teachers sometimes list words with no heading and no Chinese (e.g. after 「课后：…背诵词汇」). A run of 3+ short
-  // English-only lines outside any section, introduced as words or 6+ lines long, is read as a 词汇 section
+  // Teachers sometimes list words with no heading and no Chinese (e.g. after 「课后：…词汇，句型」). A contiguous
+  // block of 3+ bare/mixed English vocabulary lines outside recognised sections is read as a 词汇 section
   // (same rule as mark_bare_lists in Manager/vocab_import.py).
-  const BARE_LINE = /^\s*(?:[-–•·*]\s*|\d{1,3}[.、)）]\s*)?[A-Za-z][A-Za-z0-9'‘’\-\s,./()&?!]*$/;
+  const HARD_META_HEAD = /发音|听写|纠错|纠音|结课|考试复盘|语法/;
+  const HOMEWORK_INLINE = /^\s*(?:(?:课后|課後)(?:作业|作業|练习|練習|任务|任務)?|作业|作業)\s*[:：]\s*\S/;
+  const BARE_WORD_BEFORE = /词|詞|生字|单字|單字|vocab|words/i;
+  const BARE_LINE = /^\s*(?:[-–•·*]\s*|\d{1,3}[.、)）]\s*)?(?:(?:\.{2,}|…+)\s*)?[A-Za-z][A-Za-z0-9'‘’\-\s,./()&?!+=…–—]*$/;
+  const EG_LINE = /^(?:e\.?\s*g\.?|eg)(?:[:：,，]|\s+)(?!\s*[=＝/])/i;
+  const INLINE_EG = /\s+(e\.?\s*g\.?(?:[:：,，]|\s+)(?!\s*[=＝/]).*)$/i;
+  const ELLIPSIS_ZH_PATTERN = /^\s*(?:[-–•·*]\s*|\d{1,3}[.、)）]\s*)?(?:\.{2,}|…+)\s*[A-Za-z][A-Za-z'‘’\-/().=,…&?!+＋\s]{0,60}[\u4e00-\u9fff]/;
+  const STRIP_MARKS_RE = /❌\s*(?:(?:拼写?|意思|发音|音)(?:\s*[+＋/、]\s*(?:拼写?|意思|发音|音))*)?|✅|✔️|✔|⭕️?|◯|○/g;
+  const ITEM_PREFIX_RE = /^\s*(?:(?:\d\uFE0F?\u20E3|\d+[.、)）])\s*|[-–•·*]\s*)/u;
   const BARE_END = '\x00WAYON_BARE_END\x00';
+  const stripTeacherMarks = line => String(line || '').replace(STRIP_MARKS_RE, '').trim();
+  const isPureBareLine = line => {
+    const t = stripTeacherMarks(line);
+    if (!t || t.includes('http') || t.includes('___') || /^\s*(?:[A-Z]\d+|C\d+T\d+)/.test(t)) return false;
+    if (!BARE_LINE.test(t) || !/[A-Za-z]{2}/.test(t)) return false;
+    const head = t.replace(INLINE_EG, '').trim();
+    return head.split(/\s+/).filter(Boolean).length <= 8;
+  };
+  const isMixedWordLine = line => {
+    const t = stripIpa(stripTeacherMarks(line));
+    if (!t || t.includes('http') || t.length > 160) return false;
+    if (ELLIPSIS_ZH_PATTERN.test(t)) return true;
+    const m = WORD_LINE.exec(t);
+    if (!m) return false;
+    const w = m.groups.word.replace(/\s*\^\s*/g, ' ').replace(/\s+/g, ' ').replace(/^[\s\-–,.，:：'‘’]+|[\s\-–,.，:：'‘’]+$/g, '');
+    if (!w || w.split(' ').length > 8 || !/[A-Za-z]{2}/.test(w) || /^(?:[A-Z]\d+|C\d+T\d+)/.test(w)) return false;
+    const meaning = m.groups.meaning.replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').replace(/\s+/g, ' ').replace(/^[\s;；,，]+|[\s;；,，]+$/g, '');
+    if (!meaning || !/[\u4e00-\u9fff]/.test(meaning) || PROSE_EVAL_HINT.test(meaning)) return false;
+    if (!m.groups.pos) {
+      const isExplain = /^(?:表示|相当于|意思是|可[以]?理解|区分|注意)/.test(meaning);
+      if ((!isExplain && /。/.test(meaning)) || ((meaning.match(/[\u4e00-\u9fff]/g) || []).length >= 14 && /[。！!?]$/.test(meaning))) return false;
+    }
+    return true;
+  };
+  const isEgLine = line => {
+    const t = String(line || '').trim().replace(ITEM_PREFIX_RE, '').trim();
+    return !!(t && !t.includes('http') && EG_LINE.test(t));
+  };
+  const isBareListItem = (line, hasPrev) => {
+    if (!String(line || '').trim()) return false;
+    const title = feedbackHeading(line);
+    if (feedbackSection(line) || STRICT_META_SECTION.test(title) || SOFT_META_SECTION.test(title)) return false;
+    if (/^\s*[【\[][^】\]]+[】\]]\s*[:：]?\s*$/.test(line)) return false;
+    if (isPureBareLine(line) || isMixedWordLine(line)) return true;
+    return !!(hasPrev && isEgLine(line));
+  };
   function markBareLists(lines) {
     const firstNonEmpty = lines.find(l => l.trim())?.trim() || '';
-    let strict = DOC_META_TITLE.test(firstNonEmpty), inside = strict, i = 0;
+    const docStrict = DOC_META_TITLE.test(firstNonEmpty);
+    let strict = docStrict, hard = docStrict, inside = strict, i = 0;
     const out = [];
-    const isBare = x => x.trim() && BARE_LINE.test(x) && x.split(/\s+/).filter(Boolean).length <= 8 && !x.includes('http') && !/^\s*(?:[A-Z]\d+|C\d+T\d+)/.test(x);
     while (i < lines.length) {
       const line = lines[i], text = line.trim(), title = feedbackHeading(line);
-      if (feedbackSection(line) || (/词汇|生词|单词/.test(line) && !NOT_VOCAB_HEAD.test(line) && (line.replace(/[^\w\u4e00-\u9fff]/g, '').length <= 12 || /比如|例如|以下|如下|[:：]\s*$/.test(line)) && !WORD_LINE.test(stripIpa(line)))) { inside = true; strict = false; }
-      else if (/^\s*[【\[][^】\]]+[】\]]\s*[:：]?\s*$/.test(line)) { inside = true; strict = /发音|听写|纠错|结课|作业|语法/.test(line); }
-      else if (STRICT_META_SECTION.test(title) || (text && /^课后(?:作业|练习|任务)\s*[:：]?$/.test(title))) { inside = true; strict = true; }
-      else if (SOFT_META_SECTION.test(title)) { inside = false; strict = false; }
+      if (feedbackSection(line) || (/词汇|生词|单词/.test(line) && !NOT_VOCAB_HEAD.test(line) && (line.replace(/[^\w\u4e00-\u9fff]/g, '').length <= 12 || /比如|例如|以下|如下|[:：]\s*$/.test(line)) && !WORD_LINE.test(stripIpa(line)))) { inside = true; strict = false; hard = false; }
+      else if (/^\s*[【\[][^】\]]+[】\]]\s*[:：]?\s*$/.test(line)) { inside = true; strict = /发音|听写|纠错|纠音|结课|作业|语法/.test(line); hard = HARD_META_HEAD.test(line); }
+      else if (STRICT_META_SECTION.test(title) || (text && /^课后(?:作业|练习|任务)\s*[:：]?$/.test(title))) { inside = true; strict = true; hard = docStrict || HARD_META_HEAD.test(title); }
+      else if (SOFT_META_SECTION.test(title)) { inside = false; strict = false; hard = false; }
+      else if (!docStrict && !hard && (HOMEWORK_INLINE.test(title) || (BARE_WORD_BEFORE.test(line) && /以下|如下/.test(line)))) { inside = false; strict = false; }
       else if (SECTION_END.test(line) && !strict) inside = false;
-      let j = i; while (j < lines.length && isBare(lines[j])) j++;
-      const before = lines.slice(Math.max(0, i - 3), i).reverse().find(x => x.trim()) || '';
-      if (!inside && !strict && j - i >= 3 && (i === 0 || !lines[i - 1].trim() || !BARE_LINE.test(lines[i - 1])) && (j - i >= 6 || /词|生字|vocab|words/i.test(before))) {
-        out.push('词汇', ...lines.slice(i, j), BARE_END); i = j; continue;
+      let j = i; while (j < lines.length && isBareListItem(lines[j], j > i)) j++;
+      const before = lines.slice(Math.max(0, i - 6), i).reverse().find(x => x.trim()) || '';
+      if (!inside && !strict && j - i >= 3 && (i === 0 || !lines[i - 1].trim() || !isBareListItem(lines[i - 1], true))) {
+        const blk = lines.slice(i, j);
+        const bareCnt = blk.filter(x => isPureBareLine(x) || ELLIPSIS_ZH_PATTERN.test(stripTeacherMarks(x))).length;
+        if (bareCnt >= 1 && (bareCnt >= 6 || (BARE_WORD_BEFORE.test(before) && bareCnt >= 1) || (blk.length >= 6 && bareCnt >= 2))) {
+          out.push('词汇', ...blk, BARE_END); i = j; continue;
+        }
       }
       out.push(line); i++;
     }
@@ -499,7 +548,7 @@
     const add = (item, raw) => {
       item.word = capWord(item.word);
       if (!item.word) return null;
-      if (section) item.extra = META_PREFIX + JSON.stringify({section, heading, line: raw.trim().replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').trimEnd(), word: item.word, pos: item.pos || '', meaning: item.meaning || '', notes: item.extra ? [item.extra] : []});
+      if (section) item.extra = META_PREFIX + JSON.stringify({section, heading, line: raw.trim().replace(STRIP_MARKS_RE, '').trimEnd(), word: item.word, pos: item.pos || '', meaning: item.meaning || '', notes: item.extra ? [item.extra] : []});
       words.push(item); return item;
     };
     const itemPrefix = /^\s*(?:(?:\d\uFE0F?\u20E3|\d+[.、)）])\s*|[-–•·*]\s*)/u;
@@ -526,6 +575,7 @@
         const piece = section ? rawPiece.replace(itemPrefix, '').trim() : rawPiece.trim();
         const pieceRaw = multi ? rawPiece : raw;
         if (/https?:\/\//i.test(piece) || piece.includes('http')) { parent = null; continue; }
+        if ((section === '词汇' || section === '搭配' || section === '用法') && parent && EG_LINE.test(piece)) { appendEntryNote(parent, piece); continue; }
         const labelled = (section === '搭配' || section === '词汇') && (LABELLED_COLON.exec(piece) || LABELLED_HYPHEN.exec(piece));
         if (labelled && !NON_WORD_ZH_LABEL.test(labelled.groups.zh.trim())) {
           const en = labelled.groups.en.trim().replace(/[\s.…；;]+$/, '') || labelled.groups.en.trim();
@@ -545,15 +595,22 @@
           }
         }
         const candidate = stripIpa(piece);
-        const loose = inVocab && /^\s*(?:[-–•·*]\s*|\d{1,3}[.、)）]\s*)?([A-Za-z].*)$/.exec(candidate);
+        const loose = inVocab && /^\s*(?:[-–•·*]\s*|\d{1,3}[.、)）]\s*)?(?:(?:\.{2,}|…+)\s*)?([A-Za-z].*)$/.exec(candidate);
         if (loose && !(WORD_LINE.test(candidate) && /[\u4e00-\u9fff]/.test(candidate))) {
           // Inside a vocabulary section every English line is a word (same rule as vocab_import.py).
-          const text = loose[1].replace(/❌\s*(?:拼写?|意思|发音|音)?|✅|✔️|✔|⭕️?|◯|○/g, ' ').trim();
+          let text = loose[1].replace(STRIP_MARKS_RE, ' ').trim();
           if (text.includes('___') || /,\s*[A-Z]\.$/.test(text) || (text.includes('; ') && !/[\u4e00-\u9fff]/.test(text))) continue;
+          let egNote = '';
+          const egM = !/[\u4e00-\u9fff]/.test(text) ? INLINE_EG.exec(text) : null;
+          if (egM && egM.index > 0) { egNote = egM[1].trim(); text = text.slice(0, egM.index).trim(); }
           const cut = text.search(/[（(《〈「『【]*[\u4e00-\u9fff]/);
           let word = cut >= 0 ? text.slice(0, cut) : text.split('=')[0], meaning = cut >= 0 ? text.slice(cut) : (text.includes('=') ? '= ' + text.split('=').slice(1).join('=').trim() : '');
           word = word.replace(/\s+/g, ' ').replace(/^[\s\-–,.，:：^]+|[\s\-–,.，:：^]+$/g, '');
-          if (word && word.split(' ').length <= 8 && /[A-Za-z]{2}/.test(word) && !/^(?:[A-Z]\d+|C\d+T\d+)/.test(word)) { const sp = splitPos(word, '', meaning.replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').trim()); parent = add({word: (suffix ? '-' : '') + sp.word, pos: sp.pos || '', meaning: sp.meaning, extra: sp.extra || '', wrong: /❌/.test(piece)}, pieceRaw); }
+          if (word && word.split(' ').length <= 8 && /[A-Za-z]{2}/.test(word) && !/^(?:[A-Z]\d+|C\d+T\d+)/.test(word)) {
+            const sp = splitPos(word, '', meaning.replace(WRONG, '').replace(/✅|✔️|✔|⭕️?|◯|○/g, '').trim());
+            const extra = [sp.extra || '', egNote].filter(Boolean).join('\n');
+            parent = add({word: (suffix ? '-' : '') + sp.word, pos: sp.pos || '', meaning: sp.meaning, extra, wrong: /❌/.test(piece)}, pieceRaw);
+          }
           continue;
         }
         if (candidate.includes('http') || candidate.length > 160) { parent = null; continue; }
@@ -1620,6 +1677,8 @@
     .vq-done{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px}
     .vq-result-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap}
     .vq-done .vq-again{margin:0;color:var(--fg-secondary);font-size:13px}
+    .vq-done .vq-retry-wrong,.vx-foot .vq-retry-wrong{color:var(--bad-dark,#b42318);border-color:var(--bad-border,color-mix(in srgb,var(--bad-dark,#b42318) 32%,transparent));background:var(--card)}
+    .vq-done .vq-retry-wrong:hover,.vx-foot .vq-retry-wrong:hover{background:var(--bad-bg,#fdecec)}
     .vq-result-actions .fb-btn,.vq-bar .vq-actions button{height:34px;min-height:34px;white-space:nowrap;padding:0 12px;border-radius:8px}
     .qgroup.vq-card>.qhead{display:grid;grid-template-columns:minmax(100px,1fr) auto;align-items:center;gap:10px 16px}
     .qgroup.vq-card.vq-collapsed>.qhead{display:flex}
@@ -3205,16 +3264,21 @@
       const nextNote = badgeDone ? (multiSupp ? '· 已抽 ' + suppCompleted.length + ' 份' : '· 今日已抽') : '· 未抽背';
       if (foldNote && foldNote.textContent !== nextNote) foldNote.textContent = nextNote;
     }
-    const showResult = res => {
-      const last = overlay('抽背结果'); last.body.append(make('pre', 'fb-body', resultText(res.payload)));
-      last.foot.append(btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(res.payload)); flash(ok ? '已复制' : '复制失败，请手动选中文字复制', !ok); }), btn('fb-btn', '关闭', last.close));
+    const wrongItemsOf = (res, fallbackItems = []) => {
+      const batchItems = res?.payload?.items || fallbackItems || [];
+      const wrongIdx = new Set((res?.payload?.marks || []).filter(m => m.result === 'wrong').map(m => m.index));
+      return batchItems.filter((_, i) => wrongIdx.has(i));
+    };
+    const showResult = (res, title = '抽背结果') => {
+      const last = overlay(title); last.body.append(make('pre', 'fb-body', resultText(res.payload)));
+      const wrongItems = wrongItemsOf(res);
+      last.foot.append(btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(res.payload)); flash(ok ? '已复制' : '复制失败，请手动选中文字复制', !ok); }));
+      if (wrongItems.length) last.foot.append(btn('fb-btn vq-retry-wrong', '重抽错词', () => { last.close(); startQuiz(student, phase, JSON.parse(JSON.stringify(wrongItems)), redraw, {reQuiz: true}); }, '把本次答错的 ' + wrongItems.length + ' 项再抽一遍'));
+      last.foot.append(btn('fb-btn', '关闭', last.close));
     };
     const actions = make('div', 'vq-actions');
     const prevShownInSupp = phase === '补充' && previousResult?.value && suppCompleted.some(r => sessionKey(r) === sessionKey(previousResult.value));
-    if (previousResult && !(phase === '补充' ? prevShownInSupp : doneNow)) actions.append(btn('', '上次结果', () => {
-      const last = overlay('上次抽背结果'); last.body.append(make('pre', 'fb-body', resultText(previousResult.value.payload)));
-      last.foot.append(btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(previousResult.value.payload)); flash(ok ? '已复制' : '复制失败，请手动选中文字复制', !ok); }), btn('fb-btn', '关闭', last.close));
-    }));
+    if (previousResult && !(phase === '补充' ? prevShownInSupp : doneNow)) actions.append(btn('', '上次结果', () => showResult(previousResult.value, '上次抽背结果')));
     actions.append(btn('', '选词', () => {
       if (phase === '补充' && legacyDoneSupp) {
         const nextItems = [];
@@ -3341,10 +3405,14 @@
     const renderDoneRow = (res, labelText, fallbackItems) => {
       const batchItems = res.payload?.items || fallbackItems || [];
       const marks = res.payload?.marks || [], right = marks.filter(m => m.result === 'right').length, wrong = marks.filter(m => m.result === 'wrong').length, unmarked = Math.max(0, batchItems.length - marks.length);
+      const wrongItems = wrongItemsOf(res, fallbackItems);
       const row = make('div', 'vq-ready vq-done');
       const tally = make('span', 'vq-tally'); tally.append(make('span', 'ok', '对 ' + right), make('span', 'bad', '错 ' + wrong)); if (unmarked > 0) tally.append(make('span', '', '未标 ' + unmarked));
       const info = make('div', 'vq-result-info'), rowActions = make('div', 'vq-result-actions');
       info.append(make('span', 'vq-done-mark', '✓ 已完成'), make('span', 'vq-label', labelText), tally);
+      if (wrongItems.length) {
+        rowActions.append(btn('fb-btn vq-retry-wrong', '重抽错词', () => startQuiz(student, phase, JSON.parse(JSON.stringify(wrongItems)), redraw, {reQuiz: true}), '把本次答错的 ' + wrongItems.length + ' 项再抽一遍'));
+      }
       rowActions.append(btn('fb-btn vq-again', '再抽一次', () => startQuiz(student, phase, JSON.parse(JSON.stringify(batchItems)), redraw, phase === '补充' && (draft || hasPendingSupp) ? {keepDraft: true} : {})),
         btn('fb-btn', '查看', () => showResult(res)),
         btn('fb-btn pri', '复制结果', async () => { const ok = await copyPlain(resultText(res.payload)); if (ok) flash('已复制'); else showResult(res); }));
