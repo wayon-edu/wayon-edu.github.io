@@ -1216,7 +1216,7 @@
     else if (/未知/.test(text)) delete left[m];
     const ended = endedOnly(m); if (ended !== undefined && left[m] !== undefined) left[m] = ended;
   };
-  // 抽背 / 完成 are only due once the lesson is over (as the 反馈 badge): a 17:00 lesson
+  // 抽背 is only due once the lesson is over (as the 反馈 badge): a 17:00 lesson
   // does not light the badge in the morning. A row with no clock time (自习) counts as before.
   const bjNow = () => new Date().toLocaleTimeString('en-GB', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit'});
   const lessonEnded = time => {
@@ -1231,8 +1231,9 @@
         if (qzDay !== page.today) return undefined;
         return quizRows(rows).filter(r => lessonEnded(r[1]) && !(qget(qk(r)).pre && qget(qk(r)).post)).length;
       }
-      const own = typeof study !== 'undefined' ? study.cards(page.today).filter(c => lessonEnded(c.time) && !study.copied(page.today, c.id, 'done')).length : 0;
-      return rows.filter(r => lessonEnded(r[1]) && !get(r[0]).c).length + own;
+      // 用户 2026-11-21：「完成」= 今天还没复制发送完成情况的学生数，不管下没下课（列表里有几个未发送就显示几）。
+      const own = typeof study !== 'undefined' ? study.cards(page.today).filter(c => !study.copied(page.today, c.id, 'done')).length : 0;
+      return rows.filter(r => !get(r[0]).c).length + own;
     } catch { return undefined; }
   }
   const airconSaved = day => {
