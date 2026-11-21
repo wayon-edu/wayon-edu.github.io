@@ -18,6 +18,16 @@
     const n = num(v);
     return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
   };
+  const fmtHours = v => {
+    const n = num(v);
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+  };
+  const fmtBytes = b => {
+    const n = num(b);
+    if (n <= 0) return '';
+    if (n < 1048576) return `${Math.max(1, Math.round(n / 1024))} KB`;
+    return `${Math.round(n / 104857) / 10} MB`;
+  };
 
   const PBKDF2_ITERATIONS = 210000;
   const IDLE_LOCK_MS = 10 * 60 * 1000;
@@ -58,6 +68,9 @@
   let actionInfo = '';
   let salaryMasked = true;
   let selectedMonth = '';
+  let billingView = 'monthly'; // monthly | longterm
+  let billingTeacherFilter = '';
+  let billingSearchQuery = '';
   let leaveFilter = 'all';
   let leaveQuery = '';
   let profileFilter = '在读';
@@ -154,12 +167,57 @@
     .ldg-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
     .ldg-badge.ok{background:var(--done-bg,#edf7ef);color:var(--done,#248a3d)}
     .ldg-badge.warn{background:var(--warning-bg,#fff8e8);color:var(--warning-fg,#805300)}
+    .ldg-badge.danger{background:var(--bad-bg,#fff1f0);color:var(--bad,#d93025)}
     .ldg-badge.muted{background:var(--code-bg,#f5f5f7);color:var(--muted,#6e6e73)}
+    .ldg-subbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .ldg-backup-tag{font-size:12px;color:var(--muted,#6e6e73);padding:4px 10px;border-radius:999px;background:var(--code-bg,#f5f5f7);border:1px solid var(--line,rgba(30,30,40,.08))}
+    .ldg-month-select{min-height:36px;padding:6px 10px;border-radius:10px;border:1px solid var(--line-strong,rgba(30,30,40,.18));background:var(--card,#fff);color:var(--fg,#1d1d1f);font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer}
+    .ldg-bar-list{display:flex;flex-direction:column;gap:8px}
+    .ldg-bar-row{display:flex;flex-direction:column;gap:6px;width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line,rgba(30,30,40,.09));background:var(--code-bg,#f5f5f7);color:var(--fg,#1d1d1f);text-align:left;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+    .ldg-bar-row:hover{border-color:var(--ldg-accent-bg)}
+    .ldg-bar-row.on{border-color:var(--ldg-accent-bg);background:color-mix(in srgb,var(--ldg-accent-bg) 10%,var(--card,#fff))}
+    .ldg-bar-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .ldg-bar-name{font-size:14px;font-weight:620;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .ldg-bar-meta{font-size:12px;color:var(--muted,#6e6e73);font-weight:450}
+    .ldg-bar-hrs{font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--accent,#0071e3);white-space:nowrap}
+    .ldg-buckets{display:flex;gap:5px;flex-wrap:wrap}
+    .ldg-bucket{padding:1px 7px;border-radius:999px;font-size:11.5px;background:var(--card,#fff);border:1px solid var(--line,rgba(30,30,40,.1));color:var(--fg-secondary,#515156);font-variant-numeric:tabular-nums}
+    progress.ldg-progress{appearance:none;border:0 solid;overflow:clip;width:100%;height:8px;--progress-bar-radius:999px;border-radius:var(--progress-bar-radius);background:var(--line,rgba(30,30,40,.1));--progress-bar-fill:var(--ldg-accent-bg)}
+    progress.ldg-progress.ok{--progress-bar-fill:var(--done,#248a3d)}
+    progress.ldg-progress.warn{--progress-bar-fill:#d97706}
+    progress.ldg-progress.danger{--progress-bar-fill:var(--bad,#d93025)}
+    progress.ldg-progress::-webkit-progress-bar{background:transparent}
+    progress.ldg-progress::-webkit-progress-value{background:var(--progress-bar-fill);border-radius:var(--progress-bar-radius);transition:inline-size .25s}
+    progress.ldg-progress::-moz-progress-bar{background:var(--progress-bar-fill);border-radius:var(--progress-bar-radius);transition:inline-size .25s}
     .ldg-files{display:flex;gap:8px;flex-wrap:wrap}
     .ldg-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-    .ldg-card-img{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;border:1px solid var(--line,rgba(30,30,40,.09));background:var(--code-bg,#f5f5f7)}
-    .ldg-card-img img{width:100%;height:auto;border-radius:8px;display:block}
-    .ldg-card-img span{font-size:12px;color:var(--fg-secondary,#515156);word-break:break-all}
+    .ldg-card-img{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--line,rgba(30,30,40,.09));background:var(--code-bg,#f5f5f7)}
+    .ldg-card-thumb{padding:0;border:0;background:var(--card,#fff);border-radius:8px;overflow:hidden;cursor:zoom-in;width:100%;aspect-ratio:4 / 3;display:flex;align-items:center;justify-content:center}
+    .ldg-card-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+    .ldg-card-img span{font-size:12px;color:var(--fg-secondary,#515156);word-break:break-all;line-height:1.35}
+    .ldg-card-ops{display:flex;gap:6px;flex-wrap:wrap}
+    .ldg-subtotal{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted,#6e6e73);font-variant-numeric:tabular-nums}
+    .ldg-lt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    .ldg-lt-card{padding:16px;border-radius:16px;background:var(--card,#fff);border:1px solid var(--line,rgba(30,30,40,.09));display:flex;flex-direction:column;gap:10px}
+    .ldg-lt-card.danger{border-color:var(--bad-border,#f1c8c5)}
+    .ldg-lt-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .ldg-lt-title{font-size:16px;font-weight:650;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .ldg-lt-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .ldg-lt-num{padding:8px 10px;border-radius:10px;background:var(--code-bg,#f5f5f7);display:flex;flex-direction:column;gap:2px}
+    .ldg-lt-num small{font-size:11.5px;color:var(--muted,#6e6e73)}
+    .ldg-lt-num strong{font-size:16px;font-weight:650;font-variant-numeric:tabular-nums}
+    .ldg-lt-num strong.danger{color:var(--bad,#d93025)}
+    .ldg-lt-num strong.warn{color:var(--warning-fg,#805300)}
+    .ldg-lt-num strong.ok{color:var(--done,#248a3d)}
+    .ldg-lt-note{margin:0;font-size:12px;color:var(--muted,#6e6e73);line-height:1.45}
+    .ldg-summary-details>summary{cursor:pointer;font-weight:620;font-size:15px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .ldg-summary-details>summary::-webkit-details-marker{display:none}
+    .ldg-summary-details>summary::after{content:"展开 ▾";font-size:12px;font-weight:500;color:var(--muted,#6e6e73)}
+    .ldg-summary-details[open]>summary::after{content:"收起 ▴"}
+    dialog.ldg-dialog.ldg-lightbox{max-width:min(940px,calc(100vw - 24px));max-height:min(94dvh,920px)}
+    .ldg-lightbox-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .ldg-lightbox-stage{display:flex;align-items:center;justify-content:center;min-height:220px;background:var(--code-bg,#f5f5f7);border-radius:12px;padding:10px;overflow:auto}
+    .ldg-lightbox-stage img{max-width:100%;max-height:70dvh;width:auto;height:auto;object-fit:contain;border-radius:6px;display:block}
     .ldg-md{display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.6}
     .ldg-md h1,.ldg-md h2,.ldg-md h3,.ldg-md h4,.ldg-md h5,.ldg-md h6{margin:8px 0 2px;font-weight:650}
     .ldg-md h1{font-size:18px}.ldg-md h2{font-size:15.5px}.ldg-md h3{font-size:14.5px}.ldg-md h4,.ldg-md h5,.ldg-md h6{font-size:13.5px;color:var(--fg-secondary,#515156)}
@@ -196,8 +254,9 @@
     }
     @media(pointer:coarse),(max-width:599px){
       .ldg-btn,.ldg-btn.sm,.ldg-pill,.ldg-tab{min-height:44px}
-      .ldg-search,.ldg-field input,.ldg-field select,.ldg-field textarea{font-size:16px;min-height:44px}
+      .ldg-search,.ldg-month-select,.ldg-field input,.ldg-field select,.ldg-field textarea{font-size:16px;min-height:44px}
       .ldg-field-grid{grid-template-columns:1fr}
+      .ldg-lt-nums{grid-template-columns:repeat(3,1fr)}
     }
   `;
   document.head.append(style);
@@ -211,6 +270,9 @@
     store.profiles = [];
     store.docs = [];
     selectedMonth = '';
+    billingView = 'monthly';
+    billingTeacherFilter = '';
+    billingSearchQuery = '';
     signedUrls.clear();
     actionError = '';
     actionInfo = '';
@@ -679,6 +741,7 @@
     dlg.onclose = null;
     if (dlg.open) dlg.close();
     dlg.returnValue = '';
+    dlg.classList.remove('ldg-lightbox');
     dlg.setAttribute('closedby', closedBy);
     dlg.textContent = '';
     return dlg;
@@ -1059,6 +1122,209 @@
     return data.signedUrl;
   }
 
+  async function sha256Hex(arrayBuffer) {
+    const subtle = globalThis.crypto?.subtle;
+    if (subtle) {
+      const digest = await subtle.digest('SHA-256', arrayBuffer);
+      return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    const rand = new Uint8Array(16);
+    globalThis.crypto?.getRandomValues?.(rand);
+    return [...rand].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function downloadSignedFile(fileObj, btn) {
+    if (btn && btn.disabled) return;
+    if (btn) btn.disabled = true;
+    clearActionError();
+    try {
+      const u = await getSignedUrl(fileObj.path);
+      if (!u) throw new Error('获取签名下载链接失败');
+      let blobUrl = '';
+      if (typeof globalThis.fetch === 'function' && typeof globalThis.URL?.createObjectURL === 'function') {
+        try {
+          const resp = await globalThis.fetch(u);
+          if (resp && resp.ok) {
+            const blob = await resp.blob();
+            blobUrl = globalThis.URL.createObjectURL(blob);
+          }
+        } catch {}
+      }
+      const a = make('a');
+      a.href = blobUrl || u;
+      a.download = fileObj.name || 'download';
+      if (!blobUrl) {
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+      }
+      a.click();
+      if (blobUrl) {
+        setTimeout(() => { try { globalThis.URL.revokeObjectURL(blobUrl); } catch {} }, 10000);
+      }
+    } catch (err) {
+      showActionError('下载失败：' + String(err?.message || err || '请稍后重试'));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function openImageLightbox(fileObj) {
+    const dlg = prepareModal('any');
+    dlg.classList.add('ldg-lightbox');
+    const body = make('div', 'ldg-dialog-body');
+    const head = make('div', 'ldg-lightbox-head');
+    const h = make('h3', '', fileObj.name || '老师核对卡预览');
+    h.id = 'ldg-dialog-title';
+    const closeBtn = make('button', 'ldg-btn sm', '关闭');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('autofocus', '');
+    closeBtn.onclick = () => dlg.close('close');
+    head.append(h, closeBtn);
+
+    const stage = make('div', 'ldg-lightbox-stage');
+    const status = make('span', 'ldg-sub', '正在加载高清原图…');
+    const img = make('img');
+    img.alt = fileObj.name || '老师核对卡';
+    img.hidden = true;
+    stage.append(status, img);
+
+    const foot = make('div', 'ldg-dialog-foot');
+    const dlBtn = make('button', 'ldg-btn primary', '⬇️ 下载原图');
+    dlBtn.type = 'button';
+    dlBtn.onclick = () => void downloadSignedFile(fileObj, dlBtn);
+    const openBtn = make('button', 'ldg-btn', '新标签打开');
+    openBtn.type = 'button';
+    openBtn.onclick = async () => {
+      if (openBtn.disabled) return;
+      openBtn.disabled = true;
+      try {
+        const u = await getSignedUrl(fileObj.path);
+        if (!u) throw new Error('获取签名图片链接失败');
+        globalThis.open?.(u, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        showActionError('打开原图失败：' + String(err?.message || err || '请稍后重试'));
+      } finally {
+        openBtn.disabled = false;
+      }
+    };
+    foot.append(openBtn, dlBtn);
+    body.append(head, stage, foot);
+    dlg.append(body);
+    dlg.addEventListener('close', () => { dlg.returnValue = ''; }, {once: true});
+    dlg.showModal();
+
+    void getSignedUrl(fileObj.path).then(u => {
+      if (!dlg.open) return;
+      if (!u) {
+        status.textContent = '无法获取图片链接，请稍后重试。';
+        return;
+      }
+      img.src = u;
+      img.hidden = false;
+      status.hidden = true;
+    }).catch(() => {
+      if (dlg.open) status.textContent = '加载原图失败，请稍后重试。';
+    });
+  }
+
+  function openBillingUploadDialog(curMonth) {
+    const dlg = prepareModal('closerequest');
+    const form = make('form', 'ldg-dialog-body');
+    form.noValidate = true;
+    const h = make('h3', '', `补传/替换附件 · ${curMonth.title || curMonth.year_month}`);
+    h.id = 'ldg-dialog-title';
+    const desc = make('p', '', '上传的 Excel 课时表或老师核对卡图片会保存到你的私有 Supabase Storage（wayon-billing），同名文件将自动替换为最新版。');
+    desc.style.margin = '0'; desc.style.fontSize = '13px'; desc.style.color = 'var(--fg-secondary)';
+
+    const fFile = make('div', 'ldg-field');
+    const lbl = make('label', '', '选择文件（支持多选，单个不超过 20 MB）');
+    lbl.setAttribute('for', 'ldg-upload-input');
+    const inp = make('input');
+    inp.id = 'ldg-upload-input';
+    inp.type = 'file';
+    inp.multiple = true;
+    inp.accept = '.xlsx,.xls,.png,.jpg,.jpeg,.webp,.pdf';
+    inp.setAttribute('autofocus', '');
+    fFile.append(lbl, inp);
+
+    const errEl = make('p', 'ldg-form-err', '');
+    errEl.setAttribute('role', 'alert');
+    const foot = make('div', 'ldg-dialog-foot');
+    let uploading = false;
+    const cancel = make('button', 'ldg-btn', '取消');
+    cancel.type = 'button';
+    cancel.onclick = () => { if (!uploading) dlg.close(); };
+    const submit = make('button', 'ldg-btn primary', '上传并绑定本月');
+    submit.type = 'submit';
+    foot.append(cancel, submit);
+    form.append(h, desc, fFile, errEl, foot);
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (uploading) return;
+      errEl.textContent = '';
+      const picked = [...(inp.files || [])];
+      if (!picked.length) { errEl.textContent = '请先选择至少一个文件'; inp.focus?.(); return; }
+      const maxBytes = 20 * 1024 * 1024;
+      for (const f of picked) {
+        if (f.size <= 0 || f.size > maxBytes) {
+          errEl.textContent = `文件「${f.name}」大小超出限制（需在 1 B 至 20 MB 之间）`;
+          return;
+        }
+      }
+      const c = client();
+      if (!c) { errEl.textContent = '尚未登录云端，请先登录后重试'; return; }
+      uploading = true;
+      submit.disabled = true;
+      cancel.disabled = true;
+      submit.textContent = '正在上传…';
+      try {
+        const nextFiles = Array.isArray(curMonth.files) ? curMonth.files.map(x => ({...x})) : [];
+        for (const f of picked) {
+          const buf = typeof f.arrayBuffer === 'function' ? await f.arrayBuffer() : new Uint8Array(0).buffer;
+          const sha = await sha256Hex(buf);
+          const extMatch = String(f.name || '').match(/(\.[a-z0-9]{1,8})$/i);
+          const ext = extMatch ? extMatch[1].toLowerCase() : '.bin';
+          const storagePath = `${curMonth.year_month}/${sha.slice(0, 12)}${ext}`;
+          const upRes = await c.storage.from('wayon-billing').upload(storagePath, f, {
+            upsert: true,
+            contentType: f.type || undefined,
+          });
+          if (upRes?.error) throw upRes.error;
+          const isImg = /\.(png|jpe?g|webp)$/i.test(ext);
+          const entry = {
+            name: f.name,
+            path: storagePath,
+            sha256: sha,
+            kind: isImg ? 'image' : 'file',
+            size: f.size,
+            is_master: false,
+          };
+          const idx = nextFiles.findIndex(x => x.name === f.name);
+          if (idx >= 0) nextFiles[idx] = {...nextFiles[idx], ...entry};
+          else nextFiles.push(entry);
+          signedUrls.delete(storagePath);
+        }
+        const updRes = await c.from('wayon_billing_months')
+          .update({files: nextFiles, verified_at: new Date().toISOString()})
+          .eq('year_month', curMonth.year_month);
+        if (updRes?.error) throw updRes.error;
+        dlg.close();
+        showActionInfo(`已上传 ${picked.length} 个文件到「${curMonth.title || curMonth.year_month}」`);
+        await loadAll({force: true});
+      } catch (err) {
+        errEl.textContent = '上传失败：' + String(err?.message || err || '请稍后重试');
+      } finally {
+        uploading = false;
+        submit.disabled = false;
+        cancel.disabled = false;
+        submit.textContent = '上传并绑定本月';
+      }
+    };
+    dlg.append(form);
+    dlg.showModal();
+  }
+
   function openLeaveDialog(existing) {
     const dlg = prepareModal('closerequest');
     const form = make('form', 'ldg-dialog-body');
@@ -1294,81 +1560,310 @@
     dlg.showModal();
   }
 
-  function renderBillingTab(wrap) {
+  function renderLongTermView(wrap) {
+    const ltDoc = store.docs.find(d => d.slug === 'long-term-student-ledger');
+    if (!ltDoc) {
+      wrap.append(make('div', 'ldg-empty', '暂未同步长期学员台账数据，月末自动归档或刷新后会显示在此处。'));
+      return;
+    }
+    let data = null;
+    try { data = JSON.parse(ltDoc.body_md || '{}'); } catch { data = null; }
+    const studentsMap = (data && data.students && typeof data.students === 'object') ? data.students : null;
+    if (!studentsMap || !Object.keys(studentsMap).length) {
+      const fallback = make('div', 'ldg-card');
+      fallback.append(make('h3', '', ltDoc.title || '长期重点学员课时台账'), renderMarkdownNode(ltDoc.body_md, ltDoc.title));
+      wrap.append(fallback);
+      return;
+    }
+
+    const attList = Array.isArray(ltDoc.attachments) ? ltDoc.attachments : [];
+    const topBar = make('div', 'ldg-toolbar');
+    const titleWrap = make('span', 'ldg-sub', `共追踪 ${Object.keys(studentsMap).length} 位/组长期重点学员 · 余额 ≤ 10h 自动标红预警`);
+    topBar.append(titleWrap);
+    attList.forEach(att => {
+      const sz = fmtBytes(att.size);
+      const dlBtn = make('button', 'ldg-btn primary', `⬇️ 下载 ${att.name}${sz ? ` (${sz})` : ''}`);
+      dlBtn.type = 'button';
+      dlBtn.onclick = () => void downloadSignedFile(att, dlBtn);
+      topBar.append(dlBtn);
+    });
+    wrap.append(topBar);
+
+    const grid = make('div', 'ldg-lt-grid');
+    const allMonthSet = new Set();
+    const entries = Object.entries(studentsMap).map(([name, info]) => {
+      const months = (info && info.months && typeof info.months === 'object') ? info.months : {};
+      Object.keys(months).forEach(k => allMonthSet.add(k));
+      const used = Math.round(Object.values(months).reduce((s, v) => s + num(v), 0) * 100) / 100;
+      const total = num(info?.total);
+      const remaining = Math.round((total - used) * 100) / 100;
+      return {name, info: info || {}, months, used, total, remaining};
+    });
+
+    entries.forEach(({name, info, used, total, remaining}) => {
+      const level = remaining <= 10 ? 'danger' : (remaining <= 20 ? 'warn' : 'ok');
+      const card = make('div', 'ldg-lt-card' + (level === 'danger' ? ' danger' : ''));
+      const head = make('div', 'ldg-lt-head');
+      const title = make('div', 'ldg-lt-title');
+      title.append(make('span', '', name));
+      if (info.plan) title.append(make('span', 'ldg-badge muted', info.plan));
+      if (info.group_class) title.append(make('span', 'ldg-badge muted', `班课 ${info.group_class}`));
+      const badgeText = level === 'danger' ? `⚠️ 仅剩 ${fmtHours(remaining)}h` : (level === 'warn' ? `余额偏低 · ${fmtHours(remaining)}h` : '余额充足');
+      head.append(title, make('span', 'ldg-badge ' + level, badgeText));
+
+      const nums = make('div', 'ldg-lt-nums');
+      const addNum = (label, val, cls = '') => {
+        const box = make('div', 'ldg-lt-num');
+        box.append(make('small', '', label), make('strong', cls, val));
+        nums.append(box);
+      };
+      addNum('总购课时', `${fmtHours(total)}h`);
+      addNum('累计消耗', `${fmtHours(used)}h`);
+      addNum('当前剩余', `${fmtHours(remaining)}h`, level);
+
+      const pct = total > 0 ? Math.min(100, Math.max(0, Math.round((used / total) * 100))) : 0;
+      const prog = make('progress', 'ldg-progress ' + level);
+      prog.max = total > 0 ? total : 100;
+      prog.value = Math.min(prog.max, Math.max(0, used));
+      prog.setAttribute('aria-label', `${name} 课时消耗进度 ${pct}%，已消耗 ${fmtHours(used)} 课时，共 ${fmtHours(total)} 课时`);
+
+      const pctNote = make('div', 'ldg-subtotal');
+      pctNote.append(make('span', '', `已消耗 ${pct}%`), make('span', '', `${fmtHours(used)} / ${fmtHours(total)}h`));
+      card.append(head, nums, prog, pctNote);
+      if (info.note) card.append(make('p', 'ldg-lt-note', info.note));
+      grid.append(card);
+    });
+    wrap.append(grid);
+
+    const sortedMonths = [...allMonthSet].sort();
+    if (sortedMonths.length) {
+      const mCard = make('div', 'ldg-card');
+      mCard.append(make('h3', '', '📊 长期学员按月消耗明细'));
+      const headers = [
+        '学员',
+        '方案',
+        {label: '总课时', num: true},
+        ...sortedMonths.map(ym => ({label: ym.slice(2), num: true})),
+        {label: '累计消耗', num: true},
+        {label: '剩余', num: true},
+      ];
+      const rows = entries.map(({name, info, months, used, total, remaining}) => [
+        name,
+        info.plan || '-',
+        fmtHours(total),
+        ...sortedMonths.map(ym => (months[ym] !== undefined ? fmtHours(months[ym]) : '-')),
+        fmtHours(used),
+        fmtHours(remaining),
+      ]);
+      mCard.append(renderResponsiveTable('长期学员按月消耗明细', headers, rows));
+      if (Array.isArray(data.notes) && data.notes.length) {
+        const ul = make('ul', 'ldg-lt-note');
+        ul.style.paddingLeft = '18px';
+        data.notes.forEach(n => ul.append(make('li', '', String(n))));
+        mCard.append(ul);
+      }
+      wrap.append(mCard);
+    }
+  }
+
+  function renderMonthlyBillingView(wrap) {
     if (!store.billing.length) {
       wrap.append(make('div', 'ldg-empty', '暂无已归档的月度课时记录。月末例行运行后会自动写入此处。'));
       return;
     }
-    const bar = make('div', 'ldg-toolbar');
-    const pills = make('div', 'ldg-pills');
-    store.billing.forEach(m => {
-      const b = make('button', 'ldg-pill' + (m.year_month === selectedMonth ? ' on' : ''), m.title || m.year_month);
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(m.year_month === selectedMonth));
-      b.onclick = () => { selectedMonth = m.year_month; render(); };
-      pills.append(b);
-    });
-    bar.append(pills);
-    wrap.append(bar);
-
     const cur = store.billing.find(m => m.year_month === selectedMonth) || store.billing[0];
     if (!cur) return;
-    const comm = cur.meta?.commission || {};
-    if (comm.total || cur.meta?.hours) {
+    selectedMonth = cur.year_month;
+
+    const selectMonth = ym => {
+      if (ym === selectedMonth) return;
+      selectedMonth = ym;
+      billingTeacherFilter = '';
+      billingSearchQuery = '';
+      render();
+    };
+
+    const bar = make('div', 'ldg-toolbar');
+    const mSelect = make('select', 'ldg-month-select');
+    mSelect.id = 'ldg-month-select';
+    mSelect.setAttribute('aria-label', '选择归档月份');
+    store.billing.forEach(m => {
+      const opt = make('option');
+      opt.value = m.year_month;
+      const hrs = m.meta?.hours !== undefined ? ` · ${fmtHours(m.meta.hours)}h` : '';
+      const imgCnt = Array.isArray(m.files) ? m.files.filter(f => f.kind === 'image').length : 0;
+      const cardTag = imgCnt ? ` · ${imgCnt}卡` : '';
+      opt.textContent = `${m.title || m.year_month}${hrs}${cardTag}`;
+      if (m.year_month === selectedMonth) opt.selected = true;
+      mSelect.append(opt);
+    });
+    mSelect.addEventListener('change', () => selectMonth(mSelect.value));
+
+    const pills = make('div', 'ldg-pills');
+    store.billing.slice(0, 6).forEach(m => {
+      const label = (m.title || m.year_month).replace(/\s*课时汇总$/, '');
+      const b = make('button', 'ldg-pill' + (m.year_month === selectedMonth ? ' on' : ''), label);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(m.year_month === selectedMonth));
+      b.onclick = () => selectMonth(m.year_month);
+      pills.append(b);
+    });
+
+    const uploadBtn = make('button', 'ldg-btn', '📤 补传/替换文件');
+    uploadBtn.id = 'ldg-billing-upload-btn';
+    uploadBtn.type = 'button';
+    uploadBtn.onclick = () => openBillingUploadDialog(cur);
+
+    bar.append(mSelect, pills, uploadBtn);
+    wrap.append(bar);
+
+    const meta = cur.meta || {};
+    const comm = meta.commission || {};
+    const files = Array.isArray(cur.files) ? cur.files : [];
+    const docs = files.filter(f => f.kind !== 'image');
+    const imgs = files.filter(f => f.kind === 'image');
+    const tBreakdown = Array.isArray(meta.teacher_breakdown) ? meta.teacher_breakdown : [];
+    const sBreakdown = Array.isArray(meta.student_breakdown) ? meta.student_breakdown : [];
+    const records = Array.isArray(meta.records) ? meta.records : [];
+
+    if (comm.total || meta.hours || records.length) {
       const stats = make('div', 'ldg-stats');
       const addStat = (l, v, cls = '') => {
         const s = make('div', 'ldg-stat');
         s.append(make('span', 'ldg-stat-label', l), make('span', 'ldg-stat-val ' + cls, v));
         stats.append(s);
       };
-      addStat('全月排课 / 课时', `${cur.meta?.rows ?? '-'} 节 · ${cur.meta?.hours ?? '-'}h`);
-      addStat('Leo 总结算课时', `${comm.total ?? '-'}h`, 'accent');
-      addStat('提成课时 / 阶梯', `${comm.extra ?? '-'}h · 第 ${comm.tiers ?? 0} 档`, 'ok');
-      addStat('当前余量 / 距下档', `余 ${comm.rem ?? 0}h · 差 ${comm.gap ?? 0}h`, num(comm.gap) > 0 && num(comm.gap) <= 10 ? 'warn' : '');
+      addStat('全月排课 / 课时', `${meta.rows ?? records.length} 节 · ${fmtHours(meta.hours ?? 0)}h`);
+      if (comm.total) {
+        addStat('Leo 总结算课时', `${fmtHours(comm.total)}h`, 'accent');
+        addStat('提成课时 / 阶梯', `${fmtHours(comm.extra ?? 0)}h · 第 ${comm.tiers ?? 0} 档`, 'ok');
+        addStat('当前余量 / 距下档', `余 ${fmtHours(comm.rem ?? 0)}h · 差 ${fmtHours(comm.gap ?? 0)}h`, num(comm.gap) > 0 && num(comm.gap) <= 10 ? 'warn' : '');
+      } else {
+        const tCount = tBreakdown.length || (Array.isArray(meta.teachers) ? meta.teachers.length : num(meta.teachers));
+        addStat('任课老师数', `${tCount || '-'} 位`, 'accent');
+        addStat('活跃学员数', `${sBreakdown.length || '-'} 位`, 'ok');
+        addStat('永久云端附件', `${docs.length} 表 · ${imgs.length} 核对卡`);
+      }
       wrap.append(stats);
     }
 
-    const files = Array.isArray(cur.files) ? cur.files : [];
-    const docs = files.filter(f => f.kind !== 'image');
-    const imgs = files.filter(f => f.kind === 'image');
-    if (docs.length) {
+    const barBtnMap = new Map();
+    const cardsSlot = make('div', 'ldg-rows-slot');
+    cardsSlot.id = 'ldg-billing-cards-slot';
+    const recordsSlot = make('div', 'ldg-rows-slot');
+    recordsSlot.id = 'ldg-billing-records-slot';
+    let teacherSelectEl = null;
+    let clearFilterBtn = null;
+
+    const syncTeacherFilterUI = () => {
+      for (const [tName, rowBtn] of barBtnMap) {
+        const active = billingTeacherFilter === tName;
+        rowBtn.classList.toggle('on', active);
+        rowBtn.setAttribute('aria-pressed', String(active));
+      }
+      if (teacherSelectEl && teacherSelectEl.value !== billingTeacherFilter) {
+        teacherSelectEl.value = billingTeacherFilter;
+      }
+      if (clearFilterBtn) {
+        clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+      }
+      renderCardsSection();
+      renderRecordsRows();
+    };
+
+    if (tBreakdown.length) {
       const card = make('div', 'ldg-card');
-      card.append(make('h3', '', '📎 Excel 表格下载'));
-      const row = make('div', 'ldg-files');
-      docs.forEach(f => {
-        const btn = make('button', 'ldg-btn', '下载 ' + f.name);
-        btn.type = 'button';
-        btn.onclick = async () => {
-          if (btn.disabled) return;
-          btn.disabled = true;
-          clearActionError();
-          try {
-            const u = await getSignedUrl(f.path);
-            if (!u) throw new Error('获取签名下载链接失败');
-            const a = make('a'); a.href = u; a.download = f.name; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.click();
-          } catch (err) {
-            showActionError('下载失败：' + String(err?.message || err || '请稍后重试'));
-          } finally {
-            btn.disabled = false;
-          }
+      const head = make('div', 'ldg-head');
+      head.append(
+        make('h3', '', '📊 老师课时分布（点击老师筛选下方核对卡与明细）'),
+        make('span', 'ldg-sub', `共 ${tBreakdown.length} 位老师 · 合计 ${fmtHours(meta.hours ?? 0)}h`)
+      );
+      const list = make('div', 'ldg-bar-list');
+      const maxHrs = Math.max(1, ...tBreakdown.map(t => num(t.total)));
+      tBreakdown.forEach(t => {
+        const rowBtn = make('button', 'ldg-bar-row' + (billingTeacherFilter === t.teacher ? ' on' : ''));
+        rowBtn.type = 'button';
+        rowBtn.setAttribute('aria-pressed', String(billingTeacherFilter === t.teacher));
+        rowBtn.onclick = () => {
+          billingTeacherFilter = billingTeacherFilter === t.teacher ? '' : t.teacher;
+          syncTeacherFilterUI();
         };
-        row.append(btn);
+        const top = make('div', 'ldg-bar-top');
+        const nameBox = make('span', 'ldg-bar-name');
+        nameBox.append(make('span', '', t.teacher), make('span', 'ldg-bar-meta', `${t.classes} 节`));
+        const hrsEl = make('span', 'ldg-bar-hrs', `${fmtHours(t.total)}h`);
+        top.append(nameBox, hrsEl);
+
+        const prog = make('progress', 'ldg-progress');
+        prog.max = maxHrs;
+        prog.value = num(t.total);
+        prog.setAttribute('aria-label', `${t.teacher} 本月 ${fmtHours(t.total)} 课时`);
+
+        const buckets = make('div', 'ldg-buckets');
+        Object.entries(t.buckets || {}).forEach(([bk, bv]) => {
+          if (num(bv) > 0) buckets.append(make('span', 'ldg-bucket', `${bk} ${fmtHours(bv)}h`));
+        });
+
+        rowBtn.append(top, prog);
+        if (buckets.childNodes.length) rowBtn.append(buckets);
+        barBtnMap.set(t.teacher, rowBtn);
+        list.append(rowBtn);
       });
-      card.append(row);
+      card.append(head, list);
       wrap.append(card);
     }
-    if (imgs.length) {
+
+    function renderCardsSection() {
+      cardsSlot.textContent = '';
+      if (!imgs.length) return;
+      const shown = billingTeacherFilter
+        ? imgs.filter(f => String(f.name || '').includes(billingTeacherFilter))
+        : imgs;
       const card = make('div', 'ldg-card');
-      card.append(make('h3', '', '🪪 老师核对卡（点击预览/长按保存）'));
+      const head = make('div', 'ldg-head');
+      const hTitle = billingTeacherFilter
+        ? `🪪 老师核对卡 · ${billingTeacherFilter}（${shown.length}/${imgs.length} 张）`
+        : `🪪 老师课时核对卡（${imgs.length} 张 · 点击放大 / 一键下载原图）`;
+      head.append(make('h3', '', hTitle));
+      if (billingTeacherFilter) {
+        const showAll = make('button', 'ldg-btn sm', '显示全部核对卡');
+        showAll.type = 'button';
+        showAll.onclick = () => { billingTeacherFilter = ''; syncTeacherFilterUI(); };
+        head.append(showAll);
+      }
+      card.append(head);
+
+      if (!shown.length) {
+        card.append(make('div', 'ldg-empty', `本月暂无「${billingTeacherFilter}」对应的核对卡图片，可点击「显示全部核对卡」或「📤 补传/替换文件」。`));
+        cardsSlot.append(card);
+        return;
+      }
+
       const grid = make('div', 'ldg-cards-grid');
-      imgs.forEach(f => {
+      shown.forEach(f => {
         const item = make('div', 'ldg-card-img');
-        const img = make('img'); img.alt = f.name; img.loading = 'lazy';
+        const thumbBtn = make('button', 'ldg-card-thumb');
+        thumbBtn.type = 'button';
+        thumbBtn.setAttribute('aria-label', `放大预览 ${f.name}`);
+        thumbBtn.onclick = () => openImageLightbox(f);
+        const img = make('img');
+        img.alt = f.name;
+        img.loading = 'lazy';
+        thumbBtn.append(img);
+
         const cap = make('span', '', f.name);
-        const dl = make('button', 'ldg-btn sm', '打开原图'); dl.type = 'button';
-        dl.onclick = async () => {
-          if (dl.disabled) return;
-          dl.disabled = true;
+        const ops = make('div', 'ldg-card-ops');
+        const zoomBtn = make('button', 'ldg-btn sm', '放大');
+        zoomBtn.type = 'button';
+        zoomBtn.onclick = () => openImageLightbox(f);
+        const dlBtn = make('button', 'ldg-btn sm primary', '下载原图');
+        dlBtn.type = 'button';
+        dlBtn.onclick = () => void downloadSignedFile(f, dlBtn);
+        const openRaw = make('button', 'ldg-btn sm', '打开原图');
+        openRaw.type = 'button';
+        openRaw.onclick = async () => {
+          if (openRaw.disabled) return;
+          openRaw.disabled = true;
           clearActionError();
           try {
             const u = await getSignedUrl(f.path);
@@ -1377,20 +1872,182 @@
           } catch (err) {
             showActionError('打开原图失败：' + String(err?.message || err || '请稍后重试'));
           } finally {
-            dl.disabled = false;
+            openRaw.disabled = false;
           }
         };
-        item.append(img, cap, dl);
+        ops.append(zoomBtn, dlBtn, openRaw);
+        item.append(thumbBtn, cap, ops);
         grid.append(item);
         void getSignedUrl(f.path).then(u => { if (u) img.src = u; }).catch(() => {});
       });
       card.append(grid);
+      cardsSlot.append(card);
+    }
+
+    wrap.append(cardsSlot);
+    renderCardsSection();
+
+    function renderRecordsRows() {
+      recordsSlot.textContent = '';
+      if (!records.length) return;
+      const needle = billingSearchQuery.trim().toLowerCase();
+      const filtered = records.filter(r => {
+        if (billingTeacherFilter && r.teacher !== billingTeacherFilter) return false;
+        if (needle) {
+          const hay = `${r.date || ''} ${r.weekday || ''} ${r.time || ''} ${r.teacher || ''} ${r.student || ''} ${r.subject || ''} ${r.kind || ''} ${r.location || ''} ${r.note || ''}`.toLowerCase();
+          if (!hay.includes(needle)) return false;
+        }
+        return true;
+      });
+      const totalHrs = Math.round(filtered.reduce((s, r) => s + num(r.hours), 0) * 100) / 100;
+      const sub = make('div', 'ldg-subtotal');
+      sub.append(
+        make('span', '', `当前显示 ${filtered.length} / ${records.length} 节 · 合计 ${fmtHours(totalHrs)} 课时`),
+        make('span', '', billingTeacherFilter ? `筛选老师：${billingTeacherFilter}` : (meta.master_file ? `数据来源：${meta.master_file}` : ''))
+      );
+      recordsSlot.append(sub);
+
+      if (!filtered.length) {
+        const empty = make('div', 'ldg-empty');
+        empty.append(make('span', '', '没有匹配的课时记录。'));
+        const clr = make('button', 'ldg-btn sm', '清空筛选');
+        clr.type = 'button';
+        clr.onclick = () => {
+          billingTeacherFilter = '';
+          billingSearchQuery = '';
+          const inp = document.getElementById('ldg-billing-search');
+          if (inp) inp.value = '';
+          syncTeacherFilterUI();
+        };
+        empty.append(clr);
+        recordsSlot.append(empty);
+        return;
+      }
+
+      const headers = ['日期', '时间', '讲师', '学生', '科目/班级', '类型', {label: '人数', num: true}, {label: '课时', num: true}, '地点/备注'];
+      const rows = filtered.map(r => [
+        r.weekday ? `${r.date} ${r.weekday.replace('星期', '周')}` : (r.date || '-'),
+        r.time || '-',
+        r.teacher || '-',
+        r.student || '-',
+        r.subject || '-',
+        r.kind || '-',
+        String(r.count ?? 1),
+        fmtHours(r.hours),
+        [r.location, r.note].filter(Boolean).join(' · ') || '-',
+      ]);
+      recordsSlot.append(renderResponsiveTable(`${cur.title || cur.year_month} 课时明细表`, headers, rows));
+    }
+
+    if (records.length) {
+      const recCard = make('div', 'ldg-card');
+      recCard.append(make('h3', '', `📋 在线课时明细表（${records.length} 节）`));
+      const tBar = make('div', 'ldg-toolbar');
+      teacherSelectEl = make('select', 'ldg-month-select');
+      teacherSelectEl.id = 'ldg-billing-teacher';
+      teacherSelectEl.setAttribute('aria-label', '按讲师筛选课时明细');
+      const allOpt = make('option', '', '全部讲师');
+      allOpt.value = '';
+      teacherSelectEl.append(allOpt);
+      const tNames = tBreakdown.length
+        ? tBreakdown.map(t => t.teacher)
+        : [...new Set(records.map(r => r.teacher).filter(Boolean))];
+      tNames.forEach(tn => {
+        const opt = make('option', '', tn);
+        opt.value = tn;
+        if (tn === billingTeacherFilter) opt.selected = true;
+        teacherSelectEl.append(opt);
+      });
+      teacherSelectEl.addEventListener('change', () => {
+        billingTeacherFilter = teacherSelectEl.value;
+        syncTeacherFilterUI();
+      });
+
+      const q = make('input', 'ldg-search');
+      q.id = 'ldg-billing-search';
+      q.type = 'search';
+      q.placeholder = '搜学生 / 科目 / 老师 / 日期 / 备注…';
+      q.value = billingSearchQuery;
+      let composing = false;
+      q.addEventListener('compositionstart', () => { composing = true; });
+      q.addEventListener('compositionend', () => {
+        composing = false;
+        billingSearchQuery = q.value;
+        if (clearFilterBtn) clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+        renderRecordsRows();
+      });
+      q.addEventListener('input', () => {
+        if (composing) return;
+        billingSearchQuery = q.value;
+        if (clearFilterBtn) clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+        renderRecordsRows();
+      });
+
+      clearFilterBtn = make('button', 'ldg-btn sm', '清空筛选');
+      clearFilterBtn.type = 'button';
+      clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+      clearFilterBtn.onclick = () => {
+        billingTeacherFilter = '';
+        billingSearchQuery = '';
+        q.value = '';
+        syncTeacherFilterUI();
+      };
+
+      tBar.append(teacherSelectEl, q, clearFilterBtn);
+      recCard.append(tBar, recordsSlot);
+      wrap.append(recCard);
+      renderRecordsRows();
+    }
+
+    if (docs.length) {
+      const card = make('div', 'ldg-card');
+      card.append(make('h3', '', `📎 原始 Excel 表格永久下载（${docs.length} 个文件）`));
+      const row = make('div', 'ldg-files');
+      docs.forEach(f => {
+        const sz = fmtBytes(f.size);
+        const btn = make('button', 'ldg-btn' + (f.is_master ? ' primary' : ''), `下载 ${f.name}${sz ? ` (${sz})` : ''}`);
+        btn.type = 'button';
+        btn.onclick = () => void downloadSignedFile(f, btn);
+        row.append(btn);
+      });
+      card.append(row);
       wrap.append(card);
     }
 
-    const summaryCard = make('div', 'ldg-card');
-    summaryCard.append(renderMarkdownNode(cur.summary_md, cur.title || cur.year_month));
-    wrap.append(summaryCard);
+    if (cur.summary_md) {
+      const hasInteractive = tBreakdown.length > 0 || records.length > 0;
+      const summaryDetails = make('details', 'ldg-card ldg-summary-details');
+      summaryDetails.open = !hasInteractive;
+      const sumTitle = make('summary', '', `📝 月度核对汇总报告 · ${cur.title || cur.year_month}`);
+      summaryDetails.append(sumTitle, renderMarkdownNode(cur.summary_md, cur.title || cur.year_month));
+      wrap.append(summaryDetails);
+    }
+  }
+
+  function renderBillingTab(wrap) {
+    const subBar = make('div', 'ldg-subbar');
+    const subPills = make('div', 'ldg-pills');
+    const views = [
+      ['monthly', `月度课时与核对卡 (${store.billing.length}月)`],
+      ['longterm', '长期学员台账'],
+    ];
+    views.forEach(([vid, lbl]) => {
+      const b = make('button', 'ldg-pill' + (billingView === vid ? ' on' : ''), lbl);
+      b.id = 'ldg-billing-view-' + vid;
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(billingView === vid));
+      b.onclick = () => { billingView = vid; render(); };
+      subPills.append(b);
+    });
+    const backupTag = make('span', 'ldg-backup-tag', '双保险永久保留：Supabase 私有云 + 私有 GitHub 仓库');
+    subBar.append(subPills, backupTag);
+    wrap.append(subBar);
+
+    if (billingView === 'longterm') {
+      renderLongTermView(wrap);
+    } else {
+      renderMonthlyBillingView(wrap);
+    }
   }
 
   function renderLeaveTab(wrap) {
@@ -1651,8 +2308,9 @@
 
     renderProfileRows();
 
-    if (store.docs.length) {
-      store.docs.forEach(doc => {
+    const profileDocs = store.docs.filter(d => d.slug !== 'long-term-student-ledger');
+    if (profileDocs.length) {
+      profileDocs.forEach(doc => {
         const docKey = String(doc.slug || doc.id || doc.title || '');
         const card = make('details', 'ldg-card');
         card.open = docOpenState.has(docKey) ? docOpenState.get(docKey) : true;
