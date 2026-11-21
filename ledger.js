@@ -1,6 +1,6 @@
-// 个人台账与月度课时 (Owner-only private panel, replacing Notion).
+// 个人台账与月度课时 (Owner-only private panel, hidden under Settings & Account with secondary lock).
 // Zero private data lives in this file or any public page; everything is loaded from Supabase
-// under strict owner-only RLS after sign-in, with signed URLs for private Storage downloads.
+// under strict owner-only RLS ONLY after secondary PBKDF2-SHA256 verification.
 (() => {
   if (globalThis.wayonLedger || typeof document === 'undefined') return;
   const make = (tag, cls, text) => {
@@ -18,7 +18,11 @@
     const n = num(v);
     return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
   };
-  const NAV_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5z M4 18.5A2.5 2.5 0 0 1 6.5 16H20 M9 8h6 M9 12h4"/></svg>';
+
+  const PBKDF2_ITERATIONS = 210000;
+  const IDLE_LOCK_MS = 10 * 60 * 1000;
+  const MIN_PIN_LEN = 4;
+  const MAX_PIN_LEN = 64;
 
   const TABS = [
     {id: 'billing', label: '课时与账单'},
@@ -28,9 +32,20 @@
   ];
 
   let open = false;
+  let unlocked = false;
+  let lockState = 'idle'; // idle | checking | setup | locked | unlocked | signedout | error
+  let lockRecord = null;
+  let lockNotice = '';
+  let lockError = '';
+  let lockBusy = false;
+  let checkLockPromise = null;
+  let lastActiveAt = 0;
+  let idleTimer = null;
   let activeTab = 'billing';
   let root = null;
   let modal = null;
+  let liveAnnouncer = null;
+  let announceTimer = null;
   let authBoundClient = null;
   let loading = false;
   let reloadQueued = false;
@@ -40,6 +55,7 @@
   let loadState = 'idle'; // idle | loading | ready | signedout | error
   let loadError = '';
   let actionError = '';
+  let actionInfo = '';
   let salaryMasked = true;
   let selectedMonth = '';
   let leaveFilter = 'all';
@@ -67,18 +83,21 @@
     @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ldg-accent-bg:#0a66d6;--ldg-accent-bg-hover:#1774e8;--ldg-accent-fg:#fff}}
     :root[data-theme="light"]{--ldg-accent-bg:#0066cc;--ldg-accent-bg-hover:#0055b3;--ldg-accent-fg:#fff}
     :root[data-theme="dark"]{--ldg-accent-bg:#0a66d6;--ldg-accent-bg-hover:#1774e8;--ldg-accent-fg:#fff}
-    #nav-ledger:before{display:none!important}#nav-ledger svg{width:19px;height:19px;flex:none}
-    body[data-ledger-open] #tabs button:not(#nav-ledger){background:transparent!important;color:var(--fg-secondary)!important}
+    body[data-ledger-open] #tabs button{background:transparent!important;color:var(--fg-secondary)!important}
     body[data-ledger-open] #list,body[data-ledger-open] .workspace-top-bar,body[data-ledger-open] .workspace-sub-bar,body[data-ledger-open] #aircon-panel,body[data-ledger-open] #memo-panel,body[data-ledger-open] #feedback-panel,body[data-ledger-open] #mocks-panel,body[data-ledger-open] .sidebar-footer .bar{display:none!important}
     body[data-aircon-open] #ledger-panel,body[data-memo-open] #ledger-panel,body[data-feedback-open] #ledger-panel,body[data-mocks-open] #ledger-panel{display:none!important}
     #ledger-panel{display:flex;flex-direction:column;gap:14px;width:100%;min-width:0;padding-bottom:32px}
     #ledger-panel[hidden]{display:none!important}
+    .ldg-visually-hidden{position:absolute!important;clip-path:inset(50%)!important;overflow:hidden!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;border:0!important;white-space:nowrap!important}
     .ldg-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
     .ldg-head-left{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+    .ldg-head-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .ldg-head h2{margin:0;font-size:22px;font-weight:650;letter-spacing:-.02em}
     .ldg-sub{font-size:12.5px;color:var(--muted,#6e6e73)}
-    .ldg-banner-err{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;border:1px solid var(--bad-border,#f1c8c5);background:var(--bad-bg,#fff1f0);color:var(--bad,#d93025);font-size:13px;line-height:1.45}
-    .ldg-banner-err[hidden]{display:none!important}
+    .ldg-banner-err,.ldg-banner-ok{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45}
+    .ldg-banner-err{border:1px solid var(--bad-border,#f1c8c5);background:var(--bad-bg,#fff1f0);color:var(--bad,#d93025)}
+    .ldg-banner-ok{border:1px solid var(--done-border,#cce6d2);background:var(--done-bg,#edf7ef);color:var(--done,#248a3d)}
+    .ldg-banner-err[hidden],.ldg-banner-ok[hidden]{display:none!important}
     .ldg-tablist{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line,rgba(30,30,40,.09));padding-bottom:2px}
     .ldg-tablist::-webkit-scrollbar{display:none}
     .ldg-tab{position:relative;flex:none;border:0;background:transparent;color:var(--fg-secondary,#515156);padding:10px 14px;font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer;border-radius:10px 10px 0 0}
@@ -86,8 +105,25 @@
     .ldg-tab[aria-selected="true"]{color:var(--accent,#0071e3)}
     .ldg-tab[aria-selected="true"]::after{content:"";position:absolute;inset:auto 10px 0;border-block-end:2.5px solid var(--accent,#0071e3)}
     .ldg-panel-wrap,.ldg-rows-slot{display:flex;flex-direction:column;gap:14px;min-width:0}
-    .ldg-lock{padding:28px 20px;border-radius:16px;background:var(--card,#fff);border:1px solid var(--line,rgba(30,30,40,.09));text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
-    .ldg-lock p{margin:0;color:var(--fg-secondary,#515156);font-size:14px;max-width:460px}
+    .ldg-lock{padding:32px 22px;border-radius:18px;background:var(--card,#fff);border:1px solid var(--line,rgba(30,30,40,.09));display:flex;flex-direction:column;align-items:center;gap:12px;max-width:460px;width:100%;margin:16px auto 0;box-sizing:border-box;text-align:center}
+    .ldg-lock h3{margin:0;font-size:18px;font-weight:650;letter-spacing:-.015em}
+    .ldg-lock p{margin:0;color:var(--fg-secondary,#515156);font-size:13.5px;line-height:1.55;max-width:380px}
+    .ldg-lock-notice{margin:0;padding:8px 12px;border-radius:10px;background:var(--code-bg,#f5f5f7);color:var(--fg-secondary,#515156);font-size:12.5px;line-height:1.45;width:100%;box-sizing:border-box}
+    .ldg-lock-form{width:100%;display:flex;flex-direction:column;gap:12px;text-align:left;margin-top:4px}
+    .ldg-lock-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;margin-top:4px}
+    .ldg-lock-actions .ldg-btn.primary{flex:1 1 160px;min-height:44px}
+    .ldg-lock-actions .ldg-btn:not(.primary){min-height:44px}
+    .ldg-link-btn{border:0;background:transparent;color:var(--muted,#6e6e73);font-size:12.5px;font-family:inherit;cursor:pointer;padding:6px 10px;border-radius:8px;text-decoration:underline;text-underline-offset:3px}
+    .ldg-link-btn:hover{color:var(--fg,#1d1d1f);background:var(--code-bg,rgba(118,118,128,.08))}
+    .ldg-pw-wrap{position:relative;display:flex;align-items:center}
+    .ldg-pw-wrap input{padding-right:58px}
+    .ldg-pw-toggle{position:absolute;inset-inline-end:6px;min-height:32px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--fg-secondary,#515156);font-size:12.5px;font-weight:500;cursor:pointer}
+    .ldg-pw-toggle:hover{background:var(--line,rgba(30,30,40,.09));color:var(--fg,#1d1d1f)}
+    .ldg-hint{display:block;font-size:12px;color:var(--muted,#6e6e73);line-height:1.4}
+    .ldg-field-err{margin:2px 0 0;font-size:12.5px;line-height:1.4;color:var(--bad,#d93025)}
+    .ldg-field-err[hidden]{display:none!important}
+    .ldg-field input:is(:user-invalid,.ldg-user-invalid),.ldg-field select:is(:user-invalid,.ldg-user-invalid),.ldg-field textarea:is(:user-invalid,.ldg-user-invalid){border-color:var(--bad,#d93025);background:var(--bad-bg,#fff1f0)}
+    .ldg-field input:focus-visible,.ldg-field select:focus-visible,.ldg-field textarea:focus-visible,.ldg-btn:focus-visible,.ldg-pw-toggle:focus-visible,.ldg-link-btn:focus-visible{outline:2px solid var(--accent,#0071e3);outline-offset:2px}
     .ldg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
     .ldg-stat{padding:14px 16px;border-radius:14px;background:var(--card,#fff);border:1px solid var(--line,rgba(30,30,40,.09));display:flex;flex-direction:column;gap:4px}
     .ldg-stat-label{font-size:12px;color:var(--muted,#6e6e73)}
@@ -177,6 +213,333 @@
     selectedMonth = '';
     signedUrls.clear();
     actionError = '';
+    actionInfo = '';
+    salaryMasked = true;
+  }
+
+  function bytesToB64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  function b64ToBytes(b64) {
+    const bin = atob(String(b64 || ''));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function timingSafeEqualB64(a, b) {
+    try {
+      const ba = b64ToBytes(a), bb = b64ToBytes(b);
+      if (ba.length !== bb.length || ba.length === 0) return false;
+      let diff = 0;
+      for (let i = 0; i < ba.length; i++) diff |= (ba[i] ^ bb[i]);
+      return diff === 0;
+    } catch {
+      return false;
+    }
+  }
+
+  function randomSaltB64() {
+    const cryptoObj = globalThis.crypto;
+    if (!cryptoObj?.getRandomValues) throw new Error('当前环境不支持安全随机数生成，请使用 HTTPS 访问');
+    const bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return bytesToB64(bytes);
+  }
+
+  async function derivePinHash(pin, saltB64, iterations = PBKDF2_ITERATIONS) {
+    const subtle = globalThis.crypto?.subtle;
+    if (!subtle) throw new Error('当前环境不支持 WebCrypto 加密，请使用 HTTPS 访问');
+    const enc = new TextEncoder();
+    const key = await subtle.importKey('raw', enc.encode(String(pin)), 'PBKDF2', false, ['deriveBits']);
+    const bits = await subtle.deriveBits(
+      {name: 'PBKDF2', hash: 'SHA-256', salt: b64ToBytes(saltB64), iterations},
+      key,
+      256
+    );
+    return bytesToB64(new Uint8Array(bits));
+  }
+
+  function cooldownSeconds(attempts) {
+    if (attempts >= 10) return 900;
+    if (attempts >= 8) return 300;
+    if (attempts >= 5) return 60;
+    return 0;
+  }
+
+  function remainingLockSeconds(rec) {
+    if (!rec?.locked_until) return 0;
+    const ms = Date.parse(rec.locked_until) - Date.now();
+    return ms > 0 ? Math.ceil(ms / 1000) : 0;
+  }
+
+  function validatePinFormat(pin, label = '二级密码') {
+    const raw = String(pin ?? '');
+    if (!raw.trim()) return `请填写${label}`;
+    if (raw.length < MIN_PIN_LEN) return `${label}至少需要 ${MIN_PIN_LEN} 位字符`;
+    if (raw.length > MAX_PIN_LEN) return `${label}不能超过 ${MAX_PIN_LEN} 位字符`;
+    return '';
+  }
+
+  function ensureAnnouncer() {
+    if (liveAnnouncer && liveAnnouncer.parentNode) return liveAnnouncer;
+    if (!liveAnnouncer) {
+      liveAnnouncer = make('div', 'ldg-visually-hidden');
+      liveAnnouncer.setAttribute('aria-live', 'polite');
+      liveAnnouncer.setAttribute('aria-atomic', 'true');
+    }
+    document.body.append(liveAnnouncer);
+    return liveAnnouncer;
+  }
+
+  function announcePolite(msg) {
+    const box = ensureAnnouncer();
+    clearTimeout(announceTimer);
+    box.textContent = '';
+    if (!msg) return;
+    announceTimer = setTimeout(() => { box.textContent = String(msg); }, 150);
+  }
+
+  function linkFieldError(input, errorId, shown) {
+    if (!input || !errorId) return;
+    const ids = String(input.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== errorId);
+    if (shown) ids.push(errorId);
+    if (ids.length) input.setAttribute('aria-describedby', ids.join(' '));
+    else input.removeAttribute('aria-describedby');
+  }
+
+  function setFieldError(input, errEl, msg, {announce = false} = {}) {
+    const hasErr = Boolean(msg);
+    if (errEl) {
+      errEl.textContent = hasErr ? `❌ ${msg}` : '';
+      errEl.hidden = !hasErr;
+    }
+    if (input) {
+      input.setAttribute('aria-invalid', hasErr ? 'true' : 'false');
+      input.classList.toggle('ldg-user-invalid', hasErr);
+      if (errEl?.id) linkFieldError(input, errEl.id, hasErr);
+    }
+    if (hasErr && announce) announcePolite(msg);
+  }
+
+  function createPasswordField({id, name, label, hint, autocomplete, placeholder, enterkeyhint = 'done', required = true, minLength = MIN_PIN_LEN, maxLength = MAX_PIN_LEN, validator}) {
+    const field = make('div', 'ldg-field');
+    const lbl = make('label', '', label);
+    lbl.setAttribute('for', id);
+    field.append(lbl);
+    let hintId = '';
+    if (hint) {
+      hintId = id + '-hint';
+      const h = make('span', 'ldg-hint', hint);
+      h.id = hintId;
+      field.append(h);
+    }
+    const wrap = make('div', 'ldg-pw-wrap');
+    const input = make('input');
+    input.id = id;
+    input.name = name || id;
+    input.type = 'password';
+    input.required = required;
+    if (minLength) input.minLength = minLength;
+    if (maxLength) input.maxLength = maxLength;
+    if (autocomplete) input.setAttribute('autocomplete', autocomplete);
+    if (placeholder) input.placeholder = placeholder;
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'none');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('enterkeyhint', enterkeyhint);
+    input.setAttribute('aria-invalid', 'false');
+    if (hintId) input.setAttribute('aria-describedby', hintId);
+
+    const toggle = make('button', 'ldg-pw-toggle', '显示');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.setAttribute('aria-label', `显示${label}`);
+    toggle.onclick = () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      toggle.textContent = show ? '隐藏' : '显示';
+      toggle.setAttribute('aria-pressed', String(show));
+      toggle.setAttribute('aria-label', `${show ? '隐藏' : '显示'}${label}`);
+    };
+    wrap.append(input, toggle);
+
+    const errEl = make('div', 'ldg-field-err', '');
+    errEl.id = id + '-err';
+    errEl.hidden = true;
+    input.dataset.error = errEl.id;
+    field.append(wrap, errEl);
+
+    let touched = false;
+    input.addEventListener('input', () => {
+      touched = true;
+      if (input.getAttribute('aria-invalid') === 'true') {
+        const nextErr = validator ? validator(input.value) : '';
+        if (!nextErr) setFieldError(input, errEl, '');
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (!touched || !validator) return;
+      const err = validator(input.value);
+      setFieldError(input, errEl, err, {announce: Boolean(err)});
+    });
+
+    return {
+      field,
+      input,
+      toggle,
+      errEl,
+      setError: (msg, opts) => setFieldError(input, errEl, msg, opts),
+      clearError: () => setFieldError(input, errEl, ''),
+      resetMask: () => {
+        input.type = 'password';
+        toggle.textContent = '显示';
+        toggle.setAttribute('aria-pressed', 'false');
+        toggle.setAttribute('aria-label', `显示${label}`);
+      },
+    };
+  }
+
+  function touchActivity() {
+    if (open && unlocked) lastActiveAt = Date.now();
+  }
+
+  function stopIdleWatcher() {
+    if (idleTimer !== null) {
+      clearInterval(idleTimer);
+      idleTimer = null;
+    }
+  }
+
+  function checkIdleTimeout() {
+    if (!open || !unlocked || !lastActiveAt) return;
+    if (Date.now() - lastActiveAt >= IDLE_LOCK_MS) {
+      lockPanel({keepOpen: true, reason: '已闲置超过 10 分钟，台账已自动锁定并清空内存数据'});
+    }
+  }
+
+  function startIdleWatcher() {
+    stopIdleWatcher();
+    lastActiveAt = Date.now();
+    idleTimer = setInterval(checkIdleTimeout, 15000);
+  }
+
+  function lockAndClear({nextState, reason = ''} = {}) {
+    unlocked = false;
+    lastActiveAt = 0;
+    deferredRender = false;
+    reloadQueued = false;
+    reloadForce = false;
+    stopIdleWatcher();
+    clearPrivateStore();
+    loadState = 'idle';
+    loadError = '';
+    lockError = '';
+    lockNotice = reason;
+    if (modal?.open) {
+      modal.onclose = null;
+      modal.close();
+    }
+    if (nextState) lockState = nextState;
+    else lockState = lockRecord ? 'locked' : 'idle';
+  }
+
+  function lockPanel({keepOpen = true, reason = '台账已手动锁定，本页内存数据已清空'} = {}) {
+    lockAndClear({nextState: lockRecord ? 'locked' : 'setup', reason});
+    if (keepOpen && open) render();
+    else if (!keepOpen) closePanel();
+  }
+
+  async function saveLockRow(pin) {
+    const c = client();
+    if (!c) throw new Error('云端客户端未就绪');
+    const {data: sess, error: sessErr} = await c.auth.getSession();
+    if (sessErr) throw sessErr;
+    if (!sess?.session?.user?.id) throw new Error('请先登录云端账号');
+    const salt_b64 = randomSaltB64();
+    const hash_b64 = await derivePinHash(pin, salt_b64, PBKDF2_ITERATIONS);
+    const payload = {
+      owner_id: sess.session.user.id,
+      algo: 'pbkdf2-sha256',
+      iterations: PBKDF2_ITERATIONS,
+      salt_b64,
+      hash_b64,
+      failed_attempts: 0,
+      locked_until: null,
+    };
+    let res;
+    if (lockRecord) {
+      res = await c.from('wayon_ledger_lock').update({
+        algo: payload.algo,
+        iterations: payload.iterations,
+        salt_b64: payload.salt_b64,
+        hash_b64: payload.hash_b64,
+        failed_attempts: 0,
+        locked_until: null,
+      }).eq('owner_id', payload.owner_id);
+    } else {
+      res = await c.from('wayon_ledger_lock').insert(payload);
+    }
+    if (res.error) throw res.error;
+    lockRecord = {
+      algo: payload.algo,
+      iterations: payload.iterations,
+      salt_b64: payload.salt_b64,
+      hash_b64: payload.hash_b64,
+      failed_attempts: 0,
+      locked_until: null,
+    };
+    return lockRecord;
+  }
+
+  function checkLockStatus() {
+    if (checkLockPromise) return checkLockPromise;
+    checkLockPromise = (async () => {
+      const c = client();
+      if (!c) {
+        lockRecord = null;
+        lockAndClear({nextState: 'signedout'});
+        if (open) render();
+        return;
+      }
+      if (!unlocked) {
+        lockState = 'checking';
+        loadError = '';
+        if (open) render();
+      }
+      try {
+        const {data: sess, error: sessErr} = await c.auth.getSession();
+        if (sessErr) throw sessErr;
+        if (!sess?.session) {
+          lockRecord = null;
+          lockAndClear({nextState: 'signedout'});
+          if (open) render();
+          return;
+        }
+        const res = await c.from('wayon_ledger_lock')
+          .select('algo,iterations,salt_b64,hash_b64,failed_attempts,locked_until')
+          .limit(1);
+        if (res.error) throw res.error;
+        const row = Array.isArray(res.data) ? (res.data[0] || null) : (res.data || null);
+        lockRecord = row;
+        if (!unlocked) {
+          lockState = row ? 'locked' : 'setup';
+          if (open) render();
+        }
+      } catch (e) {
+        if (!unlocked) {
+          lockState = 'error';
+          loadError = String(e?.message || e || '无法读取台账锁状态');
+          if (open) render();
+        }
+      } finally {
+        checkLockPromise = null;
+      }
+    })();
+    return checkLockPromise;
   }
 
   function isInteractionBusy() {
@@ -222,6 +585,24 @@
   function clearActionError() {
     actionError = '';
     const banner = root?.querySelector?.('.ldg-banner-err');
+    if (banner) banner.hidden = true;
+  }
+
+  function showActionInfo(msg) {
+    actionInfo = String(msg || '');
+    const banner = root?.querySelector?.('.ldg-banner-ok');
+    if (banner) {
+      const text = banner.querySelector?.('.ldg-banner-ok-text');
+      if (text) text.textContent = actionInfo;
+      banner.hidden = !actionInfo;
+    } else if (open) {
+      render();
+    }
+  }
+
+  function clearActionInfo() {
+    actionInfo = '';
+    const banner = root?.querySelector?.('.ldg-banner-ok');
     if (banner) banner.hidden = true;
   }
 
@@ -285,6 +666,9 @@
       modal.addEventListener('close', () => {
         setTimeout(flushDeferredRender, 0);
       });
+      for (const ev of ['pointerdown', 'keydown', 'input']) {
+        modal.addEventListener(ev, touchActivity, {passive: true});
+      }
     }
     document.body.append(modal);
     return modal;
@@ -590,6 +974,7 @@
   }
 
   function loadAll({force = false} = {}) {
+    if (!unlocked) return Promise.resolve();
     if (force) reloadForce = true;
     if (loading) {
       reloadQueued = true;
@@ -604,10 +989,11 @@
       reloadQueued = false;
       const force = reloadForce;
       reloadForce = false;
+      if (!unlocked) break;
       const c = client();
       if (!c) {
-        clearPrivateStore();
-        loadState = 'signedout';
+        lockRecord = null;
+        lockAndClear({nextState: 'signedout'});
         if (open) renderOrDefer(force);
         break;
       }
@@ -616,9 +1002,13 @@
       try {
         const {data: sess, error: sessErr} = await c.auth.getSession();
         if (sessErr) throw sessErr;
-        if (!sess?.session) {
+        if (!unlocked) {
           clearPrivateStore();
-          loadState = 'signedout';
+          break;
+        }
+        if (!sess?.session) {
+          lockRecord = null;
+          lockAndClear({nextState: 'signedout'});
         } else {
           const [bRes, lRes, sRes, pRes, dRes] = await Promise.all([
             c.from('wayon_billing_months').select('*').order('year_month', {ascending: false}),
@@ -627,6 +1017,10 @@
             c.from('wayon_student_profiles').select('*').order('name', {ascending: true}),
             c.from('wayon_reference_docs').select('*').order('updated_at', {ascending: false}),
           ]);
+          if (!unlocked) {
+            clearPrivateStore();
+            break;
+          }
           for (const r of [bRes, lRes, sRes, pRes, dRes]) if (r.error) throw r.error;
           store.billing = bRes.data || [];
           store.leave = lRes.data || [];
@@ -639,23 +1033,28 @@
           loadError = '';
         }
       } catch (e) {
+        if (!unlocked) {
+          clearPrivateStore();
+          break;
+        }
         loadState = 'error';
         loadError = String(e?.message || e || '加载失败');
       } finally {
         loading = false;
         if (open) renderOrDefer(force);
       }
-    } while (reloadQueued);
+    } while (reloadQueued && unlocked);
     loadPromise = null;
   }
 
   async function getSignedUrl(path) {
+    if (!unlocked) return null;
     const cached = signedUrls.get(path);
     if (cached && cached.exp > Date.now()) return cached.url;
     const c = client();
     if (!c) return null;
     const {data, error} = await c.storage.from('wayon-billing').createSignedUrl(path, 300);
-    if (error || !data?.signedUrl) return null;
+    if (!unlocked || error || !data?.signedUrl) return null;
     signedUrls.set(path, {url: data.signedUrl, exp: Date.now() + 240_000});
     return data.signedUrl;
   }
@@ -1266,28 +1665,408 @@
     }
   }
 
+  function openChangePinDialog() {
+    if (!unlocked || !lockRecord) return;
+    const dlg = prepareModal('closerequest');
+    const form = make('form', 'ldg-dialog-body');
+    form.noValidate = true;
+    const h = make('h3', '', '修改台账二级密码'); h.id = 'ldg-dialog-title';
+    const curF = createPasswordField({
+      id: 'ldg-chg-cur', name: 'current_ledger_pin', label: '当前二级密码',
+      autocomplete: 'off', placeholder: '输入当前二级密码', enterkeyhint: 'next',
+      minLength: 1, validator: v => String(v || '').trim() ? '' : '请填写当前二级密码',
+    });
+    const newF = createPasswordField({
+      id: 'ldg-chg-new', name: 'new_ledger_pin', label: '新二级密码',
+      hint: `${MIN_PIN_LEN}–${MAX_PIN_LEN} 位，支持数字 PIN 或字母数字口令`,
+      autocomplete: 'new-password', placeholder: '输入新二级密码', enterkeyhint: 'next',
+      validator: v => validatePinFormat(v, '新二级密码'),
+    });
+    const cfmF = createPasswordField({
+      id: 'ldg-chg-cfm', name: 'confirm_ledger_pin', label: '确认新二级密码',
+      autocomplete: 'new-password', placeholder: '再次输入新二级密码', enterkeyhint: 'done',
+      validator: v => {
+        const base = validatePinFormat(v, '确认新二级密码');
+        if (base) return base;
+        return v !== newF.input.value ? '两次输入的新二级密码不一致' : '';
+      },
+    });
+    const errEl = make('p', 'ldg-form-err', ''); errEl.setAttribute('role', 'alert');
+    const foot = make('div', 'ldg-dialog-foot');
+    let saving = false;
+    const cancel = make('button', 'ldg-btn', '取消'); cancel.type = 'button'; cancel.onclick = () => { if (!saving) dlg.close(); };
+    const save = make('button', 'ldg-btn primary', '保存新密码'); save.type = 'submit';
+    foot.append(cancel, save);
+    form.append(h, curF.field, newF.field, cfmF.field, errEl, foot);
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (saving) return;
+      errEl.textContent = '';
+      const eCur = String(curF.input.value || '').trim() ? '' : '请填写当前二级密码';
+      const eNew = validatePinFormat(newF.input.value, '新二级密码');
+      const eCfm = validatePinFormat(cfmF.input.value, '确认新二级密码') || (cfmF.input.value !== newF.input.value ? '两次输入的新二级密码不一致' : '');
+      curF.setError(eCur);
+      newF.setError(eNew);
+      cfmF.setError(eCfm);
+      if (eCur) { curF.input.focus?.(); return; }
+      if (eNew) { newF.input.focus?.(); return; }
+      if (eCfm) { cfmF.input.focus?.(); return; }
+
+      const waitSecs = remainingLockSeconds(lockRecord);
+      if (waitSecs > 0) {
+        errEl.textContent = `尝试次数过多，请 ${waitSecs} 秒后再试`;
+        return;
+      }
+      saving = true;
+      save.disabled = true;
+      cancel.disabled = true;
+      save.textContent = '验证并保存…';
+      try {
+        const derived = await derivePinHash(curF.input.value, lockRecord.salt_b64, lockRecord.iterations || PBKDF2_ITERATIONS);
+        if (!timingSafeEqualB64(derived, lockRecord.hash_b64)) {
+          curF.input.value = '';
+          curF.setError('当前二级密码不正确', {announce: true});
+          curF.input.focus?.();
+          return;
+        }
+        await saveLockRow(newF.input.value);
+        curF.input.value = '';
+        newF.input.value = '';
+        cfmF.input.value = '';
+        dlg.close();
+        showActionInfo('台账二级密码已更新');
+      } catch (err) {
+        errEl.textContent = '更新失败：' + String(err?.message || err || '请稍后重试');
+      } finally {
+        saving = false;
+        save.disabled = false;
+        cancel.disabled = false;
+        save.textContent = '保存新密码';
+      }
+    };
+    dlg.append(form);
+    dlg.showModal();
+    curF.input.focus?.();
+  }
+
+  function openResetPinDialog() {
+    const dlg = prepareModal('closerequest');
+    const form = make('form', 'ldg-dialog-body');
+    form.noValidate = true;
+    const h = make('h3', '', '重置台账二级密码'); h.id = 'ldg-dialog-title';
+    const desc = make('p', '', '为保障安全，请先输入当前工作台主账号的登录密码验证身份，再设置新的台账二级密码。');
+    desc.style.margin = '0'; desc.style.fontSize = '13px'; desc.style.color = 'var(--fg-secondary)';
+
+    const fEmail = make('div', 'ldg-field');
+    const lEmail = make('label', '', '当前登录账号'); lEmail.setAttribute('for', 'ldg-rst-email');
+    const iEmail = make('input'); iEmail.id = 'ldg-rst-email'; iEmail.name = 'email'; iEmail.type = 'email';
+    iEmail.readOnly = true; iEmail.setAttribute('autocomplete', 'username'); iEmail.value = '正在读取…';
+    fEmail.append(lEmail, iEmail);
+
+    const mainF = createPasswordField({
+      id: 'ldg-rst-main', name: 'password', label: '工作台登录密码',
+      autocomplete: 'current-password', placeholder: '输入当前账号登录密码', enterkeyhint: 'next',
+      minLength: 1, validator: v => String(v || '').trim() ? '' : '请输入工作台登录密码',
+    });
+    const newF = createPasswordField({
+      id: 'ldg-rst-new', name: 'new_ledger_pin', label: '新台账二级密码',
+      hint: `${MIN_PIN_LEN}–${MAX_PIN_LEN} 位，支持数字 PIN 或字母数字口令`,
+      autocomplete: 'new-password', placeholder: '输入新二级密码', enterkeyhint: 'next',
+      validator: v => validatePinFormat(v, '新二级密码'),
+    });
+    const cfmF = createPasswordField({
+      id: 'ldg-rst-cfm', name: 'confirm_ledger_pin', label: '确认新二级密码',
+      autocomplete: 'new-password', placeholder: '再次输入新二级密码', enterkeyhint: 'done',
+      validator: v => {
+        const base = validatePinFormat(v, '确认新二级密码');
+        if (base) return base;
+        return v !== newF.input.value ? '两次输入的新二级密码不一致' : '';
+      },
+    });
+    const errEl = make('p', 'ldg-form-err', ''); errEl.setAttribute('role', 'alert');
+    const foot = make('div', 'ldg-dialog-foot');
+    let saving = false;
+    const cancel = make('button', 'ldg-btn', '取消'); cancel.type = 'button'; cancel.onclick = () => { if (!saving) dlg.close(); };
+    const save = make('button', 'ldg-btn primary', '验证并重置'); save.type = 'submit';
+    foot.append(cancel, save);
+    form.append(h, desc, fEmail, mainF.field, newF.field, cfmF.field, errEl, foot);
+
+    let sessionEmail = '';
+    const c0 = client();
+    if (c0?.auth?.getSession) {
+      void c0.auth.getSession().then(({data}) => {
+        sessionEmail = data?.session?.user?.email || '';
+        iEmail.value = sessionEmail || '未获取到账号邮箱';
+      }).catch(() => { iEmail.value = '未获取到账号邮箱'; });
+    }
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (saving) return;
+      errEl.textContent = '';
+      const eMain = String(mainF.input.value || '').trim() ? '' : '请输入工作台登录密码';
+      const eNew = validatePinFormat(newF.input.value, '新二级密码');
+      const eCfm = validatePinFormat(cfmF.input.value, '确认新二级密码') || (cfmF.input.value !== newF.input.value ? '两次输入的新二级密码不一致' : '');
+      mainF.setError(eMain);
+      newF.setError(eNew);
+      cfmF.setError(eCfm);
+      if (eMain) { mainF.input.focus?.(); return; }
+      if (eNew) { newF.input.focus?.(); return; }
+      if (eCfm) { cfmF.input.focus?.(); return; }
+
+      const c = client();
+      if (!c?.auth?.signInWithPassword) {
+        errEl.textContent = '当前环境不支持账号密码核验，请刷新页面后重试';
+        return;
+      }
+      saving = true;
+      save.disabled = true;
+      cancel.disabled = true;
+      save.textContent = '正在核验身份…';
+      try {
+        if (!sessionEmail) {
+          const {data: sData} = await c.auth.getSession();
+          sessionEmail = sData?.session?.user?.email || '';
+          iEmail.value = sessionEmail || '';
+        }
+        if (!sessionEmail) {
+          errEl.textContent = '未检测到有效登录会话，请重新登录工作台';
+          return;
+        }
+        const authRes = await c.auth.signInWithPassword({email: sessionEmail, password: mainF.input.value});
+        if (authRes?.error) {
+          mainF.input.value = '';
+          mainF.setError('工作台登录密码不正确，未修改二级密码', {announce: true});
+          mainF.input.focus?.();
+          return;
+        }
+        await saveLockRow(newF.input.value);
+        mainF.input.value = '';
+        newF.input.value = '';
+        cfmF.input.value = '';
+        dlg.close();
+        unlocked = true;
+        lockState = 'unlocked';
+        lockNotice = '';
+        lockError = '';
+        actionInfo = '台账二级密码已重置并解锁';
+        startIdleWatcher();
+        render();
+        void loadAll({force: true});
+      } catch (err) {
+        errEl.textContent = '重置失败：' + String(err?.message || err || '请稍后重试');
+      } finally {
+        saving = false;
+        save.disabled = false;
+        cancel.disabled = false;
+        save.textContent = '验证并重置';
+      }
+    };
+    dlg.append(form);
+    dlg.showModal();
+    mainF.input.focus?.();
+  }
+
+  function renderSetupView(container) {
+    const card = make('div', 'ldg-lock');
+    const h = make('h3', '', '🔐 首次使用：设置台账二级密码'); h.id = 'ldg-setup-title';
+    const p = make('p', '', '为避免旁人误点看到个人课时、调休或工资明细，进入台账前需先通过二级密码验证。未解锁前不会拉取任何台账数据；切走页面或闲置 10 分钟后自动清空并重锁。');
+    const form = make('form', 'ldg-lock-form');
+    form.setAttribute('aria-labelledby', 'ldg-setup-title');
+    form.noValidate = true;
+
+    const pinF = createPasswordField({
+      id: 'ldg-pin-new', name: 'new_ledger_pin', label: '设置二级密码',
+      hint: `${MIN_PIN_LEN}–${MAX_PIN_LEN} 位，支持数字 PIN 或字母数字口令（仅云端保存加盐哈希，跨设备通用）`,
+      autocomplete: 'new-password', placeholder: '输入至少 4 位二级密码', enterkeyhint: 'next',
+      validator: v => validatePinFormat(v, '二级密码'),
+    });
+    const cfmF = createPasswordField({
+      id: 'ldg-pin-confirm', name: 'confirm_ledger_pin', label: '确认二级密码',
+      autocomplete: 'new-password', placeholder: '再次输入确认', enterkeyhint: 'done',
+      validator: v => {
+        const base = validatePinFormat(v, '确认二级密码');
+        if (base) return base;
+        return v !== pinF.input.value ? '两次输入的二级密码不一致' : '';
+      },
+    });
+    const errEl = make('p', 'ldg-form-err', lockError); errEl.setAttribute('role', 'alert');
+    const actions = make('div', 'ldg-lock-actions');
+    const submit = make('button', 'ldg-btn primary', '保存密码并进入'); submit.type = 'submit';
+    const back = make('button', 'ldg-btn', '返回工作台'); back.type = 'button'; back.onclick = () => closePanel();
+    actions.append(submit, back);
+    form.append(pinF.field, cfmF.field, errEl, actions);
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (lockBusy) return;
+      errEl.textContent = '';
+      lockError = '';
+      const e1 = validatePinFormat(pinF.input.value, '二级密码');
+      const e2 = validatePinFormat(cfmF.input.value, '确认二级密码') || (cfmF.input.value !== pinF.input.value ? '两次输入的二级密码不一致' : '');
+      pinF.setError(e1);
+      cfmF.setError(e2);
+      if (e1) { pinF.input.focus?.(); return; }
+      if (e2) { cfmF.input.focus?.(); return; }
+
+      lockBusy = true;
+      submit.disabled = true;
+      back.disabled = true;
+      submit.textContent = '正在加密保存…';
+      try {
+        await saveLockRow(pinF.input.value);
+        pinF.input.value = '';
+        cfmF.input.value = '';
+        unlocked = true;
+        lockState = 'unlocked';
+        lockNotice = '';
+        actionInfo = '台账二级密码已设置并生效';
+        startIdleWatcher();
+        render();
+        void loadAll({force: true});
+      } catch (err) {
+        const msg = '保存失败：' + String(err?.message || err || '请稍后重试');
+        lockError = msg;
+        errEl.textContent = msg;
+      } finally {
+        lockBusy = false;
+        submit.disabled = false;
+        back.disabled = false;
+        submit.textContent = '保存密码并进入';
+      }
+    };
+
+    card.append(h, p, form);
+    container.append(card);
+    requestAnimationFrame(() => pinF.input.focus?.());
+  }
+
+  function renderLockView(container) {
+    const card = make('div', 'ldg-lock');
+    const h = make('h3', '', '🔒 个人台账已锁定'); h.id = 'ldg-unlock-title';
+    const p = make('p', '', '输入二级密码后才会从云端加载个人课时、调休、工资与学员档案；切回工作台或闲置 10 分钟后自动清空重锁。');
+    card.append(h, p);
+    if (lockNotice) {
+      const note = make('div', 'ldg-lock-notice', lockNotice);
+      note.setAttribute('role', 'status');
+      card.append(note);
+    }
+
+    const form = make('form', 'ldg-lock-form');
+    form.setAttribute('aria-labelledby', 'ldg-unlock-title');
+    form.noValidate = true;
+
+    const pinF = createPasswordField({
+      id: 'ldg-unlock-pin', name: 'ledger_pin', label: '台账二级密码',
+      autocomplete: 'off', placeholder: '输入二级密码解锁', enterkeyhint: 'done',
+      minLength: 1, validator: v => String(v || '').trim() ? '' : '请输入二级密码',
+    });
+    const waitInit = remainingLockSeconds(lockRecord);
+    const errEl = make('p', 'ldg-form-err', waitInit > 0 ? `输错次数过多，请 ${waitInit} 秒后再试，或使用下方账号密码重置` : lockError);
+    errEl.setAttribute('role', 'alert');
+
+    const actions = make('div', 'ldg-lock-actions');
+    const submit = make('button', 'ldg-btn primary', '解锁台账'); submit.type = 'submit';
+    const back = make('button', 'ldg-btn', '返回工作台'); back.type = 'button'; back.onclick = () => closePanel();
+    actions.append(submit, back);
+    form.append(pinF.field, errEl, actions);
+
+    const resetLink = make('button', 'ldg-link-btn', '忘记二级密码？用工作台账号密码重置');
+    resetLink.type = 'button';
+    resetLink.onclick = () => openResetPinDialog();
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (lockBusy) return;
+      errEl.textContent = '';
+      lockError = '';
+      if (!lockRecord) {
+        void checkLockStatus();
+        return;
+      }
+      const waitSecs = remainingLockSeconds(lockRecord);
+      if (waitSecs > 0) {
+        errEl.textContent = `输错次数过多，请 ${waitSecs} 秒后再试，或使用下方账号密码重置`;
+        return;
+      }
+      const val = pinF.input.value;
+      if (!String(val || '').trim()) {
+        pinF.setError('请输入二级密码');
+        pinF.input.focus?.();
+        return;
+      }
+      lockBusy = true;
+      submit.disabled = true;
+      back.disabled = true;
+      submit.textContent = '正在核验…';
+      try {
+        const derived = await derivePinHash(val, lockRecord.salt_b64, lockRecord.iterations || PBKDF2_ITERATIONS);
+        const matched = timingSafeEqualB64(derived, lockRecord.hash_b64);
+        pinF.input.value = '';
+        const c = client();
+        const {data: sessData} = c?.auth?.getSession ? await c.auth.getSession() : {data: null};
+        const uid = sessData?.session?.user?.id;
+        if (matched) {
+          if (c && uid && ((Number(lockRecord.failed_attempts) || 0) > 0 || lockRecord.locked_until)) {
+            await c.from('wayon_ledger_lock').update({failed_attempts: 0, locked_until: null}).eq('owner_id', uid);
+          }
+          lockRecord = {...lockRecord, failed_attempts: 0, locked_until: null};
+          unlocked = true;
+          lockState = 'unlocked';
+          lockNotice = '';
+          lockError = '';
+          startIdleWatcher();
+          render();
+          void loadAll({force: true});
+          return;
+        }
+        const nextFails = (Number(lockRecord.failed_attempts) || 0) + 1;
+        const cool = cooldownSeconds(nextFails);
+        const lockedUntil = cool > 0 ? new Date(Date.now() + cool * 1000).toISOString() : null;
+        lockRecord = {...lockRecord, failed_attempts: nextFails, locked_until: lockedUntil};
+        if (c && uid) {
+          await c.from('wayon_ledger_lock').update({failed_attempts: nextFails, locked_until: lockedUntil}).eq('owner_id', uid);
+        }
+        const msg = cool > 0
+          ? `二级密码错误（连续失败 ${nextFails} 次），请 ${cool} 秒后再试`
+          : `二级密码错误（连续失败 ${nextFails} 次）`;
+        lockError = msg;
+        pinF.setError(msg, {announce: true});
+        pinF.input.focus?.();
+      } catch (err) {
+        const msg = '验证失败：' + String(err?.message || err || '请稍后重试');
+        lockError = msg;
+        errEl.textContent = msg;
+      } finally {
+        lockBusy = false;
+        submit.disabled = false;
+        back.disabled = false;
+        submit.textContent = '解锁台账';
+      }
+    };
+
+    card.append(form, resetLink);
+    container.append(card);
+    requestAnimationFrame(() => pinF.input.focus?.());
+  }
+
   function render() {
     if (!root) return;
     root.textContent = '';
-    const head = make('div', 'ldg-head');
-    const hl = make('div', 'ldg-head-left');
-    hl.append(make('h2', '', '个人台账'), make('span', 'ldg-sub', '仅本人登录后可见 · 数据存 Supabase 私有表与私有 GitHub 仓库'));
-    const refreshBtn = make('button', 'ldg-btn sm', '刷新'); refreshBtn.type = 'button'; refreshBtn.onclick = () => void loadAll({force: true});
-    head.append(hl, refreshBtn);
-    root.append(head);
 
-    const errBanner = make('div', 'ldg-banner-err');
-    errBanner.setAttribute('role', 'alert');
-    errBanner.hidden = !actionError;
-    const errText = make('span', 'ldg-banner-err-text', actionError);
-    const errClose = make('button', 'ldg-btn sm', '关闭'); errClose.type = 'button'; errClose.onclick = clearActionError;
-    errBanner.append(errText, errClose);
-    root.append(errBanner);
+    if (lockState === 'signedout') {
+      const head = make('div', 'ldg-head');
+      const hl = make('div', 'ldg-head-left');
+      hl.append(make('h2', '', '个人台账'), make('span', 'ldg-sub', '入口已收纳至「设置与账户」'));
+      const exitBtn = make('button', 'ldg-btn sm', '返回工作台'); exitBtn.type = 'button'; exitBtn.onclick = () => closePanel();
+      head.append(hl, exitBtn);
+      root.append(head);
 
-    if (loadState === 'signedout') {
       const lock = make('div', 'ldg-lock');
       lock.append(make('h3', '', '🔒 需要本人云端登录'));
-      lock.append(make('p', '', '课时汇总、调休台账、工资记录和学员档案全部受本人 RLS 权限保护，公开页面不包含任何私有数据。请先在左下角「设置与账户」登录。'));
+      lock.append(make('p', '', '课时汇总、调休台账、工资记录和学员档案全部受本人 RLS 与二级密码双重保护，公开页面不包含任何私有数据。请先在左下角「设置与账户」登录。'));
+      const acts = make('div', 'ldg-lock-actions');
       const btn = make('button', 'ldg-btn primary', '打开登录设置'); btn.type = 'button';
       btn.onclick = () => {
         if (typeof globalThis.wayonOpenAccount === 'function') {
@@ -1301,12 +2080,80 @@
           document.querySelector('.wayon-sync-cta');
         target?.click?.();
       };
-      lock.append(btn);
+      const back = make('button', 'ldg-btn', '返回工作台'); back.type = 'button'; back.onclick = () => closePanel();
+      acts.append(btn, back);
+      lock.append(acts);
       root.append(lock);
       return;
     }
 
-    if (loadState === 'loading') {
+    if (lockState === 'checking' || lockState === 'idle') {
+      const head = make('div', 'ldg-head');
+      head.append(make('h2', '', '个人台账'));
+      const exitBtn = make('button', 'ldg-btn sm', '返回工作台'); exitBtn.type = 'button'; exitBtn.onclick = () => closePanel();
+      head.append(exitBtn);
+      root.append(head, make('div', 'ldg-empty', '正在核验台账锁状态…'));
+      return;
+    }
+
+    if (lockState === 'error') {
+      const head = make('div', 'ldg-head');
+      head.append(make('h2', '', '个人台账'));
+      const exitBtn = make('button', 'ldg-btn sm', '返回工作台'); exitBtn.type = 'button'; exitBtn.onclick = () => closePanel();
+      head.append(exitBtn);
+      const err = make('div', 'ldg-lock');
+      err.append(make('h3', '', '⚠️ 无法核验台账锁状态'));
+      err.append(make('p', '', '为确保安全，未完成校验前不会加载任何数据：' + loadError));
+      const acts = make('div', 'ldg-lock-actions');
+      const retry = make('button', 'ldg-btn primary', '重试'); retry.type = 'button'; retry.onclick = () => void checkLockStatus();
+      const back = make('button', 'ldg-btn', '返回工作台'); back.type = 'button'; back.onclick = () => closePanel();
+      acts.append(retry, back);
+      err.append(acts);
+      root.append(head, err);
+      return;
+    }
+
+    if (lockState === 'setup') {
+      renderSetupView(root);
+      return;
+    }
+
+    if (!unlocked || lockState !== 'unlocked') {
+      renderLockView(root);
+      return;
+    }
+
+    const head = make('div', 'ldg-head');
+    const hl = make('div', 'ldg-head-left');
+    hl.append(make('h2', '', '个人台账'), make('span', 'ldg-sub', '已解锁 · 切走或闲置 10 分钟自动锁定'));
+    const hActs = make('div', 'ldg-head-actions');
+    const lockBtn = make('button', 'ldg-btn sm', '🔒 锁定'); lockBtn.id = 'ldg-lock-btn'; lockBtn.type = 'button';
+    lockBtn.onclick = () => lockPanel({keepOpen: true, reason: '台账已手动锁定，本页内存数据已清空'});
+    const chgBtn = make('button', 'ldg-btn sm', '改密码'); chgBtn.id = 'ldg-change-pin-btn'; chgBtn.type = 'button';
+    chgBtn.onclick = () => openChangePinDialog();
+    const refreshBtn = make('button', 'ldg-btn sm', '刷新'); refreshBtn.type = 'button'; refreshBtn.onclick = () => void loadAll({force: true});
+    const exitBtn = make('button', 'ldg-btn sm', '返回'); exitBtn.id = 'ldg-exit-btn'; exitBtn.type = 'button'; exitBtn.onclick = () => closePanel();
+    hActs.append(lockBtn, chgBtn, refreshBtn, exitBtn);
+    head.append(hl, hActs);
+    root.append(head);
+
+    const okBanner = make('div', 'ldg-banner-ok');
+    okBanner.setAttribute('role', 'status');
+    okBanner.hidden = !actionInfo;
+    const okText = make('span', 'ldg-banner-ok-text', actionInfo);
+    const okClose = make('button', 'ldg-btn sm', '关闭'); okClose.type = 'button'; okClose.onclick = clearActionInfo;
+    okBanner.append(okText, okClose);
+    root.append(okBanner);
+
+    const errBanner = make('div', 'ldg-banner-err');
+    errBanner.setAttribute('role', 'alert');
+    errBanner.hidden = !actionError;
+    const errText = make('span', 'ldg-banner-err-text', actionError);
+    const errClose = make('button', 'ldg-btn sm', '关闭'); errClose.type = 'button'; errClose.onclick = clearActionError;
+    errBanner.append(errText, errClose);
+    root.append(errBanner);
+
+    if (loadState === 'loading' || loadState === 'idle') {
       root.append(make('div', 'ldg-empty', '正在从云端加载个人台账…'));
       return;
     }
@@ -1334,6 +2181,7 @@
       btn.tabIndex = sel ? 0 : -1;
       if (sel) btn.setAttribute('focusgroupstart', '');
       btn.onclick = () => {
+        touchActivity();
         activeTab = t.id;
         render();
         requestAnimationFrame(() => {
@@ -1344,6 +2192,7 @@
       btn.onkeydown = e => {
         if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
         e.preventDefault();
+        touchActivity();
         const idx = TABS.findIndex(x => x.id === t.id);
         const next = TABS[(idx + (e.key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length];
         activeTab = next.id;
@@ -1378,17 +2227,14 @@
   }
 
   function closePanel() {
-    if (!open && !document.body.dataset.ledgerOpen) return;
+    if (!open && !document.body.dataset.ledgerOpen && !unlocked) return;
     open = false;
-    if (modal?.open) {
-      modal.onclose = null;
-      modal.close();
+    lockAndClear({nextState: lockRecord ? 'locked' : 'idle', reason: ''});
+    if (root) {
+      root.textContent = '';
+      root.hidden = true;
     }
-    if (root) root.hidden = true;
     delete document.body.dataset.ledgerOpen;
-    const b = document.getElementById('nav-ledger');
-    b?.classList.remove('on');
-    b?.setAttribute('aria-pressed', 'false');
     if (globalThis.location?.hash === '#ledger' && typeof globalThis.history?.replaceState === 'function') {
       try {
         globalThis.history.replaceState(null, '', (globalThis.location.pathname || '') + (globalThis.location.search || ''));
@@ -1405,27 +2251,32 @@
     globalThis.wayonAircon?.close?.();
     globalThis.wayonVocab?.close?.();
     if (root) root.hidden = false;
-    const b = document.getElementById('nav-ledger');
-    if (b) {
-      b.classList.add('on');
-      b.setAttribute('aria-pressed', 'true');
+    if (unlocked) {
+      touchActivity();
+      startIdleWatcher();
+      render();
+      if (loadState !== 'ready') void loadAll();
+    } else {
+      render();
+      void checkLockStatus();
     }
-    render();
-    void loadAll();
   }
 
   function mount() {
     if (mounting) return;
     mounting = true;
     try {
-      const tabs = document.getElementById('tabs'), list = document.getElementById('list');
-      if (!tabs || !list) return;
+      const list = document.getElementById('list');
+      if (!list) return;
       if (!root) {
         root = make('section');
         root.id = 'ledger-panel';
         root.hidden = !open;
         root.setAttribute('aria-label', '个人台账');
         root.addEventListener('focusout', () => setTimeout(flushDeferredRender, 0));
+        for (const ev of ['pointerdown', 'keydown', 'input', 'scroll']) {
+          root.addEventListener(ev, touchActivity, {passive: true});
+        }
         list.before(root);
       } else if (!root.parentNode) {
         list.before(root);
@@ -1433,31 +2284,6 @@
       const notice = list.parentNode && [...list.parentNode.children].find(e => e.classList?.contains('wayon-sync-notice'));
       if (notice && typeof root.compareDocumentPosition === 'function' && (root.compareDocumentPosition(notice) & 4)) {
         notice.after(root);
-      }
-      let b = document.getElementById('nav-ledger');
-      const mocks = document.getElementById('nav-mocks');
-      if (!b) {
-        b = make('button', 'wayon-icon-control' + (open ? ' on' : ''));
-        b.id = 'nav-ledger';
-        b.type = 'button';
-        b.title = '个人台账与月度课时';
-        b.setAttribute('aria-label', '个人台账');
-        b.setAttribute('aria-pressed', String(open));
-        b.innerHTML = NAV_ICON;
-        b.onclick = () => openPanel();
-        if (mocks && mocks.parentNode === tabs) mocks.after(b);
-        else tabs.append(b);
-      } else {
-        if (open && !b.classList.contains('on')) {
-          b.classList.add('on');
-          b.setAttribute('aria-pressed', 'true');
-        } else if (!open && b.classList.contains('on')) {
-          b.classList.remove('on');
-          b.setAttribute('aria-pressed', 'false');
-        }
-        if (mocks && mocks.parentNode === tabs && b.parentNode === tabs && typeof b.compareDocumentPosition === 'function' && (b.compareDocumentPosition(mocks) & 4)) {
-          mocks.after(b);
-        }
       }
     } finally {
       mountObserver?.takeRecords?.();
@@ -1471,17 +2297,13 @@
     authBoundClient = c;
     c.auth?.onAuthStateChange?.((event) => {
       if (event === 'SIGNED_OUT') {
-        clearPrivateStore();
-        loadState = 'signedout';
-        if (modal?.open) {
-          modal.onclose = null;
-          modal.close();
-        }
+        lockRecord = null;
+        lockAndClear({nextState: 'signedout'});
         if (open) render();
         return;
       }
       if (event === 'SIGNED_IN') {
-        if (open) void loadAll();
+        if (open && !unlocked) void checkLockStatus();
       }
     });
     return true;
@@ -1494,16 +2316,15 @@
   }
 
   function needsRemount(records) {
-    if (!root || !root.parentNode || !document.getElementById('nav-ledger')) return true;
+    if (!root || !root.parentNode) return true;
     if (!Array.isArray(records) || !records.length) return true;
-    const tabs = document.getElementById('tabs');
     const listParent = document.getElementById('list')?.parentNode || null;
     for (const r of records) {
       const t = r?.target;
       if (!t) continue;
       if (root && (t === root || (typeof root.contains === 'function' && root.contains(t)))) continue;
       if (modal && (t === modal || (typeof modal.contains === 'function' && modal.contains(t)))) continue;
-      if (t === tabs || t === listParent || t === document.body) return true;
+      if (t === listParent || t === document.body) return true;
     }
     return false;
   }
@@ -1512,8 +2333,11 @@
     mount();
     document.addEventListener('click', e => {
       const nav = e.target?.closest?.('#tabs button');
-      if (open && nav && nav.id !== 'nav-ledger') closePanel();
+      if (open && nav) closePanel();
     }, true);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkIdleTimeout();
+    });
     if (typeof MutationObserver === 'function') {
       mountObserver = new MutationObserver(records => {
         if (needsRemount(records)) mount();
@@ -1529,12 +2353,14 @@
     const wait = setInterval(() => {
       if (bindAuth() || ++tries > 60) {
         clearInterval(wait);
-        if (open && loadState !== 'ready') void loadAll();
+        if (open && !unlocked && (lockState === 'signedout' || lockState === 'idle')) void checkLockStatus();
+        else if (open && unlocked && loadState !== 'ready') void loadAll();
       }
     }, 1000);
     addEventListener('wayon-refresh-ready', () => {
       bindAuth();
-      if (open && loadState !== 'ready') void loadAll();
+      if (open && !unlocked && (lockState === 'signedout' || lockState === 'idle')) void checkLockStatus();
+      else if (open && unlocked && loadState !== 'ready') void loadAll();
     });
     addEventListener('hashchange', checkHash);
     bindAuth();
@@ -1544,7 +2370,10 @@
   globalThis.wayonLedger = {
     open: openPanel,
     close: closePanel,
+    lock: (reason) => lockPanel({keepOpen: open, reason: reason || '台账已手动锁定，本页内存数据已清空'}),
     isOpen: () => open,
+    isUnlocked: () => unlocked,
+    checkIdleTimeout,
     parseMarkdownBlocks,
     renderMarkdownNode,
     loadAll,
