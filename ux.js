@@ -1323,7 +1323,7 @@
     const air = airconDue();
     const noticeLeft = left.notice === undefined && !air.hasReady ? undefined : (left.notice || 0) + air.uncopied;
     const todayLeft = ['plan', 'done', 'quiz', 'chasing'].some(m => left[m] !== undefined)
-      ? (left.plan || 0) + (left.quiz || 0) : undefined;   // what is due today; reminders keep their own count
+      ? (left.plan || 0) + (left.done || 0) + (left.quiz || 0) + (left.chasing || 0) : undefined;   // 用户 2026-11-21：侧栏「今天」= 安排+完成+抽背+待催四个标签的数字之和
     for (const [id, text] of Object.entries(NAV)) {
       const b = document.getElementById(id); if (!b) continue;
       const n = id === 'nav-notice' ? noticeLeft : id === 'nav-today' ? todayLeft : undefined;
