@@ -487,6 +487,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
     const hasConflict=/冲突/.test(lastStatusText);
     conflictRow.hidden=!hasConflict;
     if(ledgerRow)ledgerRow.hidden=document.body.classList.contains('wayon-room')||typeof globalThis.wayonLedger?.open!=='function';
+    if(cloudDialog?.open&&!panel.open)panel.open=true;
     if(resetSlot)resetSlot.hidden=!signedIn;
   };
   const closeCloudDialog=()=>{
@@ -700,7 +701,7 @@ export async function boot({config,capture,apply,status:report,currentDay,hydrat
       }
       const uuidGen=()=>crypto.randomUUID?.()||'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);});
       engine=new CheckSync({client,owner:user,storage:localStorage,capture,apply:(day,fields)=>applyCloudView(apply,day,fields),status,uuid:uuidGen});
-      email.hidden=password.hidden=login.hidden=true;panel.open=false;syncDialogState();
+      email.hidden=password.hidden=login.hidden=true;if(!cloudDialog?.open)panel.open=false;syncDialogState();
       remember(currentDay());
       const days=[currentDay(),...initialViews.keys()].filter((d,i,a)=>a.indexOf(d)===i);
       for(const day of days)await engine.open(day,{initialView:initialViews.get(day)});
