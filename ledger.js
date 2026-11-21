@@ -248,6 +248,14 @@
     .ldg-tip-wrap.below .ldg-tip-pop{top:calc(100% + 6px);bottom:auto}
     .ldg-tip-wrap:hover .ldg-tip-pop,.ldg-tip-wrap:focus-within .ldg-tip-pop{display:block;opacity:1;visibility:visible}
     .ldg-title-row{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .ldg-sec-toggle{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:inherit;padding:2px 6px 2px 2px;margin:-2px 0 -2px -2px;border-radius:8px;cursor:pointer;font:inherit;text-align:left}
+    .ldg-sec-toggle:hover{background:var(--code-bg,rgba(118,118,128,.1))}
+    .ldg-sec-toggle:focus-visible{outline:2px solid var(--accent,#0071e3);outline-offset:2px}
+    .ldg-sec-toggle h3{margin:0;font-size:16px;font-weight:620}
+    .ldg-sec-chev{display:inline-block;width:14px;text-align:center;font-size:12px;color:var(--muted,#6e6e73);transition:transform .16s ease;flex:none}
+    .ldg-sec-toggle[aria-expanded="false"] .ldg-sec-chev{transform:rotate(-90deg)}
+    .ldg-sec-body{display:flex;flex-direction:column;gap:12px;min-width:0}
+    .ldg-card.collapsed{gap:0;padding-block:12px}
     .ldg-ed-cell{cursor:cell;transition:background .12s}
     .ldg-ed-cell:hover{background:color-mix(in srgb,#1a73e8 6%,var(--card,#fff))}
     .ldg-ed-cell.readonly{cursor:default}
@@ -795,6 +803,69 @@
     pop.setAttribute('role', 'tooltip');
     wrap.append(btn, pop);
     return wrap;
+  }
+
+  const SECTION_STATE_KEY = 'wayon_ledger_sections_v1';
+  const sectionOpenState = new Map();
+  try {
+    const rawSec = globalThis.localStorage?.getItem(SECTION_STATE_KEY);
+    if (rawSec) {
+      const parsed = JSON.parse(rawSec);
+      if (parsed && typeof parsed === 'object') {
+        Object.entries(parsed).forEach(([k, v]) => sectionOpenState.set(k, Boolean(v)));
+      }
+    }
+  } catch {}
+
+  function isSectionOpen(key, defaultOpen = true) {
+    return sectionOpenState.has(key) ? Boolean(sectionOpenState.get(key)) : defaultOpen;
+  }
+
+  function setSectionOpen(key, nextOpen) {
+    sectionOpenState.set(key, Boolean(nextOpen));
+    try {
+      const obj = {};
+      for (const [k, v] of sectionOpenState) obj[k] = v;
+      globalThis.localStorage?.setItem(SECTION_STATE_KEY, JSON.stringify(obj));
+    } catch {}
+  }
+
+  function makeCollapsibleCard({key, title, titleEl, tipText, tipOpts, rightEl, defaultOpen = true}) {
+    const initiallyOpen = isSectionOpen(key, defaultOpen);
+    const card = make('div', 'ldg-card' + (initiallyOpen ? '' : ' collapsed'));
+    card.dataset.section = key;
+    const head = make('div', 'ldg-head');
+    const titleRow = make('div', 'ldg-title-row');
+    const bodyId = 'ldg-sec-body-' + String(key).replace(/[^a-zA-Z0-9_-]/g, '-');
+    const toggleBtn = make('button', 'ldg-sec-toggle');
+    toggleBtn.type = 'button';
+    toggleBtn.dataset.sectionToggle = key;
+    toggleBtn.setAttribute('aria-expanded', String(initiallyOpen));
+    toggleBtn.setAttribute('aria-controls', bodyId);
+    const chev = make('span', 'ldg-sec-chev', '▾');
+    chev.setAttribute('aria-hidden', 'true');
+    const heading = titleEl || make('h3', '', title || '');
+    toggleBtn.append(chev, heading);
+    titleRow.append(toggleBtn);
+    if (tipText) titleRow.append(makeInfoTip(tipText, tipOpts));
+    head.append(titleRow);
+    if (rightEl) head.append(rightEl);
+
+    const body = make('div', 'ldg-sec-body');
+    body.id = bodyId;
+    body.hidden = !initiallyOpen;
+
+    const setOpen = next => {
+      const val = Boolean(next);
+      setSectionOpen(key, val);
+      toggleBtn.setAttribute('aria-expanded', String(val));
+      body.hidden = !val;
+      card.classList.toggle('collapsed', !val);
+    };
+    toggleBtn.onclick = () => setOpen(body.hidden);
+
+    card.append(head, body);
+    return {card, head, body, toggleBtn, heading, setOpen};
   }
 
   function makeInlineEditableCell({
@@ -1630,6 +1701,205 @@
       showActionError('保存失败：' + String(err?.message || err || '请稍后重试'));
     } finally {
       if (btn) btn.disabled = false;
+    }
+  }
+
+  let crc32Table = null;
+  function crc32Bytes(bytes) {
+    if (!crc32Table) {
+      crc32Table = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        crc32Table[i] = c >>> 0;
+      }
+    }
+    let crc = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) crc = crc32Table[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+
+  function buildStoredZip(entries) {
+    const enc = new TextEncoder();
+    const now = new Date();
+    const dosTime = ((now.getHours() & 0x1f) << 11) | ((now.getMinutes() & 0x3f) << 5) | ((now.getSeconds() >> 1) & 0x1f);
+    const dosDate = ((Math.max(1980, now.getFullYear()) - 1980) << 9) | (((now.getMonth() + 1) & 0x0f) << 5) | (now.getDate() & 0x1f);
+    const localParts = [];
+    const cdParts = [];
+    let offset = 0;
+    let cdSize = 0;
+    for (const item of entries) {
+      const nameBytes = enc.encode(String(item.name || 'card.png'));
+      const data = item.bytes instanceof Uint8Array ? item.bytes : new Uint8Array(item.bytes || 0);
+      const crc = crc32Bytes(data);
+      const lfh = new Uint8Array(30);
+      const lv = new DataView(lfh.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0x0800, true);
+      lv.setUint16(8, 0, true);
+      lv.setUint16(10, dosTime, true);
+      lv.setUint16(12, dosDate, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, data.length, true);
+      lv.setUint32(22, data.length, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);
+      localParts.push(lfh, nameBytes, data);
+
+      const cdh = new Uint8Array(46);
+      const cv = new DataView(cdh.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, dosTime, true);
+      cv.setUint16(14, dosDate, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, data.length, true);
+      cv.setUint32(24, data.length, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint16(30, 0, true);
+      cv.setUint16(32, 0, true);
+      cv.setUint16(34, 0, true);
+      cv.setUint16(36, 0, true);
+      cv.setUint32(38, 0, true);
+      cv.setUint32(42, offset, true);
+      cdParts.push(cdh, nameBytes);
+
+      offset += 30 + nameBytes.length + data.length;
+      cdSize += 46 + nameBytes.length;
+    }
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(4, 0, true);
+    ev.setUint16(6, 0, true);
+    ev.setUint16(8, entries.length, true);
+    ev.setUint16(10, entries.length, true);
+    ev.setUint32(12, cdSize, true);
+    ev.setUint32(16, offset, true);
+    ev.setUint16(20, 0, true);
+
+    const totalLen = offset + cdSize + 22;
+    const out = new Uint8Array(totalLen);
+    let pos = 0;
+    for (const part of [...localParts, ...cdParts, eocd]) {
+      out.set(part, pos);
+      pos += part.length;
+    }
+    return out;
+  }
+
+  function dedupeCardFileNames(fileList) {
+    const used = new Map();
+    return fileList.map((f, idx) => {
+      const baseRaw = String(f.name || `核对卡_${idx + 1}.png`).replace(/[\\/:*?"<>|]/g, '_').trim() || `核对卡_${idx + 1}.png`;
+      const key = baseRaw.toLowerCase();
+      const count = used.get(key) || 0;
+      used.set(key, count + 1);
+      if (count === 0) return {file: f, filename: baseRaw};
+      const dot = baseRaw.lastIndexOf('.');
+      const unique = dot > 0
+        ? `${baseRaw.slice(0, dot)} (${count + 1})${baseRaw.slice(dot)}`
+        : `${baseRaw} (${count + 1})`;
+      return {file: f, filename: unique};
+    });
+  }
+
+  async function saveAllCardsToDesktop(fileList, folderLabel, btn) {
+    if (!Array.isArray(fileList) || !fileList.length) return;
+    if (btn && btn.disabled) return;
+    const origText = btn ? btn.textContent : '';
+    if (btn) btn.disabled = true;
+    clearActionError();
+    clearActionInfo();
+    const safeFolder = String(folderLabel || '老师核对卡').replace(/[\\/:*?"<>|]/g, '_').trim() || '老师核对卡';
+    const items = dedupeCardFileNames(fileList);
+
+    try {
+      // Must call showDirectoryPicker synchronously in click activation before any network awaits.
+      let targetDir = null;
+      if (typeof globalThis.showDirectoryPicker === 'function') {
+        try {
+          const picked = await globalThis.showDirectoryPicker({
+            id: 'wayon-teacher-cards',
+            mode: 'readwrite',
+            startIn: 'desktop',
+          });
+          targetDir = await picked.getDirectoryHandle(safeFolder, {create: true});
+        } catch (err) {
+          if (err?.name === 'AbortError') return;
+          targetDir = null;
+        }
+      }
+
+      if (typeof globalThis.fetch !== 'function') {
+        throw new Error('当前环境不支持批量读取文件');
+      }
+
+      const loaded = [];
+      const failed = [];
+      for (let i = 0; i < items.length; i++) {
+        const {file, filename} = items[i];
+        if (btn) btn.textContent = `${targetDir ? '保存中' : '打包中'} ${i + 1}/${items.length}…`;
+        try {
+          const u = await getSignedUrl(file.path);
+          if (!u) throw new Error('签名链接失败');
+          const resp = await globalThis.fetch(u);
+          if (!resp || !resp.ok) throw new Error(`HTTP ${resp?.status || 'ERR'}`);
+          const buf = typeof resp.arrayBuffer === 'function'
+            ? await resp.arrayBuffer()
+            : await (await resp.blob()).arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          if (targetDir) {
+            const fh = await targetDir.getFileHandle(filename, {create: true});
+            const writable = await fh.createWritable();
+            await writable.write(bytes);
+            await writable.close();
+            loaded.push({name: filename, bytes});
+          } else {
+            loaded.push({name: filename, bytes});
+          }
+        } catch {
+          failed.push(filename);
+        }
+      }
+
+      if (!loaded.length) {
+        throw new Error('未能获取到任何核对卡图片，请检查网络或重新登录后重试');
+      }
+
+      if (targetDir) {
+        const msg = failed.length
+          ? `已保存 ${loaded.length}/${items.length} 张核对卡到文件夹「${safeFolder}」（${failed.length} 张失败：${failed.join('、')}）`
+          : `已一键保存全部 ${loaded.length} 张核对卡到文件夹「${safeFolder}」`;
+        if (failed.length) showActionError(msg);
+        else showActionInfo(msg);
+        announcePolite(msg);
+        return;
+      }
+
+      const zipBytes = buildStoredZip(loaded);
+      const zipName = `${safeFolder}.zip`;
+      const zipBlob = typeof globalThis.Blob === 'function'
+        ? new globalThis.Blob([zipBytes], {type: 'application/zip'})
+        : zipBytes;
+      triggerBlobDownload(zipBlob, zipName);
+      const msg = failed.length
+        ? `已打包下载 ${loaded.length}/${items.length} 张核对卡（${zipName}，${failed.length} 张失败）`
+        : `已一键打包下载全部 ${loaded.length} 张核对卡（${zipName}）`;
+      if (failed.length) showActionError(msg);
+      else showActionInfo(msg);
+      announcePolite(msg);
+    } catch (err) {
+      showActionError('批量保存失败：' + String(err?.message || err || '请稍后重试'));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
     }
   }
 
@@ -2920,8 +3190,14 @@
 
     function renderLtCards() {
       cardsSlot.textContent = '';
+      const entries = computeEntries();
+      const sec = makeCollapsibleCard({
+        key: 'lt-cards',
+        title: `📌 长期学员进度（${entries.length}）`,
+        tipText: '余额 ≤ 10h 自动标红预警；可点击标题收纳或展开',
+      });
       const grid = make('div', 'ldg-lt-grid');
-      computeEntries().forEach(({name, info, used, total, remaining}) => {
+      entries.forEach(({name, info, used, total, remaining}) => {
         const level = remaining <= 10 ? 'danger' : (remaining <= 20 ? 'warn' : 'ok');
         const card = make('div', 'ldg-lt-card' + (level === 'danger' ? ' danger' : ''));
         const head = make('div', 'ldg-lt-head');
@@ -2954,7 +3230,8 @@
         if (info.note) card.append(make('p', 'ldg-lt-note', info.note));
         grid.append(card);
       });
-      cardsSlot.append(grid);
+      sec.body.append(grid);
+      cardsSlot.append(sec.card);
     }
 
     let saveLtBtn = null;
@@ -3000,13 +3277,6 @@
 
     function renderLtMatrix() {
       matrixSlot.textContent = '';
-      const mCard = make('div', 'ldg-card');
-      const head = make('div', 'ldg-head');
-      const hLeft = make('div', 'ldg-title-row');
-      hLeft.append(
-        make('h3', '', '📊 长期学员按月消耗明细'),
-        makeInfoTip('点击方案、总课时、各月课时或备注单元格直接原位编辑，实时重算上方进度卡与预警')
-      );
       const hActs = make('div', 'ldg-head-actions');
       const addMonthBtn = make('button', 'ldg-btn sm', '＋ 新增月份列');
       addMonthBtn.id = 'ldg-lt-add-month'; addMonthBtn.type = 'button';
@@ -3037,8 +3307,14 @@
       saveLtBtn.disabled = !ltDraft.dirty || ltDraft.saving;
       saveLtBtn.onclick = () => void saveLongTermDraft();
       hActs.append(addMonthBtn, addStuBtn, discardLtBtn, saveLtBtn);
-      head.append(hLeft, hActs);
-      mCard.append(head);
+      const sec = makeCollapsibleCard({
+        key: 'lt-matrix',
+        title: '📊 长期学员按月消耗明细',
+        tipText: '点击方案、总课时、各月课时或备注单元格直接原位编辑，实时重算上方进度卡与预警',
+        rightEl: hActs,
+      });
+      const mCard = sec.card;
+      const mBody = sec.body;
 
       const sortedMonths = ltDraft.months;
       const cols = [
@@ -3234,12 +3510,12 @@
 
       tbl.append(thead, tbody);
       tblWrap.append(tbl);
-      mCard.append(tblWrap);
+      mBody.append(tblWrap);
       if (ltDraft.notes.length) {
         const ul = make('ul', 'ldg-lt-note');
         ul.style.paddingLeft = '18px';
         ltDraft.notes.forEach(n => ul.append(make('li', '', String(n))));
-        mCard.append(ul);
+        mBody.append(ul);
       }
       matrixSlot.append(mCard);
     }
@@ -3404,17 +3680,12 @@
       const comp = currentComputed();
       const tBreakdown = comp.teacher_breakdown;
       if (!tBreakdown.length) return;
-      const card = make('div', 'ldg-card');
-      const head = make('div', 'ldg-head');
-      const hTitleWrap = make('div', 'ldg-title-row');
-      hTitleWrap.append(
-        make('h3', '', '📊 老师课时分布'),
-        makeInfoTip('点击老师筛选下方核对卡与明细；点击右侧按钮可按最新在线表重绘该老师核对卡')
-      );
-      head.append(
-        hTitleWrap,
-        make('span', 'ldg-sub', `${tBreakdown.length} 位 · ${fmtHours(comp.hours)}h`)
-      );
+      const sec = makeCollapsibleCard({
+        key: 'billing-bars',
+        title: '📊 老师课时分布',
+        tipText: '点击老师筛选下方核对卡与明细；点击右侧按钮可按最新在线表重绘该老师核对卡',
+        rightEl: make('span', 'ldg-sub', `${tBreakdown.length} 位 · ${fmtHours(comp.hours)}h`),
+      });
       const list = make('div', 'ldg-bar-list');
       const maxHrs = Math.max(1, ...tBreakdown.map(t => num(t.total)));
       tBreakdown.forEach(t => {
@@ -3454,8 +3725,8 @@
         itemWrap.append(rowBtn, genBtn);
         list.append(itemWrap);
       });
-      card.append(head, list);
-      barsSlot.append(card);
+      sec.body.append(list);
+      barsSlot.append(sec.card);
     }
 
     function refreshTeacherSelectOptions() {
@@ -3483,18 +3754,19 @@
       const shown = billingTeacherFilter
         ? latestImgs.filter(f => String(f.name || '').includes(billingTeacherFilter) || f.teacher === billingTeacherFilter)
         : latestImgs;
-      const card = make('div', 'ldg-card');
-      const head = make('div', 'ldg-head');
-      const hTitleWrap = make('div', 'ldg-title-row');
       const hTitle = billingTeacherFilter
         ? `🪪 老师核对卡 · ${billingTeacherFilter}（${shown.length}/${latestImgs.length}）`
         : `🪪 老师课时核对卡（${latestImgs.length}）`;
-      hTitleWrap.append(
-        make('h3', '', hTitle),
-        makeInfoTip('原版为月末自动归档件（永不覆盖）；点击「✏️ 编辑」可基于最新在线表重绘并另存编辑版；点击「⬇️ 存到桌面」可一键保存 PNG')
-      );
-      head.append(hTitleWrap);
       const hActs = make('div', 'ldg-head-actions');
+      if (shown.length) {
+        const monthTag = String(cur.title || cur.year_month || '').replace(/\s*课时汇总$/, '').trim();
+        const folderLabel = billingTeacherFilter ? `${monthTag}_${billingTeacherFilter}_核对卡` : `${monthTag}_老师核对卡`;
+        const saveAllBtn = make('button', 'ldg-btn sm primary', billingTeacherFilter ? `⬇️ 保存筛选 (${shown.length})` : `⬇️ 一键保存全部 (${shown.length})`);
+        saveAllBtn.id = 'ldg-cards-save-all';
+        saveAllBtn.type = 'button';
+        saveAllBtn.onclick = () => void saveAllCardsToDesktop(shown, folderLabel, saveAllBtn);
+        hActs.append(saveAllBtn);
+      }
       const newCardBtn = make('button', 'ldg-btn sm', '🎨 生成核对卡');
       newCardBtn.type = 'button';
       newCardBtn.onclick = () => openTeacherCardEditor(cur, billingTeacherFilter || '');
@@ -3505,12 +3777,16 @@
         showAll.onclick = () => { billingTeacherFilter = ''; syncTeacherFilterUI(); };
         hActs.append(showAll);
       }
-      head.append(hActs);
-      card.append(head);
+      const sec = makeCollapsibleCard({
+        key: 'billing-cards',
+        title: hTitle,
+        tipText: '原版为月末自动归档件（永不覆盖）；点击「⬇️ 一键保存全部」可一次性存入桌面文件夹或 ZIP 包；点击「✏️ 编辑」可基于最新在线表重绘并另存编辑版',
+        rightEl: hActs,
+      });
 
       if (!shown.length) {
-        card.append(make('div', 'ldg-empty', `本月暂无「${billingTeacherFilter}」核对卡，可点击上方「🎨 生成核对卡」立即重绘。`));
-        cardsSlot.append(card);
+        sec.body.append(make('div', 'ldg-empty', `本月暂无「${billingTeacherFilter}」核对卡，可点击上方「🎨 生成核对卡」立即重绘。`));
+        cardsSlot.append(sec.card);
         return;
       }
 
@@ -3548,8 +3824,8 @@
         grid.append(item);
         void getSignedUrl(f.path).then(u => { if (u) img.src = u; }).catch(() => {});
       });
-      card.append(grid);
-      cardsSlot.append(card);
+      sec.body.append(grid);
+      cardsSlot.append(sec.card);
     }
 
     function pushUndoSnapshot() {
@@ -4108,14 +4384,14 @@
     renderCardsSection();
 
     // Google Sheets-style editable table card (always available so user can add/edit rows even on empty months)
-    const recCard = make('div', 'ldg-card');
-    const recHeadRow = make('div', 'ldg-title-row');
     recTitleEl = make('h3', '', `📋 在线课时电子表（${sheetDraft.records.length} 节）`);
-    recHeadRow.append(
-      recTitleEl,
-      makeInfoTip('单击选中，双击或回车编辑，支持方向键/Tab/撤销重做与 Excel/Google 表格粘贴；保存同步云端，不影响月末原版 Excel')
-    );
-    recCard.append(recHeadRow);
+    const recSec = makeCollapsibleCard({
+      key: 'billing-sheet',
+      titleEl: recTitleEl,
+      tipText: '单击选中，双击或回车编辑，支持方向键/Tab/撤销重做与 Excel/Google 表格粘贴；保存同步云端，不影响月末原版 Excel',
+    });
+    const recCard = recSec.card;
+    const recBody = recSec.body;
 
     const tBar = make('div', 'ldg-sheet-toolbar');
     const filterGrp = make('div', 'ldg-toolbar');
@@ -4247,19 +4523,17 @@
     fxStateEl = make('span', 'ldg-fx-state clean', '已同步云端');
     fxBar.append(fxRefEl, fxSym, fxInputEl, fxStateEl);
 
-    recCard.append(tBar, fxBar, recordsSlot);
+    recBody.append(tBar, fxBar, recordsSlot);
     wrap.append(recCard);
     syncSheetMetaUI();
     renderRecordsRows();
 
     if (docs.length) {
-      const card = make('div', 'ldg-card');
-      const dHead = make('div', 'ldg-title-row');
-      dHead.append(
-        make('h3', '', `📎 原版归档 Excel（${docs.length}）`),
-        makeInfoTip('月末归档的原始微软 .xlsx 文件（只读原件永久保留，与上方在线编辑表相互独立）')
-      );
-      card.append(dHead);
+      const excelSec = makeCollapsibleCard({
+        key: 'billing-excel',
+        title: `📎 原版归档 Excel（${docs.length}）`,
+        tipText: '月末归档的原始微软 .xlsx 文件（只读原件永久保留，与上方在线编辑表相互独立）',
+      });
       const row = make('div', 'ldg-files');
       docs.forEach(f => {
         const sz = fmtBytes(f.size);
@@ -4268,8 +4542,8 @@
         btn.onclick = () => void downloadSignedFile(f, btn);
         row.append(btn);
       });
-      card.append(row);
-      wrap.append(card);
+      excelSec.body.append(row);
+      wrap.append(excelSec.card);
     }
 
     if (cur.summary_md) {
@@ -4798,14 +5072,19 @@
 
     const commMd = extractCommissionSummaryMd(cur.summary_md);
     if (commMd) {
-      const card = make('div', 'ldg-card');
-      card.append(make('h3', '', `📝 ${cur.title || cur.year_month} · 个人提成摘要`), renderMarkdownNode(commMd, '月度提成摘要'));
-      wrap.append(card);
+      const sec = makeCollapsibleCard({
+        key: 'comm-summary',
+        title: `📝 ${cur.title || cur.year_month} · 个人提成摘要`,
+      });
+      sec.body.append(renderMarkdownNode(commMd, '月度提成摘要'));
+      wrap.append(sec.card);
     }
 
     if (withComm.length) {
-      const card = make('div', 'ldg-card');
-      card.append(make('h3', '', '📊 历月个人提成核算汇总'));
+      const sec = makeCollapsibleCard({
+        key: 'comm-history',
+        title: '📊 历月个人提成核算汇总',
+      });
       const headers = ['月份', {label: '总结算课时', num: true}, {label: '提成课时', num: true}, {label: '阶梯', num: true}, {label: '余量', num: true}, {label: '距下档', num: true}];
       const rows = withComm.map(m => {
         const c = m.meta.commission;
@@ -4818,8 +5097,8 @@
           `${fmtHours(c.gap ?? 0)}h`,
         ];
       });
-      card.append(renderResponsiveTable('历月个人提成核算汇总', headers, rows));
-      wrap.append(card);
+      sec.body.append(renderResponsiveTable('历月个人提成核算汇总', headers, rows));
+      wrap.append(sec.card);
     }
   }
 
