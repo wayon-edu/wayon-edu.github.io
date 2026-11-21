@@ -54,7 +54,9 @@
     return /check constraint|violates.*constraint|invalid input syntax|wayon_vocab_sessions_final/i.test(String(e?.message || ''));
   };
   const SUBJECTS = [['听力', /听力|listening|听说/i], ['阅读', /阅读|reading/i], ['写作', /写作|writing/i], ['口语', /口语|speaking/i], ['读写', /读写/], ['托福', /托福|toefl/i], ['SAT', /sat/i], ['语法', /语法|grammar/i], ['校内', /校内|高考|中考/]];
-  const subjectOf = v => { const s = String(v || ''); const hit = SUBJECTS.find(([, re]) => re.test(s)); return hit ? hit[0] : (s.trim() || '其他'); };
+  // 用户手动建的类别（wayon_feedback_kinds）原样保留，不再被上面的关键词并进「阅读」等大类，例如「高考阅读」「新托福阅读」。
+  const kindNames = new Set();
+  const subjectOf = v => { const s = String(v || ''); if (kindNames.has(s.trim())) return s.trim(); const hit = SUBJECTS.find(([, re]) => re.test(s)); return hit ? hit[0] : (s.trim() || '其他'); };
   const LESSON_NO = /(?:L|Lesson|反馈|第)\s*(\d{1,3})(?!\d)|(?:听说|听力|阅读|写作|口语|读写|托福阅读|能力提升)[^\d]{0,6}?(\d{1,3})\s*$/gi;
   // Titles: 学生名_课程_日期 on the feedback page; quiz titles add the teacher's lesson number, e.g. "陈书进_阅读L3_11/7".
   const lessonLabel = (learner, course, no, day) => String(learner || '').replace(/\//g, '、') + '_' + (course || '课程') + (no ? 'L' + no : '') + '_' + md(day);
@@ -640,8 +642,8 @@
     }
   }
   async function lessonIndex(force) {
-    if (index && !force) { await loadIgnored(); return index; }
-    await loadIgnored();
+    if (index && !force) { await loadIgnored(); await loadKinds(); return index; }
+    await loadIgnored(); await loadKinds();
     if (mode === 'preview') index = preview.lessons.filter(l => !l.archived_at).map(({body, ...rest}) => rest);
     else index = await pageAll(() => client().from('wayon_lessons').select('id,learner,subject,lesson_date,title,origin,created_at').is('archived_at', null).order('lesson_date', {ascending: false, nullsFirst: false}));
     return index;
@@ -902,6 +904,96 @@
     if (on) { const {error} = await client().from('wayon_feedback_gaps').upsert(nos.map(n => ({learner, subject, lesson_no: n})), {onConflict: 'owner_id,learner,subject,lesson_no', ignoreDuplicates: true}); if (error) throw error; }
     else { const {error} = await client().from('wayon_feedback_gaps').delete().eq('learner', learner).eq('subject', subject).in('lesson_no', nos); if (error) throw error; }
     nos.forEach(n => on ? ignored.add(gapKey(learner, subject, n)) : ignored.delete(gapKey(learner, subject, n)));
+  }
+  // 课程类别（手动）：每个学生自己的类别名单，含还没有课的空类别。各节课属于哪个类别仍看 wayon_lessons.subject。
+  let kinds = null;   // learner -> [name]
+  const KIND_LOCAL = 'wayon-feedback-kinds';
+  const cleanKind = v => String(v || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  const kindsOf = learner => (kinds && kinds.get(learner)) || [];
+  function rebuildKindNames() { kindNames.clear(); (kinds || new Map()).forEach(list => list.forEach(n => kindNames.add(n))); }
+  async function loadKinds() {
+    if (kinds) return kinds;
+    const rows = [];
+    if (mode === 'preview') { try { rows.push(...JSON.parse(localStorage.getItem(KIND_LOCAL) || '[]')); } catch {} }
+    else if (client()) { const {data, error} = await client().from('wayon_feedback_kinds').select('learner,name').order('created_at'); if (!error && data) rows.push(...data); }
+    kinds = new Map(); rows.forEach(r => { if (!kinds.has(r.learner)) kinds.set(r.learner, []); if (!kinds.get(r.learner).includes(r.name)) kinds.get(r.learner).push(r.name); });
+    rebuildKindNames(); return kinds;
+  }
+  function saveLocalKinds() { const out = []; kinds.forEach((list, learner) => list.forEach(name => out.push({learner, name}))); try { localStorage.setItem(KIND_LOCAL, JSON.stringify(out)); } catch {} }
+  async function addKind(learner, name) {
+    name = cleanKind(name); if (!name) throw new Error('类别名不能为空');
+    await loadKinds(); if (kindsOf(learner).includes(name)) return;
+    if (mode !== 'preview') { const {error} = await client().from('wayon_feedback_kinds').upsert({learner, name}, {onConflict: 'owner_id,learner,name', ignoreDuplicates: true}); if (error) throw /relation|does not exist|schema cache/i.test(error.message) ? new Error('云端还没开通「课程类别」表，请稍后再试') : error; }
+    if (!kinds.has(learner)) kinds.set(learner, []); kinds.get(learner).push(name);
+    if (mode === 'preview') saveLocalKinds(); rebuildKindNames();
+  }
+  async function removeKind(learner, name) {
+    await loadKinds(); if (!kindsOf(learner).includes(name)) return;
+    if (mode !== 'preview') { const {error} = await client().from('wayon_feedback_kinds').delete().eq('learner', learner).eq('name', name); if (error) throw error; }
+    kinds.set(learner, kindsOf(learner).filter(n => n !== name));
+    if (mode === 'preview') saveLocalKinds(); rebuildKindNames();
+  }
+  // Move lessons (and the words that came from them) into another category. Nothing is deleted; the evening backup re-syncs them.
+  async function moveLessons(learner, ids, subject) {
+    if (!ids.length) return;
+    if (mode === 'preview') {
+      preview.lessons.filter(l => ids.includes(l.id)).forEach(l => { l.subject = subject; l.notion_synced_at = null; });
+      preview.words.filter(w => ids.includes(w.lesson_id)).forEach(w => { w.subject = subject; });
+    } else {
+      for (let i = 0; i < ids.length; i += 200) {
+        const part = ids.slice(i, i + 200);
+        const {error} = await client().from('wayon_lessons').update({subject, notion_synced_at: null}).in('id', part); if (error) throw error;
+        const {error: e2} = await client().from('wayon_vocab').update({subject}).eq('learner', learner).in('lesson_id', part); if (e2) throw e2;
+      }
+    }
+    (index || []).forEach(l => { if (ids.includes(l.id)) l.subject = subject; });
+    dropVocabCache(learner);
+  }
+  // Rename (or merge into an existing) category for one student: its lessons, their words, loose quiz words and「不算缺课」marks follow.
+  async function renameCategory(learner, from, to) {
+    to = cleanKind(to); if (!to || to === from) return 0;
+    const ids = (index || []).filter(l => l.learner === learner && subjectOf(l.subject) === from).map(l => l.id);
+    if (ids.length) await keepKind(learner, to); else await addKind(learner, to);
+    await moveLessons(learner, ids, to);
+    if (mode === 'preview') preview.words.filter(w => w.learner === learner && !w.lesson_id && subjectOf(w.subject) === from).forEach(w => { w.subject = to; });
+    else {
+      const {data, error} = await client().from('wayon_vocab').select('id,subject').eq('learner', learner).is('lesson_id', null); if (error) throw error;
+      const loose = (data || []).filter(w => subjectOf(w.subject) === from).map(w => w.id);
+      for (let i = 0; i < loose.length; i += 200) { const {error: e} = await client().from('wayon_vocab').update({subject: to}).in('id', loose.slice(i, i + 200)); if (e) throw e; }
+    }
+    const marks = [...(ignored || [])].filter(k => k.startsWith(learner + '|' + from + '|')).map(k => Number(k.split('|').pop()));
+    if (marks.length) { await setIgnored(learner, to, marks, true); await setIgnored(learner, from, marks, false); }
+    await removeKind(learner, from);
+    dropVocabCache(learner);
+    return ids.length;
+  }
+  // A typed category that the keyword rules would fold into another one (e.g.「高考阅读」→「阅读」) is remembered so it stays itself.
+  async function keepKind(learner, name) { name = cleanKind(name); if (name && subjectOf(name) !== name) await addKind(learner, name); }
+  // All categories this student has: those with lessons plus the ones added by hand (possibly still empty).
+  function categoriesOf(learner) { const out = new Set((index || []).filter(l => l.learner === learner).map(l => subjectOf(l.subject))); kindsOf(learner).forEach(n => out.add(n)); return [...out]; }
+  // Small dialog: pick an existing category or type a new one. Resolves to the name, '' when cancelled, or {remove:true}.
+  function askKind({title, detail, value = '', options = [], okText = '确定', removeText = ''}) {
+    return new Promise(resolve => {
+      const ov = make('div', 'vx-overlay fb-confirm'), box = make('div', 'vx-box fb-confirm-box');
+      const done = v => { ov.remove(); document.removeEventListener('keydown', key, true); resolve(v); };
+      const key = e => {
+        const ovs = document.querySelectorAll('.vx-overlay'); if (ovs[ovs.length - 1] !== ov) return;
+        if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); done(''); }
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.stopImmediatePropagation(); submit(); }
+      };
+      box.append(make('h3', '', title)); if (detail) box.append(make('p', 'fb-meta', detail));
+      const input = make('input'); input.type = 'text'; input.className = 'fb-search fb-kind-input'; input.maxLength = 40; input.value = value; input.placeholder = '类别名，如 高考阅读'; input.setAttribute('aria-label', '类别名');
+      const err = make('div', 'fb-meta fb-warn');
+      const chips = make('div', 'fb-kind-chips');
+      options.forEach(o => { const c = btn('fb-kind-chip' + (o === value ? ' on' : ''), o, () => { input.value = o; chips.querySelectorAll('.on').forEach(x => x.classList.remove('on')); c.classList.add('on'); input.focus(); }); chips.append(c); });
+      const submit = () => { const v = cleanKind(input.value); if (!v) { err.textContent = '请输入类别名'; input.focus(); return; } done(v); };
+      const row = make('div', 'fb-row'); row.style.justifyContent = 'flex-end'; row.style.marginTop = '14px';
+      if (removeText) { const rm = btn('fb-btn danger', removeText, () => done({remove: true})); rm.style.marginRight = 'auto'; row.append(rm); }
+      row.append(btn('fb-btn', '取消', () => done('')), btn('fb-btn pri', okText, submit));
+      box.append(input); if (options.length) box.append(chips); box.append(err, row); ov.append(box); document.body.append(ov);
+      ov.addEventListener('click', e => { if (e.target === ov) done(''); }); document.addEventListener('keydown', key, true);
+      input.focus(); input.select();
+    });
   }
   // Every change on the feedback pages asks first (what will happen, to whom), then shows a busy bar while it runs.
   function askConfirm(title, detail, okText, danger) {
@@ -1372,6 +1464,8 @@
     .fb-learner-head .fb-meta{display:flex;gap:8px;align-items:center}
     .fb-link{border:0;background:none;padding:0;font:inherit;font-size:13px;color:var(--accent,#0a63d8);cursor:pointer}
     .fb-subject-tabs{margin:2px 0 12px}
+    .fb-kind-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 12px}.fb-kind-bar .fb-subject-tabs{margin:0;flex-wrap:wrap}.fb-kind-tools{display:flex;gap:6px;margin-left:auto}.fb-kind-btn{min-height:32px;font-size:12.5px;padding:0 12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fb-kind-input{width:100%;box-sizing:border-box;margin-top:2px}.fb-kind-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.fb-kind-chip{border:1px solid var(--line);background:var(--code-bg);color:var(--fg);border-radius:999px;padding:4px 11px;font:inherit;font-size:12.5px;cursor:pointer}.fb-kind-chip.on,.fb-kind-chip:hover{border-color:var(--accent,#0a63d8);color:var(--accent,#0a63d8)}
     .fb-wedit .fb-words-head+.fb-wrow{border-top:0}.fb-wedit .fb-words-head{position:sticky;top:-10px;margin:-10px -12px 0;padding:10px 12px 6px;background:var(--card);z-index:2;border-bottom:1px solid var(--line)}.fb-wedit .fb-link{font-size:12.5px}
     .fb-wrow{border-top:1px solid var(--line);padding:8px 0 7px}.fb-wtop{display:flex;align-items:center;gap:8px;min-width:0}
     .fb-wrow input{border:0;border-bottom:1px solid transparent;border-radius:0;background:transparent;font:inherit;color:var(--fg);padding:1px 0;min-width:0;transition:border-color .15s}
@@ -1461,7 +1555,7 @@
     :is(.fb-lesson>summary,.fb-bulk-sum) .vx-sub{font-size:12px}.vx-tags{margin-left:auto;display:flex;gap:6px}
     .vx-copy{margin-left:auto;flex:none;width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--fg-secondary,var(--muted));display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,color .15s}
     .vx-copy svg{width:17px;height:17px}.vx-copy:hover{background:var(--code-bg);color:var(--accent,#0a63d8)}.vx-copy:active{transform:scale(.94)}.vx-copy+.vx-tags{margin-left:10px}
-    @media (hover:hover) and (pointer:fine){.fb-swipe:hover summary:has(.vx-tags:empty) .vx-copy,.fb-swipe:focus-within summary:has(.vx-tags:empty) .vx-copy{margin-right:80px}}
+    @media (hover:hover) and (pointer:fine){.fb-swipe:hover summary .vx-copy,.fb-swipe:focus-within summary .vx-copy{margin-right:var(--tray-w,80px)}.fb-swipe:hover summary .vx-tags,.fb-swipe:focus-within summary .vx-tags{position:absolute}}
     .vq{margin:6px 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--code-bg)}
     .vq-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
     .vq-tabs button{min-height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg-secondary);font:inherit;font-size:13px;cursor:pointer}
@@ -2221,16 +2315,16 @@
       const kind = make('input'); kind.type = 'text'; kind.className = 'fb-search fb-kind'; kind.value = l.subject || ''; kind.size = 10; kind.maxLength = 40;
       kind.placeholder = '课程类别'; kind.setAttribute('aria-label', '课程类别');
       const kinds = make('datalist'); kinds.id = 'fb-kinds-' + l.id; kind.setAttribute('list', kinds.id);
-      [...new Set((index || []).filter(x => x.learner === l.learner && x.subject).map(x => x.subject))].sort().forEach(v => { const o = make('option'); o.value = v; kinds.append(o); });
+      [...new Set([...categoriesOf(l.learner), ...(index || []).filter(x => x.learner === l.learner && x.subject).map(x => x.subject)])].sort().forEach(v => { const o = make('option'); o.value = v; kinds.append(o); });
       const status = make('span', 'fb-meta');
       const save = btn('fb-btn pri', '保存修改', async () => {
         const next = ta.value.trim(); if (!next) { status.textContent = '内容不能为空'; return; }
-        const subject = kind.value.trim() || l.subject, moved = subject !== l.subject;
+        const subject = cleanKind(kind.value) || l.subject, moved = subject !== l.subject;
         if (next === raw.trim() && (date.value || null) === (l.lesson_date || null) && !ed.edited && !moved) { view(raw); return; }
         const ws = ed.words(), no = lessonNo(l.title);
-        if (!await askConfirm('保存修改？', [l.learner.replace(/\//g, '、'), moved ? subjectOf(l.subject) + ' → ' + subjectOf(subject) : subjectOf(l.subject), no ? 'L' + no : '', date.value ? md(date.value) + weekday(date.value) : '没有日期'].filter(Boolean).join(' · ') + '\n改后识别到 ' + ws.length + ' 个生词；新出现的词加进词库，已有的词不删。', '保存修改')) return;
+        if (!await askConfirm('保存修改？', [l.learner.replace(/\//g, '、'), moved ? subjectOf(l.subject) + ' → ' + subject : subjectOf(l.subject), no ? 'L' + no : '', date.value ? md(date.value) + weekday(date.value) : '没有日期'].filter(Boolean).join(' · ') + '\n改后识别到 ' + ws.length + ' 个生词；新出现的词加进词库，已有的词不删。', '保存修改')) return;
         save.disabled = true; status.textContent = '保存中…';
-        try { const r = await busy('正在保存修改…', () => editLesson(l.id, {body: next, lesson_date: date.value || null, words: ws, custom: ed.edited, subject})); flash('已保存，识别到 ' + r.total + ' 个生词' + (r.added ? '，新增 ' + r.added + ' 个进词库' : '') + (moved ? '，已移到「' + subjectOf(subject) + '」' : '')); drawHead(); view(next); refresh && refresh(); if (moved && open) renderPanel(); }
+        try { if (moved) await keepKind(l.learner, subject); const r = await busy('正在保存修改…', () => editLesson(l.id, {body: next, lesson_date: date.value || null, words: ws, custom: ed.edited, subject})); flash('已保存，识别到 ' + r.total + ' 个生词' + (r.added ? '，新增 ' + r.added + ' 个进词库' : '') + (moved ? '，已移到「' + subjectOf(subject) + '」' : '')); drawHead(); view(next); refresh && refresh(); if (moved && open) renderPanel(); }
         catch (e) { status.textContent = '保存失败：' + (e.message || e); save.disabled = false; }
       });
       tools.append(make('span', 'fb-meta', '类别'), kind, kinds, make('span', 'fb-meta', '日期'), date, save, btn('fb-btn', '取消', () => view(raw)), status);
@@ -2247,6 +2341,7 @@
     return d;
   }
   const ICON = {
+    move: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M12 14h6M15 11l3 3-3 3"/></svg>',
     trash: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
     paste: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 10v7M9 14l3 3 3-3"/></svg>',
   };
@@ -2259,6 +2354,7 @@
     inner.append(el); wrap.append(inner, tray);
     actions.forEach(a => { const b = make('button', 'fb-swipe-act ' + a.cls); b.type = 'button'; b.innerHTML = ICON[a.icon]; b.title = a.label; b.setAttribute('aria-label', a.label); b.onclick = e => { e.stopPropagation(); settle(0); a.run(wrap); }; tray.append(b); });
     const width = actions.length * 64;
+    wrap.style.setProperty('--tray-w', (actions.length * 36 + 8) + 'px');   // the copy button makes room for every hover icon
     let x = 0, base = 0, x0 = null, y0 = 0, startX = 0, axis = null, lastT = 0, lastX = 0, v = 0;
     const paint = to => { x = to; inner.style.transform = to ? 'translate3d(' + to + 'px,0,0)' : ''; wrap.style.setProperty('--p', Math.min(1, -to / width).toFixed(3)); };
     const settle = to => { wrap.classList.remove('dragging'); wrap.classList.toggle('open', to !== 0); paint(to); base = to; };
@@ -2288,6 +2384,7 @@
     const ls = index.filter(l => l.learner === k);
     const bySubject = new Map(); ls.forEach(l => { const s = subjectOf(l.subject); if (!bySubject.has(s)) bySubject.set(s, []); bySubject.get(s).push(l); });
     const subjects = [...bySubject.entries()].sort((a, b) => latestOf(b[1]).localeCompare(latestOf(a[1])));
+    kindsOf(k).forEach(n => { if (!bySubject.has(n)) { bySubject.set(n, []); subjects.push([n, bySubject.get(n)]); } });   // hand-added, still empty
     let pick = subjects.some(([n]) => n === learnerSubject) ? learnerSubject : (subjects[0] ? subjects[0][0] : '其他');
     // Header: back link, the student, a one-line summary, and the import action on the right.
     const top = make('div', 'fb-card fb-learner-head');
@@ -2304,13 +2401,46 @@
     acts.append(btn('fb-btn', '＋ 添加一节', () => openAdd(addSlot)), btn('fb-btn pri', '批量导入反馈', () => openBulk(k)));
     top.append(left, acts);
     root.append(top, addSlot);
-    if (!ls.length) { root.append(make('div', 'fb-card fb-meta', '还没有反馈，点右上角「批量导入反馈」或「＋ 添加一节」。')); return; }
-    const tabs = make('div', 'fb-tabs fb-subject-tabs'), list = make('div');
-    root.append(tabs, list);
+    if (!ls.length && !subjects.length) { root.append(make('div', 'fb-card fb-meta', '还没有反馈，点右上角「批量导入反馈」或「＋ 添加一节」。')); return; }
+    const kindBar = make('div', 'fb-kind-bar'), tabs = make('div', 'fb-tabs fb-subject-tabs'), kindTools = make('div', 'fb-kind-tools'), list = make('div');
+    kindBar.append(tabs, kindTools);
+    root.append(kindBar, list);
+    const who = k.replace(/\//g, '、');
+    // ＋ 类别：给这个学生加一个课程类别（可先空着，之后在里面加课，或把已有的课移过来）。
+    const newKind = async () => {
+      const name = await askKind({title: '添加课程类别', detail: who + '\n例如「高考阅读」「新托福阅读」。建好后可在里面加一节，或把已有的课移进来。', okText: '添加'});
+      if (!name) return;
+      if (bySubject.has(name)) { pick = learnerSubject = name; paint(); flash('「' + name + '」已经有了'); return; }
+      try { await busy('正在添加类别…', () => addKind(k, name)); pick = learnerSubject = name; flash('已添加「' + name + '」'); renderPanel(); } catch (e) { flash('添加失败：' + (e.message || e), true); }
+    };
+    // ✎：给当前类别改名；改成已有的类别名就是合并。空类别可以删掉。
+    const manageKind = async name => {
+      const items = bySubject.get(name) || [], others = subjects.map(([n]) => n).filter(n => n !== name);
+      const r = await askKind({title: '修改类别「' + name + '」', detail: who + ' · ' + items.length + ' 节\n输入新名字改名；选已有的类别就是把这 ' + items.length + ' 节并过去。课的原文和生词都不删。', value: name, options: others, okText: '保存', removeText: items.length ? '' : '删除这个类别'});
+      if (!r) return;
+      if (r.remove) {
+        if (!await askConfirm('删除类别？', who + ' · 「' + name + '」\n这个类别里没有课，删除只是把它从标签里去掉。', '删除', true)) return;
+        try { await busy('正在删除类别…', () => removeKind(k, name)); if (pick === name) learnerSubject = null; flash('已删除「' + name + '」'); renderPanel(); } catch (e) { flash('删除失败：' + (e.message || e), true); }
+        return;
+      }
+      if (r === name) return;
+      const merge = bySubject.has(r);
+      if (!await askConfirm(merge ? '合并类别？' : '改名？', who + '\n「' + name + '」' + items.length + ' 节 → ' + (merge ? '并入已有的' : '改名为') + '「' + r + '」\n这几节的生词也跟着改类别；原文、生词、抽背记录都不删。', merge ? '合并' : '改名')) return;
+      try { const n = await busy('正在修改类别…', () => renameCategory(k, name, r)); pick = learnerSubject = r; flash((merge ? '已合并到「' : '已改名为「') + r + '」' + (n ? '，' + n + ' 节' : '')); renderPanel(); } catch (e) { flash('修改失败：' + (e.message || e), true); }
+    };
+    // 单节移动：把这一节放到别的类别（可新建）。
+    const moveOne = async (l, label) => {
+      const from = subjectOf(l.subject), others = subjects.map(([n]) => n).filter(n => n !== from);
+      const to = await askKind({title: '移到其他类别', detail: who + ' · ' + label + '\n选一个已有类别，或输入新类别名。', options: others, okText: '移过去'});
+      if (!to || to === from) return;
+      try { await busy('正在移动…', async () => { await keepKind(k, to); await moveLessons(k, [l.id], to); }); pick = learnerSubject = subjectOf(to); flash('已移到「' + subjectOf(to) + '」'); renderPanel(); } catch (e) { flash('移动失败：' + (e.message || e), true); }
+    };
     const paint = () => {
-      tabs.textContent = ''; list.textContent = '';
-      subjects.forEach(([name, items]) => { const b = btn(name === pick ? 'on' : '', name + ' ' + items.length, () => { pick = learnerSubject = name; addSlot.textContent = ''; paint(); }); tabs.append(b); });
-      const items = bySubject.get(pick), gaps = gapsOf(items), hidden = hiddenGaps(items);
+      tabs.textContent = ''; list.textContent = ''; kindTools.textContent = '';
+      subjects.forEach(([name, items]) => { const b = btn(name === pick ? 'on' : '', name + ' ' + items.length, () => { pick = learnerSubject = name; addSlot.textContent = ''; paint(); }); b.title = '双击修改这个类别'; b.addEventListener('dblclick', () => manageKind(name)); tabs.append(b); });
+      kindTools.append(btn('fb-btn fb-kind-btn', '✎ 修改「' + pick + '」', () => manageKind(pick), '修改当前类别'), btn('fb-btn fb-kind-btn', '＋ 类别', newKind, '添加课程类别'));
+      const items = bySubject.get(pick) || [], gaps = gapsOf(items), hidden = hiddenGaps(items);
+      if (!items.length) list.append(make('div', 'fb-card fb-meta', '「' + pick + '」里还没有课。点下面加一节，或在别的类别里把课「移到其他类别」放进来。'));
       if (gaps.length || hidden.length) {
         const note = make('div', 'fb-gap');
         if (gaps.length) note.append('课次跳号，疑似缺 ' + gaps.length + ' 节（虚线行）。点虚线行导入这节反馈；老师本来就跳号的话，把鼠标移到那一行点红色按钮清除（手机上左滑）。');
@@ -2327,6 +2457,7 @@
         if (n) prev = n;
         const d = lessonDetails(l, () => {}), label = [subjectOf(l.subject), lessonNo(l.title) ? 'L' + lessonNo(l.title) : '', md(l.lesson_date)].filter(Boolean).join(' · ');
         list.append(swipeable(d, [
+          {icon: 'move', cls: 'blue', label: '移到其他类别', run: () => moveOne(l, label)},
           {icon: 'paste', cls: 'blue', label: '重新导入这节课的课堂反馈', run: () => { d.open = true; d.dispatchEvent(new CustomEvent('fb-reimport')); }},
           {icon: 'trash', cls: 'red', label: '删除这节课堂反馈', run: async row => {
             if (!await askConfirm('删除这节反馈？', k.replace(/\//g, '、') + ' · ' + label + '\n删除后列表里不再显示；原文、已进词库的生词和 Notion 备份都保留，需要时可从云端恢复。', '删除', true)) return;
@@ -3855,7 +3986,7 @@
         if (nextMode !== 'cloud' && nextMode !== 'preview') activeOwner = null;
         if (prevOwner && activeOwner !== prevOwner) {
           index = null; bodies.clear(); customWords.clear(); vocabCache.clear(); listCache.clear();
-          ignored = null; dayActiveQuiz.clear(); suppCloudCache.clear(); freshSuppLists.clear();
+          ignored = null; kinds = null; kindNames.clear(); dayActiveQuiz.clear(); suppCloudCache.clear(); freshSuppLists.clear();
         }
         dayActiveLoaded.clear();
         void updateBadge();
