@@ -33,6 +33,51 @@
   const MIN_PIN_LEN = 4;
   const MAX_PIN_LEN = 64;
   const SPLIT_TEACHERS = new Set(['王银屏', '徐梓淞']);
+  const BASE_PAY_DAYS = {1: 22, 2: 20, 3: 22, 4: 22, 5: 21, 6: 22, 7: 23, 8: 21, 9: 23, 10: 21, 11: 21, 12: 23};
+  const isForecastMonth = m => Boolean(m && m.meta && m.meta.is_forecast === true);
+  const monthShortLabel = m => {
+    const raw = String(m?.title || m?.year_month || '').trim();
+    if (isForecastMonth(m)) {
+      const base = raw.replace(/\s*课时(?:汇总|预计).*$/, '').trim() || String(m?.year_month || '');
+      return `${base} 预计`;
+    }
+    return raw.replace(/\s*课时汇总$/, '');
+  };
+  const fmtForecastTime = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (!Number.isFinite(d.valueOf())) return '';
+    try {
+      const parts = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).formatToParts(d);
+      const get = t => parts.find(p => p.type === t)?.value || '';
+      const mo = get('month'), da = get('day'), hr = get('hour'), mi = get('minute');
+      if (mo && da && hr && mi) return `${mo}/${da} ${hr}:${mi}`;
+    } catch {}
+    return String(iso).slice(5, 16).replace('T', ' ');
+  };
+  const computeCommissionFromRecords = (records, yearMonth) => {
+    const mo = Number(String(yearMonth || '').split('-')[1]) || 0;
+    const pay_days = BASE_PAY_DAYS[mo] || 21;
+    const base = pay_days * 4;
+    let h12 = 0, h3 = 0, classes = 0;
+    for (const r of (records || [])) {
+      const hrs = Math.max(0, Math.round(num(r.hours) * 100) / 100);
+      if (!String(r.teacher || '').trim() || hrs <= 0) continue;
+      classes += 1;
+      const cnt = Math.max(1, Math.round(num(r.count || 1)));
+      if (cnt <= 2) h12 = Math.round((h12 + hrs) * 100) / 100;
+      else h3 = Math.round((h3 + hrs) * 100) / 100;
+    }
+    const total = Math.round((h12 + h3 * 2) * 100) / 100;
+    const extra = Math.round(Math.max(0, total - base) * 100) / 100;
+    const tiers = Math.floor(extra / 20);
+    const rem = Math.round((extra % 20) * 100) / 100;
+    const gap = rem > 0 ? Math.round((20 - rem) * 100) / 100 : 0;
+    return {pay_days, base, classes, h12, h3, total, extra, tiers, rem, gap};
+  };
   const SHEET_COLS = [
     {letter: 'A', key: 'date', label: '日期', type: 'text', cls: 'nowrap', minW: 108, placeholder: 'YYYY-MM-DD'},
     {letter: 'B', key: 'weekday', label: '星期', type: 'text', cls: 'nowrap center', minW: 66, placeholder: '星期一'},
@@ -100,7 +145,9 @@
   let commissionMonth = '';
   let billingView = 'monthly'; // monthly | longterm
   let billingTeacherFilter = '';
+  let billingPhaseFilter = 'all'; // all | done | upcoming
   let billingSearchQuery = '';
+  let forecastSyncBusy = false;
   let sheetDraft = null;
   let sheetRidSeq = 1;
   let ltDraft = null;
@@ -182,10 +229,14 @@
     .ldg-stat-label{font-size:12px;color:var(--muted,#6e6e73)}
     .ldg-stat-val{font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
     .ldg-stat-val.accent{color:var(--accent,#0071e3)}.ldg-stat-val.ok{color:var(--done,#248a3d)}.ldg-stat-val.warn{color:var(--warning-fg,#805300)}
+    .ldg-stat-sub{font-size:11.5px;color:var(--muted,#6e6e73);font-variant-numeric:tabular-nums;line-height:1.35}
     .ldg-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .ldg-pills{display:flex;gap:6px;flex-wrap:wrap}
     .ldg-pill{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong,rgba(30,30,40,.18));background:var(--card,#fff);color:var(--fg-secondary,#515156);font-size:13px;font-weight:500;cursor:pointer}
-    .ldg-pill.on{background:var(--ldg-accent-bg);border-color:var(--ldg-accent-bg);color:var(--ldg-accent-fg)}
+    .ldg-pill.forecast{border-style:dashed;border-color:color-mix(in srgb,var(--accent,#0071e3) 55%,transparent);color:var(--accent,#0071e3);background:color-mix(in srgb,var(--accent,#0071e3) 6%,var(--card,#fff))}
+    .ldg-pill.on,.ldg-pill.forecast.on{border-style:solid;background:var(--ldg-accent-bg);border-color:var(--ldg-accent-bg);color:var(--ldg-accent-fg)}
+    .ldg-forecast-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:550;background:color-mix(in srgb,var(--accent,#0071e3) 10%,var(--card,#fff));color:var(--accent,#0071e3);border:1px solid color-mix(in srgb,var(--accent,#0071e3) 26%,transparent);white-space:nowrap}
+    .ldg-phase-tag{display:inline-flex;align-items:center;margin-left:5px;padding:0 5px;border-radius:999px;font-size:10.5px;font-weight:600;background:var(--warning-bg,#fff8e8);color:var(--warning-fg,#805300);vertical-align:middle}
     .ldg-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--line-strong,rgba(30,30,40,.18));background:var(--card,#fff);color:var(--fg,#1d1d1f);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap}
     .ldg-btn:disabled{opacity:.55;cursor:default}
     .ldg-btn.primary{background:var(--ldg-accent-bg);border-color:transparent;color:var(--ldg-accent-fg)}
@@ -225,6 +276,7 @@
     .ldg-bar-hrs{font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--accent,#0071e3);white-space:nowrap}
     .ldg-buckets{display:flex;gap:5px;flex-wrap:wrap}
     .ldg-bucket{padding:1px 7px;border-radius:999px;font-size:11.5px;background:var(--card,#fff);border:1px solid var(--line,rgba(30,30,40,.1));color:var(--fg-secondary,#515156);font-variant-numeric:tabular-nums}
+    .ldg-bucket.phase{background:color-mix(in srgb,var(--accent,#0071e3) 8%,var(--card,#fff));border-color:color-mix(in srgb,var(--accent,#0071e3) 22%,transparent);color:var(--accent,#0071e3)}
     progress.ldg-progress{appearance:none;border:0 solid;overflow:clip;width:100%;height:8px;--progress-bar-radius:999px;border-radius:var(--progress-bar-radius);background:var(--line,rgba(30,30,40,.1));--progress-bar-fill:var(--ldg-accent-bg)}
     progress.ldg-progress.ok{--progress-bar-fill:var(--done,#248a3d)}
     progress.ldg-progress.warn{--progress-bar-fill:#d97706}
@@ -1410,7 +1462,7 @@
   }
 
   const COMMISSION_HEADING_RE = /(?:提成|阶梯|Leo\s*总结算|Leo\s*结算|工资|薪资)/i;
-  const COMMISSION_LINE_RE = /(?:提成课时|提成阶梯|提成|Leo\s*总结算|Leo\s*结算|助教总结算|距下档|距下一阶梯|当前余量|当前阶梯余量|满档阶梯|个人工资|税前工资)/i;
+  const COMMISSION_LINE_RE = /(?:提成课时|提成阶梯|提成|Leo\s*总结算|Leo\s*结算|助教总结算|助教预计总结算|冲档提醒|距下档|距下一阶梯|当前余量|当前阶梯余量|满档阶梯|个人工资|税前工资)/i;
 
   function sanitizeAcademicSummaryMd(md) {
     const lines = String(md || '').replace(/\r\n?/g, '\n').split('\n');
@@ -2613,6 +2665,7 @@
       hours: hrsVal,
       location: String(r.location ?? '').trim(),
       note: String(r.note ?? '').trim(),
+      phase: r.phase === 'done' || r.phase === 'upcoming' ? r.phase : '',
     };
   }
 
@@ -2622,58 +2675,149 @@
   }
 
   function stripSheetRecords(records) {
-    return (records || []).map(r => ({
-      date: String(r.date ?? '').trim(),
-      weekday: String(r.weekday ?? '').trim(),
-      time: String(r.time ?? '').trim(),
-      teacher: String(r.teacher ?? '').trim(),
-      kind: String(r.kind ?? '').trim(),
-      subject: String(r.subject ?? '').trim(),
-      student: String(r.student ?? '').trim(),
-      location: String(r.location ?? '').trim(),
-      count: Math.max(1, Math.round(num(r.count ?? 1))),
-      hours: Math.max(0, Math.round(num(r.hours ?? 0) * 100) / 100),
-      note: String(r.note ?? '').trim(),
-    }));
+    return (records || []).map(r => {
+      const out = {
+        date: String(r.date ?? '').trim(),
+        weekday: String(r.weekday ?? '').trim(),
+        time: String(r.time ?? '').trim(),
+        teacher: String(r.teacher ?? '').trim(),
+        kind: String(r.kind ?? '').trim(),
+        subject: String(r.subject ?? '').trim(),
+        student: String(r.student ?? '').trim(),
+        location: String(r.location ?? '').trim(),
+        count: Math.max(1, Math.round(num(r.count ?? 1))),
+        hours: Math.max(0, Math.round(num(r.hours ?? 0) * 100) / 100),
+        note: String(r.note ?? '').trim(),
+      };
+      if (r.phase === 'done' || r.phase === 'upcoming') out.phase = r.phase;
+      return out;
+    });
   }
 
-  function recomputeBillingBreakdown(records) {
+  function recomputeBillingBreakdown(records, {yearMonth = ''} = {}) {
     const tMap = new Map();
     const sMap = new Map();
     let totalHours = 0;
     let validRows = 0;
+    let completedRows = 0;
+    let completedHours = 0;
+    let upcomingRows = 0;
+    let upcomingHours = 0;
+    const validList = [];
+    const doneList = [];
     for (const r of (records || [])) {
       const teacher = String(r.teacher || '').trim();
       const hrs = Math.max(0, Math.round(num(r.hours) * 100) / 100);
       if (!teacher || hrs <= 0) continue;
       validRows += 1;
       totalHours = Math.round((totalHours + hrs) * 100) / 100;
+      const isDone = r.phase === 'done';
+      const isUpcoming = r.phase === 'upcoming';
+      validList.push(r);
+      if (isDone) {
+        completedRows += 1;
+        completedHours = Math.round((completedHours + hrs) * 100) / 100;
+        doneList.push(r);
+      } else if (isUpcoming) {
+        upcomingRows += 1;
+        upcomingHours = Math.round((upcomingHours + hrs) * 100) / 100;
+      }
       const cnt = Math.max(1, Math.round(num(r.count || 1)));
       let te = tMap.get(teacher);
-      if (!te) { te = {teacher, total: 0, classes: 0, buckets: {}}; tMap.set(teacher, te); }
+      if (!te) {
+        te = {teacher, total: 0, classes: 0, done_hours: 0, upcoming_hours: 0, done_classes: 0, upcoming_classes: 0, buckets: {}};
+        tMap.set(teacher, te);
+      }
       te.total = Math.round((te.total + hrs) * 100) / 100;
       te.classes += 1;
+      if (isDone) {
+        te.done_hours = Math.round((te.done_hours + hrs) * 100) / 100;
+        te.done_classes += 1;
+      } else if (isUpcoming) {
+        te.upcoming_hours = Math.round((te.upcoming_hours + hrs) * 100) / 100;
+        te.upcoming_classes += 1;
+      }
       const bkey = SPLIT_TEACHERS.has(teacher) ? `1对${cnt}` : (cnt === 1 ? '1对1' : '1对多');
       te.buckets[bkey] = Math.round((num(te.buckets[bkey]) + hrs) * 100) / 100;
 
       const st = String(r.student || '').trim() || '未注明';
       let se = sMap.get(st);
-      if (!se) { se = {student: st, hours: 0, classes: 0, teachers: new Set()}; sMap.set(st, se); }
+      if (!se) { se = {student: st, hours: 0, done_hours: 0, upcoming_hours: 0, classes: 0, teachers: new Set()}; sMap.set(st, se); }
       se.hours = Math.round((se.hours + hrs) * 100) / 100;
+      if (isDone) se.done_hours = Math.round((se.done_hours + hrs) * 100) / 100;
+      else if (isUpcoming) se.upcoming_hours = Math.round((se.upcoming_hours + hrs) * 100) / 100;
       se.classes += 1;
       se.teachers.add(teacher);
     }
     const teacher_breakdown = [...tMap.values()].sort((a, b) => (b.total - a.total) || SHEET_COLLATOR.compare(a.teacher, b.teacher));
     const student_breakdown = [...sMap.values()]
-      .map(v => ({student: v.student, hours: v.hours, classes: v.classes, teachers: [...v.teachers].sort((a, b) => SHEET_COLLATOR.compare(a, b))}))
+      .map(v => ({student: v.student, hours: v.hours, done_hours: v.done_hours, upcoming_hours: v.upcoming_hours, classes: v.classes, teachers: [...v.teachers].sort((a, b) => SHEET_COLLATOR.compare(a, b))}))
       .sort((a, b) => (b.hours - a.hours) || SHEET_COLLATOR.compare(a.student, b.student));
-    return {
+    const out = {
       rows: validRows,
       hours: totalHours,
+      completed_rows: completedRows,
+      completed_hours: completedHours,
+      upcoming_rows: upcomingRows,
+      upcoming_hours: upcomingHours,
       teachers: teacher_breakdown.map(t => t.teacher),
       teacher_breakdown,
       student_breakdown,
     };
+    if (yearMonth) {
+      out.commission = computeCommissionFromRecords(validList, yearMonth);
+      out.completed_commission = computeCommissionFromRecords(doneList, yearMonth);
+    }
+    return out;
+  }
+
+  async function triggerLiveForecastSync(btn) {
+    if (forecastSyncBusy) return;
+    const api = globalThis.wayonRefreshAPI;
+    if (!api?.enabled) {
+      showActionError('当前账号暂未开启云端课表同步，请稍后刷新查看例行更新');
+      return;
+    }
+    forecastSyncBusy = true;
+    clearActionError();
+    clearActionInfo();
+    const origText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ 同步课表中…'; }
+    try {
+      const reqId = (globalThis.crypto?.randomUUID?.()) || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const started = await api.start(reqId, 'schedule');
+      if (started?.state === 'busy') {
+        showActionInfo('已有课表刷新正在运行，请约 30 秒后点右上角「刷新」读取最新预计');
+        return;
+      }
+      if (started?.state === 'failed') {
+        showActionError('云端课表刷新启动失败，请稍后重试');
+        return;
+      }
+      const activeId = started?.request_id || reqId;
+      const deadline = Date.now() + 3 * 60 * 1000;
+      while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const st = await api.status(activeId);
+        if (st?.state === 'succeeded') {
+          await loadAcademic({force: true});
+          if (privateUnlocked && ownerCheckState === 'owner') await loadPrivate({force: true});
+          showActionInfo('已同步小SaaS 最新排课，本月预计已更新');
+          announcePolite('本月预计已更新');
+          return;
+        }
+        if (st?.state === 'failed') {
+          showActionError('课表同步未完成，请稍后重试');
+          return;
+        }
+      }
+      showActionInfo('同步耗时较长，请稍后点右上角「刷新」读取最新预计');
+    } catch (err) {
+      showActionError('同步本月预计失败：' + String(err?.message || err || '请稍后重试'));
+    } finally {
+      forecastSyncBusy = false;
+      if (btn) { btn.disabled = false; btn.textContent = origText; }
+    }
   }
 
   function isSafeGoogleSheetUrl(url) {
@@ -3532,6 +3676,7 @@
     const cur = store.billing.find(m => m.year_month === selectedMonth) || store.billing[0];
     if (!cur) return;
     selectedMonth = cur.year_month;
+    const isForecast = isForecastMonth(cur);
 
     if (!sheetDraft || sheetDraft.yearMonth !== cur.year_month) {
       sheetDraft = {
@@ -3550,6 +3695,7 @@
     const doSwitchMonth = ym => {
       selectedMonth = ym;
       billingTeacherFilter = '';
+      billingPhaseFilter = 'all';
       billingSearchQuery = '';
       sheetDraft = null;
       render();
@@ -3572,9 +3718,14 @@
       const opt = make('option');
       opt.value = m.year_month;
       const hrs = m.meta?.hours !== undefined ? ` · ${fmtHours(m.meta.hours)}h` : '';
-      const imgCnt = Array.isArray(m.files) ? m.files.filter(f => f.kind === 'image').length : 0;
-      const cardTag = imgCnt ? ` · ${imgCnt}卡` : '';
-      opt.textContent = `${m.title || m.year_month}${hrs}${cardTag}`;
+      if (isForecastMonth(m)) {
+        const doneTag = m.meta?.completed_hours !== undefined ? `（已上${fmtHours(m.meta.completed_hours)}h）` : '（预计）';
+        opt.textContent = `${monthShortLabel(m)}${hrs}${doneTag}`;
+      } else {
+        const imgCnt = Array.isArray(m.files) ? m.files.filter(f => f.kind === 'image').length : 0;
+        const cardTag = imgCnt ? ` · ${imgCnt}卡` : '';
+        opt.textContent = `${m.title || m.year_month}${hrs}${cardTag}`;
+      }
       if (m.year_month === selectedMonth) opt.selected = true;
       mSelect.append(opt);
     });
@@ -3582,20 +3733,36 @@
 
     const pills = make('div', 'ldg-pills');
     store.billing.slice(0, 6).forEach(m => {
-      const label = (m.title || m.year_month).replace(/\s*课时汇总$/, '');
-      const b = make('button', 'ldg-pill' + (m.year_month === selectedMonth ? ' on' : ''), label);
+      const mForecast = isForecastMonth(m);
+      const label = monthShortLabel(m);
+      const b = make('button', 'ldg-pill' + (mForecast ? ' forecast' : '') + (m.year_month === selectedMonth ? ' on' : ''), label);
       b.type = 'button';
       b.setAttribute('aria-pressed', String(m.year_month === selectedMonth));
       b.onclick = () => selectMonth(m.year_month);
       pills.append(b);
     });
 
-    const uploadBtn = make('button', 'ldg-btn', '📤 补传/替换文件');
-    uploadBtn.id = 'ldg-billing-upload-btn';
-    uploadBtn.type = 'button';
-    uploadBtn.onclick = () => openBillingUploadDialog(cur);
-
-    bar.append(mSelect, pills, uploadBtn);
+    bar.append(mSelect, pills);
+    if (isForecast) {
+      const syncStamp = fmtForecastTime(cur.meta?.forecast_as_of || cur.verified_at);
+      const chip = make('span', 'ldg-forecast-chip', syncStamp ? `预计 · ${syncStamp} 同步` : '本月实时预计');
+      chip.id = 'ldg-forecast-chip';
+      bar.append(chip);
+      if (globalThis.wayonRefreshAPI?.enabled) {
+        const syncBtn = make('button', 'ldg-btn sm', '🔄 同步课表');
+        syncBtn.id = 'ldg-forecast-sync-btn';
+        syncBtn.type = 'button';
+        syncBtn.onclick = () => void triggerLiveForecastSync(syncBtn);
+        bar.append(syncBtn);
+      }
+      bar.append(makeInfoTip('基于小SaaS 本月全部有效排课实时测算，含已上课与待上预排，自动随早晚例行及课表刷新同步；月末归档后自动转为正式月'));
+    } else {
+      const uploadBtn = make('button', 'ldg-btn', '📤 补传/替换文件');
+      uploadBtn.id = 'ldg-billing-upload-btn';
+      uploadBtn.type = 'button';
+      uploadBtn.onclick = () => openBillingUploadDialog(cur);
+      bar.append(uploadBtn);
+    }
     const gsheetUrl = String(cur.meta?.google_sheet_url || '').trim();
     if (gsheetUrl && isSafeGoogleSheetUrl(gsheetUrl)) {
       const gOpen = make('a', 'ldg-btn gsheet', '📊 在 Google 表格中编辑');
@@ -3627,6 +3794,7 @@
 
     const barBtnMap = new Map();
     let teacherSelectEl = null;
+    let phaseSelectEl = null;
     let clearFilterBtn = null;
     let recTitleEl = null;
     let undoBtn = null;
@@ -3643,12 +3811,16 @@
 
     const currentComputed = () => {
       if (sheetDraft.records.length || sheetDraft.dirty) {
-        return recomputeBillingBreakdown(sheetDraft.records);
+        return recomputeBillingBreakdown(sheetDraft.records, {yearMonth: cur.year_month});
       }
       const m = cur.meta || {};
       return {
         rows: m.rows ?? 0,
         hours: m.hours ?? 0,
+        completed_rows: m.completed_rows ?? 0,
+        completed_hours: m.completed_hours ?? 0,
+        upcoming_rows: m.upcoming_rows ?? 0,
+        upcoming_hours: m.upcoming_hours ?? 0,
         teachers: Array.isArray(m.teachers) ? m.teachers : [],
         teacher_breakdown: Array.isArray(m.teacher_breakdown) ? m.teacher_breakdown : [],
         student_breakdown: Array.isArray(m.student_breakdown) ? m.student_breakdown : [],
@@ -3658,19 +3830,33 @@
     function renderStatsSlot() {
       statsSlot.textContent = '';
       const comp = currentComputed();
-      if (!comp.hours && !sheetDraft.records.length && !docs.length && !imgs.length) return;
+      if (!comp.hours && !sheetDraft.records.length && !docs.length && !imgs.length && !isForecast) return;
       const stats = make('div', 'ldg-stats');
-      const addStat = (l, v, cls = '') => {
+      const addStat = (l, v, cls = '', subText = '') => {
         const s = make('div', 'ldg-stat');
         s.append(make('span', 'ldg-stat-label', l), make('span', 'ldg-stat-val ' + cls, v));
+        if (subText) s.append(make('span', 'ldg-stat-sub', subText));
         stats.append(s);
       };
       // Academic space ALWAYS shows academic-only metrics (never Leo commission/salary).
-      const curImgs = (Array.isArray(cur.files) ? cur.files : []).filter(f => f.kind === 'image');
-      addStat('全月排课 / 课时', `${comp.rows} 节 · ${fmtHours(comp.hours)}h`);
-      addStat('任课老师数', `${comp.teacher_breakdown.length || '-'} 位`, 'accent');
-      addStat('活跃学员数', `${comp.student_breakdown.length || '-'} 位`, 'ok');
-      addStat('云端附件', `${docs.length} 表 · ${curImgs.length} 核对卡`);
+      if (isForecast) {
+        const doneH = comp.completed_hours ?? cur.meta?.completed_hours ?? 0;
+        const upH = comp.upcoming_hours ?? cur.meta?.upcoming_hours ?? 0;
+        const doneR = comp.completed_rows ?? cur.meta?.completed_rows ?? 0;
+        const upR = comp.upcoming_rows ?? cur.meta?.upcoming_rows ?? 0;
+        const pct = comp.hours > 0 ? Math.round((doneH / comp.hours) * 100) : 0;
+        const cancelNote = num(cur.meta?.cancelled_rows) > 0 ? `已跳过 ${cur.meta.cancelled_rows} 节取消课` : '不含已取消排课';
+        addStat('本月预计排课 / 课时', `${comp.rows} 节 · ${fmtHours(comp.hours)}h`, '', cancelNote);
+        addStat('已上 / 待上进度', `${fmtHours(doneH)}h / ${fmtHours(upH)}h`, 'ok', `已上 ${doneR} 节 (${pct}%) · 待上 ${upR} 节`);
+        addStat('任课老师数', `${comp.teacher_breakdown.length || '-'} 位`, 'accent');
+        addStat('活跃学员数', `${comp.student_breakdown.length || '-'} 位`);
+      } else {
+        const curImgs = (Array.isArray(cur.files) ? cur.files : []).filter(f => f.kind === 'image');
+        addStat('全月排课 / 课时', `${comp.rows} 节 · ${fmtHours(comp.hours)}h`);
+        addStat('任课老师数', `${comp.teacher_breakdown.length || '-'} 位`, 'accent');
+        addStat('活跃学员数', `${comp.student_breakdown.length || '-'} 位`, 'ok');
+        addStat('云端附件', `${docs.length} 表 · ${curImgs.length} 核对卡`);
+      }
       statsSlot.append(stats);
     }
 
@@ -3682,7 +3868,7 @@
       if (!tBreakdown.length) return;
       const sec = makeCollapsibleCard({
         key: 'billing-bars',
-        title: '📊 老师课时分布',
+        title: isForecast ? '📊 老师课时分布（预计）' : '📊 老师课时分布',
         tipText: '点击老师筛选下方核对卡与明细；点击右侧按钮可按最新在线表重绘该老师核对卡',
         rightEl: make('span', 'ldg-sub', `${tBreakdown.length} 位 · ${fmtHours(comp.hours)}h`),
       });
@@ -3712,6 +3898,9 @@
         Object.entries(t.buckets || {}).forEach(([bk, bv]) => {
           if (num(bv) > 0) buckets.append(make('span', 'ldg-bucket', `${bk} ${fmtHours(bv)}h`));
         });
+        if (isForecast && (num(t.done_hours) > 0 || num(t.upcoming_hours) > 0)) {
+          buckets.append(make('span', 'ldg-bucket phase', `已上 ${fmtHours(t.done_hours)}h · 待上 ${fmtHours(t.upcoming_hours)}h`));
+        }
 
         rowBtn.append(top, prog);
         if (buckets.childNodes.length) rowBtn.append(buckets);
@@ -3909,7 +4098,7 @@
       syncSheetMetaUI();
       try {
         const cleanRecords = stripSheetRecords(sheetDraft.records);
-        const comp = recomputeBillingBreakdown(cleanRecords);
+        const comp = recomputeBillingBreakdown(cleanRecords, {yearMonth: cur.year_month});
         const nextMeta = {
           ...(cur.meta || {}),
           rows: comp.rows,
@@ -3918,6 +4107,14 @@
           teacher_breakdown: comp.teacher_breakdown,
           student_breakdown: comp.student_breakdown,
           records: cleanRecords,
+          ...(isForecast ? {
+            completed_rows: comp.completed_rows,
+            completed_hours: comp.completed_hours,
+            upcoming_rows: comp.upcoming_rows,
+            upcoming_hours: comp.upcoming_hours,
+            commission: comp.commission,
+            completed_commission: comp.completed_commission,
+          } : (cur.meta?.commission ? {commission: comp.commission} : {})),
         };
         const res = await c.from('wayon_billing_months')
           .update({meta: nextMeta, verified_at: new Date().toISOString()})
@@ -3993,6 +4190,9 @@
       const val = col.key === 'hours' ? fmtHours(row.hours) : String(row[col.key] ?? '');
       td.dataset.value = col.type === 'number' ? String(num(row[col.key])) : val;
       td.textContent = val;
+      if (isForecast && col.key === 'date' && row.phase === 'upcoming') {
+        td.append(make('span', 'ldg-phase-tag', '待上'));
+      }
     }
 
     function startEditCell(rid, colIdx, initialText = null) {
@@ -4167,6 +4367,7 @@
       const needle = billingSearchQuery.trim().toLowerCase();
       const filtered = sheetDraft.records.filter(r => {
         if (billingTeacherFilter && r.teacher !== billingTeacherFilter) return false;
+        if (isForecast && billingPhaseFilter !== 'all' && r.phase !== billingPhaseFilter) return false;
         if (needle) {
           const hay = `${r.date || ''} ${r.weekday || ''} ${r.time || ''} ${r.teacher || ''} ${r.student || ''} ${r.subject || ''} ${r.kind || ''} ${r.location || ''} ${r.note || ''}`.toLowerCase();
           if (!hay.includes(needle)) return false;
@@ -4192,11 +4393,12 @@
       if (!filtered.length) {
         const empty = make('div', 'ldg-empty');
         empty.append(make('span', '', sheetDraft.records.length ? '没有匹配的课时记录。' : '本月暂无排课明细，点击「＋ 加一行」开始在线录入。'));
-        if (billingTeacherFilter || billingSearchQuery.trim()) {
+        if (billingTeacherFilter || (isForecast && billingPhaseFilter !== 'all') || billingSearchQuery.trim()) {
           const clr = make('button', 'ldg-btn sm', '清空筛选');
           clr.type = 'button';
           clr.onclick = () => {
             billingTeacherFilter = '';
+            billingPhaseFilter = 'all';
             billingSearchQuery = '';
             const inp = document.getElementById('ldg-billing-search');
             if (inp) inp.value = '';
@@ -4362,6 +4564,7 @@
       syncFormulaBar();
     }
 
+    const hasActiveSheetFilter = () => Boolean(billingTeacherFilter || (isForecast && billingPhaseFilter !== 'all') || billingSearchQuery.trim());
     const syncTeacherFilterUI = () => {
       for (const [tName, rowBtn] of barBtnMap) {
         const active = billingTeacherFilter === tName;
@@ -4371,8 +4574,11 @@
       if (teacherSelectEl && teacherSelectEl.value !== billingTeacherFilter) {
         teacherSelectEl.value = billingTeacherFilter;
       }
+      if (phaseSelectEl && phaseSelectEl.value !== billingPhaseFilter) {
+        phaseSelectEl.value = billingPhaseFilter;
+      }
       if (clearFilterBtn) {
-        clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+        clearFilterBtn.hidden = !hasActiveSheetFilter();
       }
       renderCardsSection();
       renderRecordsRows();
@@ -4406,6 +4612,27 @@
       syncTeacherFilterUI();
     });
 
+    if (isForecast) {
+      phaseSelectEl = make('select', 'ldg-month-select');
+      phaseSelectEl.id = 'ldg-billing-phase';
+      phaseSelectEl.setAttribute('aria-label', '按上课进度筛选课时明细');
+      const comp0 = currentComputed();
+      [
+        ['all', `全部 (${comp0.rows})`],
+        ['done', `已上 (${comp0.completed_rows})`],
+        ['upcoming', `待上 (${comp0.upcoming_rows})`],
+      ].forEach(([val, lbl]) => {
+        const opt = make('option', '', lbl);
+        opt.value = val;
+        if (val === billingPhaseFilter) opt.selected = true;
+        phaseSelectEl.append(opt);
+      });
+      phaseSelectEl.addEventListener('change', () => {
+        billingPhaseFilter = phaseSelectEl.value;
+        syncTeacherFilterUI();
+      });
+    }
+
     const q = make('input', 'ldg-search');
     q.id = 'ldg-billing-search';
     q.type = 'search';
@@ -4416,26 +4643,28 @@
     q.addEventListener('compositionend', () => {
       composing = false;
       billingSearchQuery = q.value;
-      if (clearFilterBtn) clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+      if (clearFilterBtn) clearFilterBtn.hidden = !hasActiveSheetFilter();
       renderRecordsRows();
     });
     q.addEventListener('input', () => {
       if (composing) return;
       billingSearchQuery = q.value;
-      if (clearFilterBtn) clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+      if (clearFilterBtn) clearFilterBtn.hidden = !hasActiveSheetFilter();
       renderRecordsRows();
     });
 
     clearFilterBtn = make('button', 'ldg-btn sm', '清空筛选');
     clearFilterBtn.type = 'button';
-    clearFilterBtn.hidden = !billingTeacherFilter && !billingSearchQuery.trim();
+    clearFilterBtn.hidden = !hasActiveSheetFilter();
     clearFilterBtn.onclick = () => {
       billingTeacherFilter = '';
+      billingPhaseFilter = 'all';
       billingSearchQuery = '';
       q.value = '';
       syncTeacherFilterUI();
     };
-    filterGrp.append(teacherSelectEl, q, clearFilterBtn);
+    if (phaseSelectEl) filterGrp.append(teacherSelectEl, phaseSelectEl, q, clearFilterBtn);
+    else filterGrp.append(teacherSelectEl, q, clearFilterBtn);
 
     const sheetActs = make('div', 'ldg-sheet-actions');
     const addRowBtn = make('button', 'ldg-btn sm', '＋ 加一行');
@@ -4563,8 +4792,13 @@
   function renderBillingTab(wrap) {
     const subBar = make('div', 'ldg-subbar');
     const subPills = make('div', 'ldg-pills');
+    const forecastCount = store.billing.filter(isForecastMonth).length;
+    const archivedCount = store.billing.length - forecastCount;
+    const monthlyLbl = forecastCount
+      ? `月度课时与核对卡 (${archivedCount}月 + 预计)`
+      : `月度课时与核对卡 (${store.billing.length}月)`;
     const views = [
-      ['monthly', `月度课时与核对卡 (${store.billing.length}月)`],
+      ['monthly', monthlyLbl],
       ['longterm', '长期学员台账'],
     ];
     views.forEach(([vid, lbl]) => {
@@ -5026,6 +5260,7 @@
     }
     const cur = store.billing.find(m => m.year_month === commissionMonth) || store.billing[0];
     if (!cur) return;
+    const isForecast = isForecastMonth(cur);
 
     const bar = make('div', 'ldg-toolbar');
     const sel = make('select', 'ldg-month-select');
@@ -5035,7 +5270,11 @@
       const opt = make('option');
       opt.value = m.year_month;
       const cTot = num(m.meta?.commission?.total);
-      opt.textContent = `${m.title || m.year_month}${cTot > 0 ? ` · ${fmtHours(cTot)}h` : ''}`;
+      if (isForecastMonth(m)) {
+        opt.textContent = `${monthShortLabel(m)}${cTot > 0 ? ` · ${fmtHours(cTot)}h（预计）` : '（预计）'}`;
+      } else {
+        opt.textContent = `${m.title || m.year_month}${cTot > 0 ? ` · ${fmtHours(cTot)}h` : ''}`;
+      }
       if (m.year_month === cur.year_month) opt.selected = true;
       sel.append(opt);
     });
@@ -5043,28 +5282,76 @@
 
     const pills = make('div', 'ldg-pills');
     (withComm.length ? withComm : store.billing).slice(0, 6).forEach(m => {
-      const b = make('button', 'ldg-pill' + (m.year_month === cur.year_month ? ' on' : ''), (m.title || m.year_month).replace(/\s*课时汇总$/, ''));
+      const mForecast = isForecastMonth(m);
+      const b = make('button', 'ldg-pill' + (mForecast ? ' forecast' : '') + (m.year_month === cur.year_month ? ' on' : ''), monthShortLabel(m));
       b.type = 'button';
       b.setAttribute('aria-pressed', String(m.year_month === cur.year_month));
       b.onclick = () => { commissionMonth = m.year_month; render(); };
       pills.append(b);
     });
-    bar.append(sel, pills, makeInfoTip('仅管理员本人私密空间可见，教务端「课时汇总」绝不展示个人结算与提成阶梯'));
+    bar.append(sel, pills);
+    if (isForecast) {
+      const syncStamp = fmtForecastTime(cur.meta?.forecast_as_of || cur.verified_at);
+      const chip = make('span', 'ldg-forecast-chip', syncStamp ? `预计 · ${syncStamp} 同步` : '本月实时预计');
+      chip.id = 'ldg-comm-forecast-chip';
+      bar.append(chip);
+      if (globalThis.wayonRefreshAPI?.enabled) {
+        const syncBtn = make('button', 'ldg-btn sm', '🔄 同步课表');
+        syncBtn.id = 'ldg-comm-forecast-sync-btn';
+        syncBtn.type = 'button';
+        syncBtn.onclick = () => void triggerLiveForecastSync(syncBtn);
+        bar.append(syncBtn);
+      }
+    }
+    bar.append(makeInfoTip(isForecast
+      ? '基于小SaaS 本月全部有效排课实时测算（1对1/1对2 按1倍，1对3及以上按2倍，含已上与待上预排）；仅管理员本人私密空间可见，自动随早晚例行及课表刷新更新'
+      : '仅管理员本人私密空间可见，教务端「课时汇总」绝不展示个人结算与提成阶梯'));
     wrap.append(bar);
 
     const meta = cur.meta || {};
     const comm = meta.commission || {};
-    if (num(comm.total) > 0) {
+    const doneComm = meta.completed_commission || null;
+    if (num(comm.total) > 0 || isForecast) {
       const stats = make('div', 'ldg-stats');
-      const addStat = (l, v, cls = '') => {
+      const addStat = (l, v, cls = '', subText = '') => {
         const s = make('div', 'ldg-stat');
         s.append(make('span', 'ldg-stat-label', l), make('span', 'ldg-stat-val ' + cls, v));
+        if (subText) s.append(make('span', 'ldg-stat-sub', subText));
         stats.append(s);
       };
-      addStat('Leo 总结算课时', `${fmtHours(comm.total)}h`, 'accent');
-      addStat('提成课时 / 阶梯', `${fmtHours(comm.extra ?? 0)}h · 第 ${comm.tiers ?? 0} 档`, 'ok');
-      addStat('当前余量 / 距下档', `余 ${fmtHours(comm.rem ?? 0)}h · 差 ${fmtHours(comm.gap ?? 0)}h`, num(comm.gap) > 0 && num(comm.gap) <= 10 ? 'warn' : '');
-      addStat('当月机构总课时', `${meta.rows ?? 0} 节 · ${fmtHours(meta.hours ?? 0)}h`);
+      if (isForecast) {
+        const doneTotal = doneComm ? num(doneComm.total) : 0;
+        const upWeighted = Math.max(0, Math.round((num(comm.total) - doneTotal) * 100) / 100);
+        addStat(
+          'Leo 预计总结算课时',
+          `${fmtHours(comm.total ?? 0)}h`,
+          'accent',
+          doneComm ? `已上 ${fmtHours(doneTotal)}h · 待上折算 ${fmtHours(upWeighted)}h` : ''
+        );
+        addStat(
+          '预计提成课时 / 阶梯',
+          `${fmtHours(comm.extra ?? 0)}h · 第 ${comm.tiers ?? 0} 档`,
+          'ok',
+          doneComm ? `目前已达第 ${doneComm.tiers ?? 0} 档 (${fmtHours(doneComm.extra ?? 0)}h)` : ''
+        );
+        addStat(
+          '预计余量 / 距下档',
+          `余 ${fmtHours(comm.rem ?? 0)}h · 差 ${fmtHours(comm.gap ?? 0)}h`,
+          num(comm.gap) > 0 && num(comm.gap) <= 10 ? 'warn' : '',
+          doneComm ? `当前已上余 ${fmtHours(doneComm.rem ?? 0)}h · 差 ${fmtHours(doneComm.gap ?? 0)}h` : ''
+        );
+        addStat(
+          '本月预计机构总课时',
+          `${meta.rows ?? 0} 节 · ${fmtHours(meta.hours ?? 0)}h`,
+          '',
+          `已上 ${meta.completed_rows ?? 0} 节 ${fmtHours(meta.completed_hours ?? 0)}h · 待上 ${meta.upcoming_rows ?? 0} 节 ${fmtHours(meta.upcoming_hours ?? 0)}h`
+        );
+      } else {
+        addStat('Leo 总结算课时', `${fmtHours(comm.total)}h`, 'accent');
+        addStat('提成课时 / 阶梯', `${fmtHours(comm.extra ?? 0)}h · 第 ${comm.tiers ?? 0} 档`, 'ok');
+        addStat('当前余量 / 距下档', `余 ${fmtHours(comm.rem ?? 0)}h · 差 ${fmtHours(comm.gap ?? 0)}h`, num(comm.gap) > 0 && num(comm.gap) <= 10 ? 'warn' : '');
+        addStat('当月机构总课时', `${meta.rows ?? 0} 节 · ${fmtHours(meta.hours ?? 0)}h`);
+      }
       wrap.append(stats);
     } else {
       wrap.append(make('div', 'ldg-empty', `「${cur.title || cur.year_month}」未记录个人提成阶梯数据。`));
@@ -5089,7 +5376,7 @@
       const rows = withComm.map(m => {
         const c = m.meta.commission;
         return [
-          m.title || m.year_month,
+          isForecastMonth(m) ? monthShortLabel(m) : (m.title || m.year_month),
           `${fmtHours(c.total)}h`,
           `${fmtHours(c.extra ?? 0)}h`,
           `第 ${c.tiers ?? 0} 档`,
@@ -6166,6 +6453,11 @@
       if (open && activeSpace === 'private' && !privateUnlocked && (ownerCheckState === 'idle' || ownerCheckState === 'error' || privateLockState === 'idle' || privateLockState === 'error')) {
         void checkOwnerAndPrivateLock();
       }
+      if (open) render();
+    });
+    addEventListener('wayon-refresh-updated', () => {
+      if (loadState === 'ready') void loadAcademic({force: true});
+      if (privateUnlocked && ownerCheckState === 'owner') void loadPrivate({force: true});
     });
     addEventListener('hashchange', checkHash);
     bindAuth();
@@ -6188,6 +6480,8 @@
     renderMarkdownNode,
     sanitizeAcademicSummaryMd,
     extractCommissionSummaryMd,
+    isForecastMonth,
+    computeCommissionFromRecords,
     loadAll: loadAcademic,
     loadAcademic,
     loadPrivate,
