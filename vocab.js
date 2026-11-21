@@ -1601,7 +1601,10 @@
     @media (max-width:760px){.fb-entry-body{grid-template-columns:1fr}}
     .fb-entry-body .fb-body{margin:0;padding:12px 14px;border-radius:10px;background:var(--code-bg);max-height:520px;overflow:auto}
     .fb-words{border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-height:520px;overflow:auto;background:var(--card)}
-    .fb-words-head{display:flex;gap:8px;align-items:center;margin-bottom:6px}.fb-words-head .fb-words-copy{margin-left:auto;min-height:28px;padding:0 12px;font-size:12.5px}
+    .fb-words-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.fb-words-head .fb-words-copy{margin-left:auto;min-height:28px;padding:0 12px;font-size:12.5px}
+    .fb-ai-btn{border:1px solid color-mix(in srgb,var(--accent,#0a63d8) 32%,transparent);background:color-mix(in srgb,var(--accent,#0a63d8) 8%,transparent);color:var(--accent,#0a63d8);border-radius:999px;padding:2px 10px;min-height:26px;font:inherit;font-size:12px;font-weight:550;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s}
+    .fb-ai-btn:hover:not(:disabled){background:color-mix(in srgb,var(--accent,#0a63d8) 15%,transparent);border-color:var(--accent,#0a63d8)}
+    .fb-ai-btn:disabled{opacity:.6;cursor:wait}
     .fb-word{display:flex;flex-direction:column;padding:5px 0;border-top:1px solid var(--line)}.fb-word[title]{cursor:text}.fb-word-edit .fb-row{gap:6px;flex-wrap:wrap;align-items:center}.fb-word-edit input{flex:1 1 120px;min-width:0;width:auto}.fb-word-edit input.p{flex:0 0 64px}.fb-word b{font-size:15px}.fb-word b small{font-weight:400;color:var(--muted)}.fb-word span{font-size:12.5px;color:var(--muted)}
     .fb-bulk-text{width:100%;min-height:180px;margin:10px 0 6px;box-sizing:border-box;font:inherit;font-size:13px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--code-bg);color:var(--fg)}
     .fb-bulk-sum{display:flex;gap:10px;align-items:center;padding:10px 14px}.fb-bulk-sum .fb-pill{white-space:nowrap}.fb-bulk-row{display:block;cursor:pointer}
@@ -2200,26 +2203,80 @@
     list[i] = {...before, ...cleanPatch};
     return editLesson(l.id, {body: raw, words: list, custom: true, learner: l.learner});
   }
-  // Editable word list beside a feedback text. It follows the text until you change a word; then your list is kept
-  // (「按原文重新识别」 goes back). 「批量编辑」 turns it into one word per line: "word pos. 意思".
+  // Owner-only AI fallback parser (Gemini Free Tier via Supabase Edge Function `wayon-vocab-parse`).
+  // Default parsing remains 100% local regex; this is called only when the user explicitly clicks 「✨ AI 识别」.
+  async function aiParseFeedback(rawText) {
+    const text = String(rawText || '').trim();
+    if (!text) throw new Error('请先粘贴课堂反馈内容');
+    const c = client();
+    if (!c || typeof c.functions?.invoke !== 'function') throw new Error('请先登录工作台后再使用 AI 识别');
+    const {data: sess} = await vocabDeadline(c.auth.getSession());
+    if (!sess?.session) throw new Error('请先登录工作台后再使用 AI 识别');
+    let timer;
+    const res = await Promise.race([
+      c.functions.invoke('wayon-vocab-parse', {body: {body: text}}),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('AI 识别超时，请重试')), 30000); }),
+    ]).finally(() => clearTimeout(timer));
+    const {data, error} = res || {};
+    if (error || !data || !Array.isArray(data.items)) {
+      const status = error?.context?.status || error?.status || 0;
+      if (status === 429) throw new Error('AI 免费额度暂时繁忙，请稍后再试');
+      if (status === 401 || status === 403) throw new Error('请先登录管理员账号后再使用 AI 识别');
+      if (status === 503) throw new Error('AI 识别服务暂未配置');
+      throw new Error('AI 识别失败，请稍后重试或继续使用程序识别');
+    }
+    return data;
+  }
+  // Editable word list beside a feedback text. It follows the text until you change a word or run AI parse; then your list is kept
+  // (「按原文重新识别」 goes back to local program parsing). 「批量编辑」 turns it into one word per line: "word pos. 意思".
   function wordEditor(box, getText, initial) {
     let list = initial ? slimWords(initial) : slimWords(parseFeedback(getText())), edited = !!initial, batch = false;
-    let picked = new Set(), undo = null;   // marquee selection (row indices) and the last bulk removal
+    let sourceTag = initial ? 'manual' : 'auto', aiBusy = false, aiSeq = 0;
+    let picked = new Set(), undo = null;   // marquee selection (row indices) and the last bulk removal / pre-AI list
     const line = w => [w.word, w.pos ? w.pos + '.' : '', w.meaning].filter(Boolean).join(' ');
     const fromLine = raw => { let t = raw.replace(/^\s*(?:\d{1,3}[.、)）]|[①-⑳]|[-–•·*])\s*/u, '');
       const lab = /^([\u4e00-\u9fff][^:：A-Za-z]{0,10})[:：]\s*([A-Za-z].*)$/u.exec(t); if (lab) return {word: capWord(lab[2]), pos: '', meaning: lab[1].trim(), extra: ''};
       const parsed = parseFeedback('词汇\n' + t)[0];
       const p = parsed && stripSyntheticVocabMeta(parsed, t);
       if (p) return {...p, extra: list.find(w => wordKey(w.word) === wordKey(p.word))?.extra || p.extra || ''}; const cut = t.search(/[一-鿿]/), word = capWord(cut >= 0 ? t.slice(0, cut) : t); return {word, pos: '', meaning: cut >= 0 ? t.slice(cut).trim() : '', extra: list.find(w => wordKey(w.word) === wordKey(word))?.extra || ''}; };
-    const touch = () => { edited = true; };
+    const notifyChange = () => { try { box.dispatchEvent(new Event('input', {bubbles: true})); } catch {} };
+    const touch = () => { aiSeq++; edited = true; sourceTag = 'manual'; };
+    const runAiParse = async () => {
+      if (aiBusy) return;
+      const text = String(getText() || '').trim();
+      if (!text) { flash('请先粘贴课堂反馈内容', true); return; }
+      const reqSeq = ++aiSeq;
+      aiBusy = true; draw();
+      try {
+        const res = await aiParseFeedback(text);
+        if (reqSeq !== aiSeq || !box.isConnected) return;
+        undo = list.slice();
+        list = slimWords(res.items);
+        edited = true; sourceTag = 'ai'; batch = false; picked.clear();
+        aiBusy = false; draw(); notifyChange();
+        flash(list.length ? 'AI 识别完成：共 ' + list.length + ' 项' : 'AI 未在正文里发现需要背诵的生词');
+      } catch (e) {
+        if (reqSeq !== aiSeq) return;
+        aiBusy = false; if (box.isConnected) draw();
+        flash(e?.message || 'AI 识别失败，请稍后重试', true);
+      }
+    };
     const draw = () => {
       box.textContent = ''; box.classList.add('fb-wedit');
       const head = make('div', 'fb-words-head'); head.title = '在空白处按住拖动可框选多个词，按 ⌫ 删除；⌘ 点一行可加选；⌘Z 撤销';
-      head.append(make('b', '', edited ? '生词（已手动修改）' : '识别到的生词'), make('span', 'fb-pill', picked.size ? '已选 ' + picked.size : list.length + ' 个'), make('span', 'fb-grow'));
+      const headLabel = sourceTag === 'ai' ? '识别到的生词（AI）' : edited ? '生词（已手动修改）' : '识别到的生词';
+      head.append(make('b', '', headLabel), make('span', 'fb-pill', picked.size ? '已选 ' + picked.size : list.length + ' 个'), make('span', 'fb-grow'));
       if (picked.size && !batch) head.append(btn('fb-link danger', '删除所选 ' + picked.size, removePicked));
-      else if (undo && !batch) head.append(btn('fb-link', '撤销删除', () => { list = undo; undo = null; draw(); }));
-      if (edited) head.append(btn('fb-link', '按原文重新识别', () => { list = slimWords(parseFeedback(getText())); edited = false; batch = false; picked.clear(); draw(); }));
-      head.append(btn('fb-link', batch ? '完成' : '批量编辑', () => { if (batch) { list = ta.value.split('\n').map(x => x.trim()).filter(Boolean).map(fromLine).filter(w => w.word); touch(); } batch = !batch; draw(); }));
+      else if (undo && !batch) head.append(btn('fb-link', '撤销', () => { aiSeq++; list = undo; undo = null; draw(); notifyChange(); }));
+      if (edited && !batch) head.append(btn('fb-link', '按原文重新识别', () => { aiSeq++; list = slimWords(parseFeedback(getText())); edited = false; sourceTag = 'auto'; batch = false; picked.clear(); draw(); notifyChange(); }));
+      if (!batch) {
+        const aiBtn = btn('fb-ai-btn', aiBusy ? 'AI 识别中…' : '✨ AI 识别', () => void runAiParse(), '调用 Gemini 免费 API 智能识别生词并补全空白释义（默认仍为本地程序识别）');
+        aiBtn.disabled = aiBusy;
+        head.append(aiBtn);
+      }
+      const batchBtn = btn('fb-link', batch ? '完成' : '批量编辑', () => { if (batch) { list = ta.value.split('\n').map(x => x.trim()).filter(Boolean).map(fromLine).filter(w => w.word); touch(); notifyChange(); } batch = !batch; draw(); });
+      batchBtn.disabled = aiBusy;
+      head.append(batchBtn);
       box.append(head);
       let ta = null;
       if (batch) {
@@ -2228,7 +2285,7 @@
         box.append(ta, make('div', 'fb-meta', '一行一个：英文 词性. 中文，例如 vessel n. 船只。删掉一行就是去掉这个词，点「完成」保存这份清单。'));
         setTimeout(() => ta.focus(), 0); return;
       }
-      if (!list.length) box.append(make('div', 'fb-meta', '没有识别到生词，可以在下面加'));
+      if (!list.length) box.append(make('div', 'fb-meta', '没有识别到生词，可点上方「✨ AI 识别」或在下面加'));
       let previous = '';
       list.forEach((w, i) => {
         const heading = entryHeading(w); if (heading && heading !== previous) box.append(make('h4', 'vx-section', heading)); previous = heading;
