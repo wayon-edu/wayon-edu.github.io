@@ -1216,8 +1216,7 @@
     else if (/未知/.test(text)) delete left[m];
     const ended = endedOnly(m); if (ended !== undefined && left[m] !== undefined) left[m] = ended;
   };
-  // 抽背 is only due once the lesson is over (as the 反馈 badge): a 17:00 lesson
-  // does not light the badge in the morning. A row with no clock time (自习) counts as before.
+  // 用户 2026-11-21：每个页面的小红点 = 该页列表里还没处理的数量，不再按是否下课过滤。lessonEnded 保留备用。
   const bjNow = () => new Date().toLocaleTimeString('en-GB', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit'});
   const lessonEnded = time => {
     const ends = [...String(time || '').matchAll(/\d{1,2}:\d{2}\s*[-–~～]\s*(\d{1,2}:\d{2})/g)].map(x => x[1].padStart(5, '0')).sort();
@@ -1229,7 +1228,7 @@
       const rows = page.data[page.today] || [];
       if (m === 'quiz') {
         if (qzDay !== page.today) return undefined;
-        return quizRows(rows).filter(r => lessonEnded(r[1]) && !(qget(qk(r)).pre && qget(qk(r)).post)).length;
+        return quizRows(rows).filter(r => !(qget(qk(r)).pre && qget(qk(r)).post)).length;   // 用户 2026-11-21：列表里还有几个没抽完就显示几
       }
       // 用户 2026-11-21：「完成」= 今天还没复制发送完成情况的学生数，不管下没下课（列表里有几个未发送就显示几）。
       const own = typeof study !== 'undefined' ? study.cards(page.today).filter(c => !study.copied(page.today, c.id, 'done')).length : 0;

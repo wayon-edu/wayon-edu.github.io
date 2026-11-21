@@ -1901,7 +1901,7 @@
     if (idx < 0 || idx >= untimed.length) return {learner, subject, done: []};
     return {learner, subject, done: idx === unmatched.length - 1 ? untimed.slice(idx) : [untimed[idx]]};
   }
-  // Red count on the sidebar button: today's lessons that have already ended and still have no feedback.
+  // Red count on the sidebar button: today's lessons that still have no feedback (same as「还差 N 节」on 今日收集).
   let badgeBusy = false, lastBadgeTodo = '';
   const sessionEnd = time => {
     const m = /[-–—~～至]\s*(\d{1,2}):(\d{2})/.exec(String(time || ''));
@@ -1916,7 +1916,8 @@
       if (mode === 'cloud' || mode === 'preview') {
         const day = today(), now = new Date().toLocaleTimeString('en-GB', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit'});
         const got = (await lessonIndex()).filter(l => l.lesson_date === day), learners = allLearners(), sess = sessionsFor(day);
-        n = sess.filter(s => { const end = sessionEnd(s.time); return Boolean(end && end <= now) && !collected(s, got, learners, sess).done.length; }).length;
+        n = sess.filter(s => !collected(s, got, learners, sess).done.length).length;   // 用户 2026-11-21：与「今日收集」的「还差 N 节」一致，不再只算已下课的；now 保留备用
+        void now;
       }
     } catch { n = 0; } finally { badgeBusy = false; }
     const text = n ? String(n) : '';
