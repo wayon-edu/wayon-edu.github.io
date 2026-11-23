@@ -48,6 +48,19 @@
   }
   const read = day => {try {const v=JSON.parse(localStorage.getItem('wayon-aircon-'+day)||'{}');return v && typeof v==='object' && !Array.isArray(v)?v:{};}catch{return {};}};
   const write = (day,value) => {try{localStorage.setItem('wayon-aircon-'+day,JSON.stringify(value));}catch{}};
+  const readDraft = day => {try {const v=JSON.parse(localStorage.getItem('wayon-aircon-draft-'+day)||'{}');return v && typeof v==='object' && !Array.isArray(v)?v:{};}catch{return {};}};
+  const writeDraft = (day,id,baseSig,text) => {
+    try {
+      const drafts=readDraft(day);
+      if(!text || text===baseSig) delete drafts[id];
+      else drafts[id]={base:baseSig,text};
+      localStorage.setItem('wayon-aircon-draft-'+day,JSON.stringify(drafts));
+    }catch{}
+  };
+  const activeText = (day,req) => {
+    const entry=readDraft(day)[req.id];
+    return entry && entry.base===req.text && typeof entry.text==='string' && entry.text.trim() ? entry.text : req.text;
+  };
   function capture(day) {
     const fields={};
     for (const [id,value] of Object.entries(read(day))) if(value && typeof value.copied_at==='string' && typeof value.signature==='string') fields[JSON.stringify(['aircon-copy-v1',id])]=value;
@@ -73,7 +86,22 @@
   function save(day,marks) {write(day,marks);cloud()?.observe(day);}
   let openPanel=day=>{if(iso(day))selected=day;isOpen=true;};
   let closePanel=()=>{isOpen=false;};
-  globalThis.wayonAircon={buildRequest,capture,apply,currentDay:()=>isOpen?selected:null,open:day=>openPanel(day),close:()=>closePanel()};
+  let copyDay=(day,ok,fail)=>{
+    const req=buildRequest(data(),day);
+    if(req.status!=='ready'){openPanel(day);return false;}
+    const body=activeText(day,req);
+    const done=()=>{
+      const marks=read(day);
+      marks[req.id]={signature:req.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};
+      save(day,marks);
+      if(isOpen && day===selected)render();
+      ok?.(body);
+    };
+    if(typeof document==='undefined'){done();return true;}
+    copyText(body,done,()=>fail?.());
+    return true;
+  };
+  globalThis.wayonAircon={buildRequest,capture,apply,currentDay:()=>isOpen?selected:null,open:day=>openPanel(day),close:()=>closePanel(),copy:(day,ok,fail)=>copyDay(day,ok,fail)};
   if(typeof document==='undefined')return;
   const make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;};
   const style=make('style');style.textContent=`
@@ -84,7 +112,9 @@
     .aircon-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
     .aircon-heading h2{font-size:24px;letter-spacing:-.025em;margin:0}.aircon-heading select{max-width:100%;min-height:44px;border:1px solid var(--line-strong);border-radius:10px;background:var(--card) url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E") no-repeat right 12px center/11px 11px;color:var(--fg);padding:8px 34px 8px 12px;font:inherit;appearance:none;-webkit-appearance:none}
     .aircon-hint{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 16px}.aircon-empty{padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--muted)}
-    #aircon-panel pre{margin:16px 0 0;padding:16px;border-radius:12px;background:var(--code-bg);font:15px/1.8 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere}
+    #aircon-panel pre,#aircon-panel .aircon-editor{box-sizing:border-box;width:100%;margin:16px 0 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--code-bg);color:var(--fg);font:15px/1.8 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;resize:vertical}
+    #aircon-panel .aircon-editor{field-sizing:content;height:auto;min-block-size:5lh;max-block-size:24lh}
+    #aircon-panel .aircon-editor:focus{outline:none;border-color:var(--line-strong)}
     #aircon-panel .aircon-card.folded{padding:0!important;display:block!important;height:auto;min-height:44px}
     #aircon-panel summary{cursor:pointer;padding:12px 16px;min-height:44px;list-style:none;font-size:14px}
     #aircon-panel .aircon-detail{padding:0 16px 16px}#aircon-panel .aircon-feedback{font-size:13px;color:var(--bad);margin:10px 0 0}
@@ -92,7 +122,7 @@
   `;document.head.append(style);
   function copyText(text,ok,fail) {
     const area=make('textarea');area.value=text;area.setAttribute('aria-label','空调加时申请文本');
-    area.style.cssText='position:fixed;left:-9999px;top:0';document.body.append(area);area.select();
+    area.style.cssText='position:fixed;left:-9999px;top:0';document.body.append(area);area.select?.();
     try{if(document.execCommand('copy')){area.remove();ok();return;}}catch{}
     area.remove();
     try{Promise.resolve(navigator.clipboard.writeText(text)).then(ok,fail);}catch{fail();}
@@ -119,16 +149,21 @@
     const content=make('div',copied?'aircon-detail':'');const head=make('div','head');
     head.append(make('div','name','C1108 · 空调加时'),make('div','meta',request.days.map(label).join('/')));
     const feedback=make('p','aircon-feedback');feedback.setAttribute('role','status');
-    const pre=make('pre','',request.text);
-    const button=make('button','copy',copied?'再次复制':'复制');button.type='button';button.id='aircon-copy';
-    button.onclick=()=>{const copyDay=selected;copyText(request.text,()=>{
+    const currentText=activeText(selected,request);
+    const editor=make('textarea','aircon-editor',currentText);editor.value=currentText;editor.rows=Math.max(5,currentText.split('\n').length+1);editor.setAttribute('aria-label','空调加时申请文本');
+    const resetBtn=make('button','small','恢复默认');resetBtn.type='button';resetBtn.id='aircon-reset';resetBtn.hidden=currentText===request.text;
+    const syncDraft=()=>{writeDraft(selected,request.id,request.text,editor.value);resetBtn.hidden=editor.value===request.text;};
+    editor.oninput=syncDraft;
+    resetBtn.onclick=()=>{editor.value=request.text;editor.textContent=request.text;syncDraft();};
+    const button=make('button','copy',copied?'再次复制':'复制');button.type='button';button.id='aircon-copy';button.setAttribute('aria-label',copied?'再次复制空调加时申请':'复制空调加时申请');
+    button.onclick=()=>{const copyTarget=selected;const payload=editor.value||request.text;copyText(payload,()=>{
       // A schedule refresh during the permission prompt must not mark a different version as copied.
-      const marks=read(copyDay);marks[request.id]={signature:request.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};
-      save(copyDay,marks);render();
+      const marks=read(copyTarget);marks[request.id]={signature:request.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};
+      save(copyTarget,marks);render();
     },()=>{button.textContent='复制失败，请重试';feedback.textContent='复制未成功，请重试，或手动选中下方文字复制。';});};
-    head.append(button);
+    head.append(resetBtn,button);
     if(copied){const undo=make('button','small','撤销');undo.type='button';undo.id='aircon-undo';undo.onclick=()=>{const marks=read(selected);delete marks[request.id];save(selected,marks);render();};head.append(undo);}
-    content.append(head,pre,feedback);card.append(content);root.append(card);
+    content.append(head,editor,feedback);card.append(content);root.append(card);
     const verified=request.days.map(day=>{const c=snapshot._aircon_schedule?.[day]?.checked_at,s=snapshot._schedule_status?.[day]?.checked_at;return c&&s?(Date.parse(s)>Date.parse(c)?s:c):(c||s);}).filter(Boolean);
     if(verified.length)root.append(make('p','aircon-hint','课表核对时间：'+verified.map(t=>new Date(t).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})).join(' / ')));
   }

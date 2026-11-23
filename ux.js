@@ -946,41 +946,118 @@
     }
 
     /* ---- Apple Cupertino Controls & Borderless Soft-Shadow Cards Across All Views ---- */
-    body.wayon-workbench #day-picker{
+    body.wayon-workbench #days{
+      position:relative!important;
+      display:inline-flex!important;
+      flex-direction:row!important;
+      flex-wrap:nowrap!important;
+      align-items:center!important;
+      gap:0!important;
+      padding:0!important;
+      overflow:visible!important;
+    }
+    body.wayon-workbench #day-picker,
+    body.wayon-workbench #aircon-day-picker{
+      display:inline-flex!important;
+      align-items:center!important;
       height:36px!important;
       min-height:36px!important;
+      line-height:36px!important;
+      vertical-align:middle!important;
       border:0!important;
       border-radius:999px!important;
       appearance:none!important;
       -webkit-appearance:none!important;
       -moz-appearance:none!important;
       background-color:var(--apple-surface)!important;
+      background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%222%22%20x2%3D%2216%22%20y2%3D%226%22%2F%3E%3Cline%20x1%3D%228%22%20y1%3D%222%22%20x2%3D%228%22%20y2%3D%226%22%2F%3E%3Cline%20x1%3D%223%22%20y1%3D%2210%22%20x2%3D%2221%22%20y2%3D%2210%22%2F%3E%3C%2Fsvg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E")!important;
+      background-position:left 11px center,right 11px center!important;
+      background-repeat:no-repeat!important;
+      background-size:15px 15px,11px 11px!important;
       box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
-      padding-left:36px!important;
-      padding-right:32px!important;
+      padding:0 32px 0 36px!important;
+      font-size:13.5px!important;
       font-weight:500!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench #day-picker option,
+    body.wayon-workbench #aircon-day-picker option{line-height:1.4}
+    body.wayon-workbench #days:has(>.home-btn:not([hidden])) #day-picker{
+      background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E")!important;
+      background-position:right 11px center!important;
+      background-size:11px 11px!important;
+      padding-left:38px!important;
     }
     body.wayon-workbench #day-picker::picker-icon,
     body.wayon-workbench #aircon-day-picker::picker-icon{display:none!important;content:none!important}
-    body.wayon-workbench #day-picker:focus{
+    body.wayon-workbench #day-picker:focus,
+    body.wayon-workbench #aircon-day-picker:focus{
+      outline:none!important;
       box-shadow:0 0 0 2.5px var(--wayon-brand-soft,rgba(24,24,27,.1)),0 0 0 1px var(--wayon-brand-ring,rgba(24,24,27,.22))!important;
     }
     body.wayon-workbench #days .home-btn,
-    body.wayon-workbench #study-add,
+    body.wayon-workbench #days .home-btn.wayon-icon-control{
+      position:absolute!important;
+      left:4px!important;
+      top:50%!important;
+      transform:translateY(-50%)!important;
+      z-index:2!important;
+      width:28px!important;
+      min-width:28px!important;
+      height:28px!important;
+      min-height:28px!important;
+      padding:0!important;
+      margin:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+      box-shadow:none!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      cursor:pointer!important;
+      transition:background-color .16s var(--apple-ease),color .16s var(--apple-ease),transform .12s var(--apple-ease)!important;
+    }
+    body.wayon-workbench #days .home-btn[hidden]{display:none!important}
+    body.wayon-workbench #days .home-btn svg{width:14px!important;height:14px!important;stroke-width:2!important}
+    body.wayon-workbench #days .home-btn:hover{
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      border-color:transparent!important;
+    }
+    body.wayon-workbench #days .home-btn:active{transform:translateY(-50%) scale(.93)!important}
+    body.wayon-workbench .schedule-refresh-btn .schedule-refresh-label{display:none!important}
     body.wayon-workbench .schedule-refresh-btn{
+      width:36px!important;
+      min-width:36px!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0!important;
+      gap:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--apple-surface)!important;
+      color:var(--muted)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+    }
+    body.wayon-workbench .schedule-refresh-btn:hover:not(:disabled){
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+    body.wayon-workbench #study-add{
       height:36px!important;
       min-height:36px!important;
       padding:0 15px!important;
       border:0!important;
       border-radius:999px!important;
       font-weight:500!important;
-    }
-    body.wayon-workbench #study-add{
       background:var(--apple-surface)!important;
       color:var(--fg)!important;
       box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
     }
-    body.wayon-workbench #study-add:hover{background:var(--accent-subtle)!important;color:var(--accent)!important}
+    body.wayon-workbench #study-add:hover{background:var(--wayon-btn-hover)!important;color:var(--fg)!important}
     body.wayon-workbench .workflow-icon{
       width:36px!important;
       height:36px!important;
@@ -991,7 +1068,12 @@
       box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
       transition:color .16s var(--apple-ease),background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease);
     }
-    body.wayon-workbench .workflow-icon:hover:not(:disabled){color:var(--accent)!important;background:var(--accent-subtle)!important}
+    body.wayon-workbench .workflow-icon:hover:not(:disabled),
+    body.wayon-workbench #workflow-checks[open]>summary{
+      color:var(--fg)!important;
+      background:var(--wayon-btn-hover)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
     body.wayon-workbench #workflow-checks-panel{
       border:0!important;
       border-radius:18px!important;
@@ -1043,17 +1125,17 @@
       line-height:1.35!important;
     }
     body.wayon-workbench .copy{
-      background:var(--accent)!important;
-      color:#fff!important;
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
       border:0!important;
       border-radius:999px!important;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 8px rgba(0,113,227,.22);
+      box-shadow:0 2px 8px -2px rgba(15,23,42,.22)!important;
     }
-    body.wayon-workbench .copy:hover{background:var(--accent-hover)!important}
+    body.wayon-workbench .copy:hover{background:var(--wayon-brand-cta-hover)!important}
     body.wayon-workbench .item.copied .copy{
-      background:var(--done-bg)!important;
-      color:var(--done)!important;
-      box-shadow:none!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-btn-ring)!important;
     }
     body.wayon-workbench .head .small{
       border-radius:12px!important;
@@ -1078,17 +1160,204 @@
       border:0!important;
       padding:3px 11px!important;
     }
+    body.wayon-workbench .ux-aircon b,
+    body.wayon-workbench .ux-aircon span{cursor:pointer;transition:color .16s ease,opacity .16s ease}
+    body.wayon-workbench .ux-aircon b:hover,
+    body.wayon-workbench .ux-aircon span:hover{opacity:.72;text-decoration:underline;text-underline-offset:3px}
     body.wayon-workbench .ux-aircon button{
       border:0!important;
       border-radius:999px!important;
-      background:var(--accent)!important;
-      color:#fff!important;
-      font-weight:500!important;
-      padding:0 16px!important;
+      width:34px!important;
+      min-width:34px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      box-shadow:none!important;
     }
+    body.wayon-workbench .ux-aircon button svg{width:15px!important;height:15px!important;pointer-events:none}
+    body.wayon-workbench .ux-aircon button:hover{background:var(--wayon-brand-cta-hover)!important}
     body.wayon-workbench .ux-aircon[data-copied] button{
-      background:var(--apple-seg-track)!important;
+      background:var(--wayon-btn-surface)!important;
       color:var(--fg)!important;
+    }
+    body.wayon-workbench .ux-aircon[data-copied] button:hover{background:var(--wayon-btn-hover)!important}
+    /* Aircon full panel, study form, note icons, cloud login dialog & rules login CTA -> unified monochrome ink */
+    body.wayon-workbench #aircon-panel .aircon-card:not(.folded),
+    body.wayon-workbench #aircon-panel .aircon-empty{
+      background:var(--wayon-panel-bg)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:18px!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+    }
+    body.wayon-workbench #aircon-panel .aircon-card:not(.folded){padding:22px 24px!important}
+    body.wayon-workbench #aircon-panel .aircon-editor{
+      background:var(--wayon-pre-bg)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:14px!important;
+      color:var(--fg)!important;
+      field-sizing:content!important;
+      width:100%!important;
+      height:auto!important;
+      min-block-size:5lh!important;
+      max-block-size:24lh!important;
+    }
+    body.wayon-workbench #aircon-panel .aircon-editor:focus{
+      border-color:var(--wayon-brand-ring)!important;
+      box-shadow:0 0 0 2.5px var(--wayon-brand-soft)!important;
+    }
+    body.wayon-workbench #aircon-panel .aircon-card .head>.name{
+      font-family:var(--wayon-name-font)!important;
+      font-size:21px!important;
+      font-weight:700!important;
+    }
+    body.wayon-workbench #aircon-panel #aircon-copy,
+    body.wayon-workbench #aircon-panel #aircon-copy.wayon-icon-control{
+      width:36px!important;
+      min-width:36px!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0!important;
+      border-radius:999px!important;
+    }
+    body.wayon-workbench #aircon-panel #aircon-copy svg{width:15px!important;height:15px!important;stroke-width:1.95!important}
+    body.wayon-workbench #aircon-panel #aircon-undo,
+    body.wayon-workbench #aircon-panel #aircon-undo.wayon-icon-control,
+    body.wayon-workbench #aircon-panel #aircon-reset{
+      width:36px!important;
+      min-width:36px!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0!important;
+      border-radius:999px!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+      border:0!important;
+    }
+    body.wayon-workbench #aircon-panel #aircon-reset{width:auto!important;padding:0 12px!important;font-size:12.5px!important;font-weight:500!important}
+    body.wayon-workbench #aircon-panel #aircon-undo svg{width:15px!important;height:15px!important}
+    body.wayon-workbench #study-form.study-form{
+      max-width:none!important;
+      padding:22px 26px!important;
+      background:var(--wayon-panel-bg)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:18px!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+    }
+    body.wayon-workbench #study-form input,
+    body.wayon-workbench #study-form textarea{
+      border-radius:11px!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      background:var(--wayon-pre-bg)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench #study-form .study-actions button.copy,
+    body.wayon-workbench #study-form .study-actions button.small{
+      width:auto!important;
+      min-width:0!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0 16px!important;
+      gap:6px!important;
+      border-radius:999px!important;
+    }
+    body.wayon-workbench #study-form .study-actions button svg{width:15px!important;height:15px!important}
+    body.wayon-workbench #study-form .study-actions button.copy::after{content:'保存';font-size:13px;font-weight:600}
+    body.wayon-workbench #study-form .study-actions button.small{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+      border:0!important;
+    }
+    body.wayon-workbench #study-form .study-actions button.small:hover{background:var(--wayon-btn-hover)!important}
+    body.wayon-workbench #study-form .study-actions button.small::after{content:'取消';font-size:13px;font-weight:550}
+    /* In-place homework editor inside the card box */
+    body.wayon-workbench #list .item .task-editor{
+      margin:0!important;
+      padding:14px 16px 12px!important;
+      border-radius:14px!important;
+      background:var(--wayon-pre-bg)!important;
+      border:1px solid var(--wayon-brand-ring)!important;
+      box-shadow:0 0 0 2.5px var(--wayon-brand-soft)!important;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:10px!important;
+    }
+    body.wayon-workbench #list .item .task-editor .editor-area{
+      field-sizing:content!important;
+      width:100%!important;
+      height:auto!important;
+      min-block-size:5lh!important;
+      max-block-size:24lh!important;
+      padding:0!important;
+      margin:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      color:var(--fg)!important;
+      font:14.5px/1.75 var(--apple-sans)!important;
+      resize:vertical!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench #list .item .task-editor .editor-area:focus{outline:none!important;box-shadow:none!important}
+    body.wayon-workbench #list .item .task-editor button.small{
+      width:34px!important;
+      min-width:34px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0!important;
+      border-radius:999px!important;
+      border:0!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg-secondary)!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench #list .item .task-editor button.small:hover{
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench #list .item .task-editor button.small svg{width:15px!important;height:15px!important}
+    body.wayon-workbench #list .item button.small[data-icon-action="Save"]{
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      border-color:transparent!important;
+      border-radius:999px!important;
+      width:34px!important;
+      min-width:34px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench #list .item button.small[data-icon-action="Save"]:hover{background:var(--wayon-brand-cta-hover)!important}
+    body.wayon-workbench .note-disclosure[open]>summary.wayon-icon-control{
+      background:var(--wayon-brand-soft)!important;
+      color:var(--wayon-brand)!important;
+    }
+    body.wayon-workbench .wayon-icon-control.has-note:after{background:var(--wayon-brand)!important}
+    body.wayon-workbench .cloud-panel .cloud-submit-btn,
+    body.wayon-workbench .cloud-panel .cloud-btn-primary,
+    body.wayon-workbench #wayon-rules-dialog .rules-studio .button.primary{
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      border-color:transparent!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench .cloud-panel .cloud-submit-btn:hover,
+    body.wayon-workbench .cloud-panel .cloud-btn-primary:hover,
+    body.wayon-workbench #wayon-rules-dialog .rules-studio .button.primary:hover{
+      background:var(--wayon-brand-cta-hover)!important;
+    }
+    body.wayon-workbench .cloud-emblem:not([data-state="connected"]){
+      background:var(--wayon-brand-soft)!important;
+      color:var(--wayon-brand)!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench .cloud-panel .cloud-input:focus{
+      box-shadow:0 0 0 2.5px var(--wayon-brand-soft),0 0 0 1px var(--wayon-brand-ring)!important;
     }
     body.wayon-workbench .ux-past{
       border:0!important;
@@ -1406,17 +1675,16 @@
       }
       body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button{
         margin-left:2px!important;
-        height:32px!important;
-        min-height:32px!important;
-        padding:0 14px!important;
+        width:34px!important;
+        min-width:34px!important;
+        height:34px!important;
+        min-height:34px!important;
+        padding:0!important;
         border-radius:999px!important;
         border:0!important;
         background:var(--wayon-brand-cta)!important;
         color:var(--wayon-brand-cta-fg)!important;
-        font-size:12.5px!important;
-        font-weight:600!important;
         box-shadow:none!important;
-        white-space:nowrap!important;
       }
       body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button:hover{
         background:var(--wayon-brand-cta-hover)!important;
@@ -1446,18 +1714,22 @@
         margin:0!important;
       }
       body.wayon-workbench .schedule-refresh-btn{
-        background:var(--wayon-btn-surface)!important;
-        border:1px solid var(--wayon-panel-border)!important;
-        color:var(--fg)!important;
+        width:36px!important;
+        min-width:36px!important;
+        height:36px!important;
+        min-height:36px!important;
+        padding:0!important;
+        gap:0!important;
+        border:0!important;
         border-radius:999px!important;
-        height:34px!important;
-        padding:0 13px!important;
-        box-shadow:none!important;
+        background:var(--apple-surface)!important;
+        color:var(--muted)!important;
+        box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
       }
       body.wayon-workbench .schedule-refresh-btn:hover:not(:disabled){
         background:var(--wayon-btn-hover)!important;
-        border-color:var(--wayon-brand-ring)!important;
         color:var(--fg)!important;
+        box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
       }
       body.wayon-workbench:not([data-mode="classroom"]):not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]) .main-content{
         min-height:calc(100dvh + 160px)!important;
@@ -2028,6 +2300,21 @@
       font-size:13px;
       color:var(--muted);
     }
+    /* All-done celebration card for Notice & Quiz when all cards are folded to the right rail */
+    body.wayon-workbench #list>.ux-all-done,
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-all-done{
+      grid-column:1;
+      min-height:min(420px,calc(100dvh - 220px));
+      background:var(--wayon-panel-bg);
+      border:1px solid var(--wayon-panel-border);
+      border-radius:18px;
+      box-shadow:var(--wayon-panel-shadow);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px 24px;
+      min-width:0;
+    }
 
     /* Right Panel Proxy Card for an Expanded Completed Student */
     body.wayon-workbench #list .ux-folded-rail>.ux-rail-open{
@@ -2325,23 +2612,21 @@
     }
     body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn{
       margin-top:0!important;
-      width:auto!important;
-      min-width:0!important;
-      height:28px!important;
-      min-height:28px!important;
-      padding:0 9px!important;
+      width:30px!important;
+      min-width:30px!important;
+      height:30px!important;
+      min-height:30px!important;
+      padding:0!important;
       border-radius:999px!important;
-      gap:4px!important;
-      color:var(--muted)!important;
+      color:var(--fg-secondary)!important;
       opacity:1!important;
-      background:transparent!important;
+      background:var(--wayon-btn-surface)!important;
       transition:background-color .16s ease,color .16s ease!important;
     }
-    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn svg{width:13px!important;height:13px!important}
-    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn::after{content:'添加任务';font-size:12px;font-weight:500}
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn svg{width:14px!important;height:14px!important}
     body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn:hover{
-      background:var(--accent-subtle)!important;
-      color:var(--accent)!important;
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
     }
 
     /* Refined jewel-like circular check controls (26px visual ring, generous touch area via ::after) */
@@ -2858,6 +3143,35 @@
       border-color:var(--wayon-brand-ring)!important;
       color:var(--fg)!important;
     }
+    body.wayon-workbench .ux-topbar-panel .ux-quiz-add{display:none!important}
+    @media(min-width:900px){
+      body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]){
+        order:-5!important;
+        flex:0 0 auto!important;
+        display:inline-flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        width:36px!important;
+        min-width:36px!important;
+        height:36px!important;
+        min-height:36px!important;
+        padding:0!important;
+        margin:0!important;
+        border:0!important;
+        border-radius:999px!important;
+        background:var(--apple-surface)!important;
+        color:var(--fg)!important;
+        box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+        cursor:pointer!important;
+        transition:color .16s var(--apple-ease),background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease)!important;
+      }
+      body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]) svg{width:16px!important;height:16px!important;pointer-events:none}
+      body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]):hover{
+        background:var(--wayon-btn-hover)!important;
+        box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+      }
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.head{display:none!important}
+    }
     body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid{
       grid-column:1;
       display:grid;
@@ -3037,28 +3351,29 @@
     body.wayon-workbench #list .ux-card-foot button.copy,
     body.wayon-workbench #list .ux-card-foot button.copy.wayon-icon-control{
       margin-inline-start:auto!important;
-      width:auto!important;
-      min-width:78px!important;
-      height:34px!important;
-      min-height:34px!important;
-      padding:0 15px!important;
-      gap:6px!important;
+      width:36px!important;
+      min-width:36px!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0!important;
       border-radius:999px!important;
       background:var(--wayon-brand-cta)!important;
       color:var(--wayon-brand-cta-fg)!important;
       box-shadow:0 2px 8px -2px rgba(15,23,42,.24)!important;
       transition:background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease),transform .12s var(--apple-ease)!important;
     }
-    body.wayon-workbench #list .ux-card-foot button.copy svg{width:14px!important;height:14px!important;stroke-width:1.95!important}
-    body.wayon-workbench #list .ux-card-foot button.copy::after{content:'复制';font-size:12.5px;font-weight:600;letter-spacing:-.01em}
-    body.wayon-workbench[data-mode=chasing] #list .ux-card-foot button.copy::after{content:'催交'}
+    body.wayon-workbench #list .ux-card-foot button.copy svg{width:15px!important;height:15px!important;stroke-width:1.95!important}
+    body.wayon-workbench #list .ux-card-foot button.copy[data-icon-action="Retry Copy"]{
+      width:auto!important;
+      min-width:58px!important;
+      padding:0 12px!important;
+      gap:4px!important;
+    }
     body.wayon-workbench #list .item.copied .ux-card-foot button.copy{
       background:var(--wayon-btn-surface)!important;
       color:var(--fg)!important;
       box-shadow:inset 0 0 0 1px var(--wayon-btn-ring)!important;
     }
-    body.wayon-workbench #list .item.copied .ux-card-foot button.copy::after{content:'再复制'}
-    body.wayon-workbench #list .ux-card-foot button.copy[data-icon-action="Retry Copy"]::after{content:none!important}
     body.wayon-workbench #list .ux-card-foot button.copy:hover{
       background:var(--wayon-brand-cta-hover)!important;
       box-shadow:0 4px 12px -2px rgba(15,23,42,.32)!important;
@@ -3202,7 +3517,15 @@
         box-shadow:var(--wayon-panel-shadow)!important;
       }
       body.wayon-workbench #list>.ux-active-grid,
-      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid{order:2}
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid,
+      body.wayon-workbench #list>.ux-all-done,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-all-done{order:2}
+      body.wayon-workbench #list>.ux-all-done,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-all-done{
+        min-height:220px!important;
+        padding:24px 16px!important;
+      }
+      body.wayon-workbench #list .ux-all-done>.ux-stage-empty{display:flex!important}
       body.wayon-workbench #list>.ux-past,
       body.wayon-workbench #list>.chasing-stopped{order:3}
       body.wayon-workbench #list .ux-folded-rail>.item.folded,
@@ -3263,8 +3586,14 @@
       }
       body.wayon-workbench #list .ux-card-foot button.copy,
       body.wayon-workbench #list .ux-card-foot button.copy.wayon-icon-control{
+        width:38px!important;
+        min-width:38px!important;
         height:38px!important;
         min-height:38px!important;
+        padding:0!important;
+      }
+      body.wayon-workbench #list .ux-card-foot button.copy[data-icon-action="Retry Copy"]{
+        width:auto!important;
         padding:0 15px!important;
       }
     }
@@ -3384,6 +3713,13 @@
     } else if (m === 'quiz') {
       const day = page.today, rows = page.data[day] || [];
       if (page.data._schedule_status?.[day]?.status === 'error' && !rows.length) { delete left.quiz; return; }
+      if (page.mode === 'quiz' && showsToday()) {
+        const groups = $$('#list .quiz .qgroup.vq-card');
+        if (groups.length) {
+          left.quiz = groups.filter(g => !g.classList.contains('vq-collapsed')).length;
+          return;
+        }
+      }
       const ended = endedOnly('quiz');
       if (ended !== undefined) { left.quiz = ended; return; }
       if (typeof qzDay !== 'undefined' && qzDay !== page.today) { delete left.quiz; return; }
@@ -3417,7 +3753,15 @@
       const rows = page.data[page.today] || [];
       if (m === 'quiz') {
         if (qzDay !== page.today) return undefined;
-        return quizRows(rows).filter(r => !(qget(qk(r)).pre && qget(qk(r)).post)).length;   // 用户 2026-11-21：列表里还有几个没抽完就显示几
+        let folds = {};
+        try { folds = JSON.parse(localStorage.getItem('wayon-vq-folds') || '{}') || {}; } catch {}
+        const prefix = page.today + '|';
+        const foldedSet = new Set(Object.keys(folds).filter(k => folds[k] && k.startsWith(prefix)).map(k => shown(k.slice(prefix.length))));
+        const isFolded = r => {
+          const raw = String(r?.[0] || '').trim(), who = shown(raw);
+          return foldedSet.has(who) || Boolean(folds[prefix + who] || folds[prefix + raw]);
+        };
+        return quizRows(rows).filter(r => !(qget(qk(r)).pre && qget(qk(r)).post) && !isFolded(r)).length;   // 收纳完成即清空该生小红点
       }
       // 用户 2026-11-21：「完成」= 今天还没复制发送完成情况的学生数，不管下没下课（列表里有几个未发送就显示几）。
       const own = typeof study !== 'undefined' ? study.cards(page.today).filter(c => !study.copied(page.today, c.id, 'done')).length : 0;
@@ -3439,7 +3783,7 @@
     const curAir = airconFor(target);
     if (target === page.tomorrow && (!curAir || curAir.request.status === 'none')) {
       const todayAir = airconFor(page.today);
-      if (todayAir && todayAir.request.status === 'ready' && !todayAir.copied) return todayAir;
+      if (todayAir && todayAir.request.status === 'ready') return todayAir;
     }
     return curAir || (target ? {day: target, request: {status: 'unknown', days: [target], text: ''}, copied: false} : null);
   };
@@ -4016,14 +4360,10 @@
     }
     let railEmpty = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-empty'));
     let railTip = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-tip'));
+    railEmpty?.remove();
     if (completedTotal === 0) {
-      if (!railEmpty) {
-        railEmpty = make('div', 'ux-rail-empty', m === 'chasing' ? '催交后收纳于此' : '复制后收纳于此');
-        rail.append(railEmpty);
-      }
       railTip?.remove();
     } else {
-      railEmpty?.remove();
       if (!railTip) {
         railTip = make('div', 'ux-rail-tip', '双击姓名撤回');
         rail.append(railTip);
@@ -4057,6 +4397,7 @@
     }
     let rail = direct.find(c => c.classList?.contains('ux-folded-rail'));
     let activeGrid = direct.find(c => c.classList?.contains('ux-active-grid'));
+    let allDone = direct.find(c => c.classList?.contains('ux-all-done'));
     const folded = [
       ...(rail ? [...(rail.children || [])].filter(c => c.classList?.contains('folded')) : []),
       ...direct.filter(c => c.classList?.contains('item') && c.classList?.contains('folded'))
@@ -4066,6 +4407,7 @@
       ...direct.filter(c => c.classList?.contains('item') && !c.classList?.contains('folded') && !c.classList?.contains('study-form'))
     ];
     if (!folded.length) {
+      allDone?.remove();
       if (activeGrid) {
         for (const card of activeCards) activeGrid.before(card);
         activeGrid.remove();
@@ -4075,6 +4417,7 @@
     }
     const shelfAnchor = direct.find(c => c.classList?.contains('ux-past') || c.classList?.contains('chasing-stopped'));
     if (activeCards.length) {
+      allDone?.remove();
       if (!activeGrid) {
         activeGrid = make('div', 'ux-active-grid');
         if (rail && rail.parentElement === list) rail.before(activeGrid);
@@ -4084,8 +4427,17 @@
       for (const card of activeCards) {
         if (card.parentElement !== activeGrid) activeGrid.append(card);
       }
-    } else if (activeGrid) {
-      activeGrid.remove();
+    } else {
+      if (activeGrid) activeGrid.remove();
+      if (!allDone) {
+        allDone = make('div', 'ux-all-done');
+        const empty = make('div', 'ux-stage-empty');
+        empty.append(make('div', 'ux-stage-empty-icon'), make('b', '', '课程通知已全部完成'), make('span', '', '点击右侧姓名可展开复核，双击撤回'));
+        allDone.append(empty);
+        if (rail && rail.parentElement === list) rail.before(allDone);
+        else if (shelfAnchor) shelfAnchor.before(allDone);
+        else list.append(allDone);
+      }
     }
     if (!rail) {
       rail = make('div', 'ux-folded-rail');
@@ -4107,6 +4459,7 @@
     const direct = [...(quiz.children || [])];
     let rail = direct.find(c => c.classList?.contains('ux-quiz-rail'));
     let grid = direct.find(c => c.classList?.contains('ux-quiz-grid'));
+    let allDone = direct.find(c => c.classList?.contains('ux-all-done'));
     const allGroups = [
       ...(grid ? [...(grid.children || [])].filter(c => c.classList?.contains('qgroup')) : []),
       ...(rail ? [...(rail.children || [])].filter(c => c.classList?.contains('qgroup')) : []),
@@ -4115,6 +4468,7 @@
     const folded = allGroups.filter(g => g.classList?.contains('vq-collapsed'));
     const active = allGroups.filter(g => !g.classList?.contains('vq-collapsed'));
     if (!folded.length) {
+      allDone?.remove();
       if (grid) {
         for (const g of active) grid.before(g);
         grid.remove();
@@ -4123,6 +4477,7 @@
       return;
     }
     if (active.length) {
+      allDone?.remove();
       if (!grid) {
         grid = make('div', 'ux-quiz-grid');
         if (rail && rail.parentElement === quiz) rail.before(grid); else quiz.append(grid);
@@ -4130,8 +4485,15 @@
       for (const g of active) {
         if (g.parentElement !== grid) grid.append(g);
       }
-    } else if (grid) {
-      grid.remove();
+    } else {
+      if (grid) grid.remove();
+      if (!allDone) {
+        allDone = make('div', 'ux-all-done');
+        const empty = make('div', 'ux-stage-empty');
+        empty.append(make('div', 'ux-stage-empty-icon'), make('b', '', '今日单词抽背已全部完成'), make('span', '', '点击右侧姓名可展开复核，双击撤回'));
+        allDone.append(empty);
+        if (rail && rail.parentElement === quiz) rail.before(allDone); else quiz.append(allDone);
+      }
     }
     if (!rail) {
       rail = make('div', 'ux-quiz-rail');
@@ -4167,13 +4529,44 @@
       : status === 'none'
       ? md(air.day) + ' 无需加时 · 可选其他日期'
       : md(air.day) + ' 课表待核实 · 可选其他日期';
-    row.append(make('b', '', '空调加时申请'), make('span', '', summary));
-    const open = make('button', '', status === 'ready' && !air.copied ? '去复制' : '查看'); open.type = 'button';
-    open.onclick = () => {
+    const openAircon = () => {
       if (typeof globalThis.wayonAircon?.open === 'function') globalThis.wayonAircon.open(air.day);
       else document.getElementById('nav-aircon')?.click();
     };
-    row.append(open);
+    const onOpenKey = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAircon(); } };
+    const titleEl = make('b', '', '空调加时申请');
+    titleEl.title = '点击查看并编辑空调加时文本';
+    titleEl.setAttribute('role', 'button');
+    titleEl.tabIndex = 0;
+    titleEl.onclick = openAircon;
+    titleEl.onkeydown = onOpenKey;
+    const sumEl = make('span', '', summary);
+    sumEl.title = '点击查看并编辑空调加时文本';
+    sumEl.setAttribute('role', 'button');
+    sumEl.tabIndex = 0;
+    sumEl.onclick = openAircon;
+    sumEl.onkeydown = onOpenKey;
+    row.append(titleEl, sumEl);
+    const act = make('button', 'ux-aircon-copy'); act.type = 'button';
+    const isReady = status === 'ready';
+    const label = isReady ? (air.copied ? '再次复制空调加时申请' : '一键复制空调加时申请') : '查看空调加时';
+    act.title = label;
+    act.setAttribute('aria-label', label);
+    act.innerHTML = isReady
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+    act.onclick = () => {
+      if (isReady && typeof globalThis.wayonAircon?.copy === 'function') {
+        globalThis.wayonAircon.copy(air.day, () => {
+          showUndoToast('已复制空调加时申请');
+          delete row.dataset.sig;
+          apply();
+        }, () => openAircon());
+      } else {
+        openAircon();
+      }
+    };
+    row.append(act);
     if (topPanel) topPanel.prepend(row); else list.prepend(row);
   }
 
@@ -4202,7 +4595,7 @@
     } else if (box && !$('.item', box)) {
       box.remove(); box = null;
     }
-    if (box) $('summary', box).textContent = '考期已过 · ' + $$('.item', box).length + ' 人（展开查看；仍可复制催交或停止催交）';
+    if (box) $('summary', box).textContent = '考期已过 · ' + $$('.item', box).length + ' 人';
     const foldedChasing = (() => {
       const rail = [...(list.children || [])].find(c => c.classList?.contains('ux-folded-rail'));
       return [
@@ -4550,7 +4943,7 @@
       };
       return;
     }
-    if (event.target.closest?.('#list .quiz .vq-fold, #list .quiz .qgroup.vq-collapsed')) { setTimeout(schedule, 0); }
+    if (event.target.closest?.('#list .quiz .vq-fold, #list .quiz .qgroup.vq-collapsed')) { setTimeout(() => { readCount('quiz'); decorateNav(); schedule(); }, 0); }
     if (!FOCUS_MODES.has(page.mode)) return;
     const copyBtn = event.target.closest?.('#list .ux-focus-stage .item:not(.folded) button.copy');
     if (copyBtn) {
@@ -4623,7 +5016,16 @@
   let lastUser = 0;
   const userOpened = new Set();
   const cardName = el => { const card = el.closest('.item'); return card ? ($('.head .name', card)?.textContent || '') : ''; };
-  const detailKey = el => [page.mode, page.cur, el.className, cardName(el),
+  const taskTag = el => {
+    const row = el.closest?.('.task');
+    if (!row) return '';
+    const txt = $('.txt, textarea, .study-task-text', row);
+    const label = String(txt?.value ?? txt?.textContent ?? '').trim().slice(0, 32);
+    const siblings = row.parentElement ? [...row.parentElement.children] : [];
+    const idx = siblings.indexOf(row);
+    return label ? `${idx}:${label}` : String(idx);
+  };
+  const detailKey = el => [page.mode, page.cur, el.className, cardName(el), taskTag(el),
     ($(':scope > summary', el)?.textContent || '').replace(/[0-9]+/g, '').trim().slice(0, 24)].join('|').replace(/^([^|]*\|[^|]*\|[^|]*\|)[0-9]+\.\s*/, '$1');
   const syncDetailsIntent = el => {
     if (!el || el.tagName !== 'DETAILS' || !el.closest?.('#list')) return;
@@ -4653,14 +5055,38 @@
   }
 
   function decorateTopBarPanel() {
+    const homeBtn = $('#days .home-btn');
+    if (homeBtn) {
+      const tip = page.mode === 'notice' ? '点击回到明天' : '点击回到今天';
+      if (homeBtn.title !== tip) homeBtn.title = tip;
+    }
     const topBar = $('.workspace-top-bar');
-    if (!topBar || topBar.parentElement?.classList?.contains('ux-topbar-panel')) return;
-    const subBar = $('.workspace-sub-bar');
-    const wrap = make('div', 'ux-topbar-panel');
-    if (typeof topBar.before === 'function') topBar.before(wrap);
-    else return;
-    wrap.append(topBar);
-    if (subBar) wrap.append(subBar);
+    let wrap = topBar?.parentElement?.classList?.contains('ux-topbar-panel') ? topBar.parentElement : null;
+    if (topBar && !wrap && typeof topBar.before === 'function') {
+      const subBar = $('.workspace-sub-bar');
+      wrap = make('div', 'ux-topbar-panel');
+      topBar.before(wrap);
+      wrap.append(topBar);
+      if (subBar) wrap.append(subBar);
+    }
+    if (!wrap) return;
+    // Quiz view: mirror "+ 添加学生" right into the top white toolbar next to #subtabs (same slot as "+")
+    const srcQuizAdd = page.mode === 'quiz' ? $('#list #vq-add-student') : null;
+    let proxy = $('.ux-quiz-add', wrap);
+    if (srcQuizAdd) {
+      if (!proxy) {
+        proxy = make('button', 'ux-quiz-add');
+        proxy.type = 'button';
+        proxy.title = '添加抽背学生';
+        proxy.setAttribute('aria-label', '添加抽背学生');
+        proxy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
+        proxy.onclick = () => { $('#list #vq-add-student')?.click(); };
+        wrap.append(proxy);
+      }
+      if (proxy.hidden) proxy.hidden = false;
+    } else if (proxy && !proxy.hidden) {
+      proxy.hidden = true;
+    }
   }
   // ---- sync notice popup: present unauthenticated cloud notice as a dismissible modal popup ----
   function decorateSyncPopup() {

@@ -243,8 +243,9 @@
   .wayon-room .legend i{width:8px!important;height:8px!important;border-radius:999px!important;flex:none}
   .wayon-room .legend .lg-hall-note{margin-left:0;color:var(--rm-fg2);opacity:.92}
   .wayon-room .legend .lg-hall-swatch{width:10px!important;height:10px!important;border-radius:3px!important;border:1.5px dashed var(--rm-accent);background:transparent!important;box-sizing:border-box}
-  .wayon-room .top .tl-fullscreen{order:3;margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 11px;border-radius:999px;background:var(--rm-surface);border:1px solid var(--rm-line);color:var(--rm-fg);font-size:12px;font-weight:550;text-decoration:none;white-space:nowrap;transition:background-color .16s ease,border-color .16s ease,color .16s ease}
-  .wayon-room .top .tl-fullscreen:hover{background:var(--rm-seg-track);border-color:var(--rm-fg2)}
+  .wayon-room .top .tl-fullscreen{order:3;margin-left:auto;display:grid;place-items:center;width:32px;height:32px;padding:0;border-radius:999px;background:var(--rm-seg-track);border:0;color:var(--rm-fg2);text-decoration:none;flex:none;transition:background-color .18s ease,color .18s ease}
+  .wayon-room .top .tl-fullscreen svg{width:15px;height:15px;pointer-events:none}
+  .wayon-room .top .tl-fullscreen:hover{background:var(--rm-accent-sub);color:var(--rm-accent)}
   .wayon-room .top .tl-summary{order:3;margin-left:auto;font-size:12px;font-weight:450;color:var(--rm-fg2);font-variant-numeric:tabular-nums;letter-spacing:-.005em;white-space:nowrap}
   .wayon-room .top .tl-fullscreen+.tl-summary{margin-left:0}
   .wayon-room .top .tl-summary:empty{display:none}
@@ -303,20 +304,21 @@
   .wayon-room .tl-slot:hover{background:var(--rm-accent-sub)}
 
   /* Apple Calendar pastel lesson cards with rounded left accent bar */
-  .wayon-room .k.tl-lesson{position:relative;z-index:2;justify-self:start;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-auto-rows:min-content;align-items:baseline;align-content:start;column-gap:6px;row-gap:2px;margin:2px 5px;padding:7px 10px 7px 13px;border:0!important;border-radius:11px;overflow:hidden;box-shadow:none;box-sizing:border-box;transition:filter .18s ease,box-shadow .2s ease}
+  .wayon-room .k.tl-lesson{position:relative;z-index:2;justify-self:start;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:min-content;align-items:start;align-content:start;column-gap:6px;row-gap:2px;margin:2px 5px;padding:7px 10px 7px 13px;border:0!important;border-radius:11px;overflow:hidden;box-shadow:none;box-sizing:border-box;transition:filter .18s ease,box-shadow .2s ease}
   .wayon-room .k.tl-lesson::before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:3px;border-radius:99px;background:var(--ev-bar,var(--rm-accent))}
   @media (prefers-reduced-motion: no-preference){
     .wayon-room .k.tl-lesson{transition:transform .22s cubic-bezier(.28,.11,.32,1),box-shadow .22s cubic-bezier(.28,.11,.32,1)}
     .wayon-room .k.tl-lesson:hover{transform:scale(1.012);box-shadow:0 6px 16px -4px var(--rm-shadow-hover);z-index:4}
   }
-  .wayon-room .k.tl-lesson .w{grid-column:1;grid-row:1;font-size:13px;line-height:1.3;font-weight:600;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
-  .wayon-room .k.tl-lesson .tt{grid-column:2;grid-row:1;order:0;font-size:11px;line-height:1.3;font-weight:500;opacity:.78;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .wayon-room .k.tl-lesson .s{grid-column:1 / -1;grid-row:2;font-size:11.5px;line-height:1.35;opacity:.86;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+  .wayon-room .k.tl-lesson .w{grid-column:1;grid-row:1;font-size:13px;line-height:1.32;font-weight:600;letter-spacing:-.015em;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+  .wayon-room .k.tl-lesson .tt{grid-column:1;grid-row:2;order:0;font-size:11px;line-height:1.3;font-weight:500;opacity:.78;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .wayon-room .k.tl-lesson .s{grid-column:1;grid-row:3;font-size:11.5px;line-height:1.35;opacity:.86;white-space:normal;overflow-wrap:anywhere}
   .wayon-room .k.tl-lesson .room-subject,.wayon-room .k.tl-lesson .room-teacher{display:inline;font-size:inherit;opacity:1}
   .wayon-room .k.tl-lesson .room-teacher::before{content:" · "}
-  .wayon-room .k.tl-lesson.short{padding:3px 9px 3px 12px;align-content:center;align-items:center}
+  .wayon-room .k.tl-lesson.short{grid-template-columns:minmax(0,1fr) auto;padding:3px 9px 3px 12px;align-content:center;align-items:center}
   .wayon-room .k.tl-lesson.short .s{display:none}
-  .wayon-room .k.tl-lesson.short .w{font-size:12px}
+  .wayon-room .k.tl-lesson.short .w{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wayon-room .k.tl-lesson.short .tt{grid-column:2;grid-row:1}
   .wayon-room .k.tl-lesson.man{box-shadow:inset 0 0 0 1.25px color-mix(in oklab,var(--rm-edit) 65%,transparent)}
   .wayon-room .k.tl-lesson.man::after{content:"✎";position:absolute;bottom:3px;right:7px;font-size:10px;color:var(--rm-edit);opacity:.9}
   .wayon-room .k.tl-lesson.bad{outline:2px solid var(--rm-now);outline-offset:-2px;box-shadow:0 0 0 2px var(--rm-danger-bg)}
@@ -465,10 +467,13 @@
     // Quiet right-aligned summary (only shown in the single-row micro-bar; stays silent about conflict-free status).
     const inFrame = (() => { try { return typeof window !== 'undefined' && window.self !== window.top; } catch { return true; } })();
     if (top && inFrame && !top.querySelector('.tl-fullscreen')) {
-      const full = el('a', 'tl-fullscreen', '全屏新窗口打开 ↗');
+      const full = el('a', 'tl-fullscreen');
       full.href = (typeof window !== 'undefined' && window.location?.href) || './rooms.html';
       full.target = '_blank';
       full.rel = 'noopener noreferrer';
+      full.title = '全屏新窗口打开';
+      full.setAttribute('aria-label', '全屏新窗口打开');
+      full.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
       top.append(full);
     }
     const summaryEl = el('span', 'tl-summary', '');
