@@ -171,7 +171,10 @@
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){background:var(--card,#fff);border:1px solid var(--line,#e5e5ea)!important;border-radius:16px!important;padding:16px 20px!important;margin:0 0 12px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)}
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup.vq-collapsed{padding:9px 14px!important;margin:0 0 10px!important}
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup .qhead{font-size:18px;font-weight:600;letter-spacing:-.01em}
-    @media(prefers-color-scheme:dark){.ux-chip[data-kind=ok],.ux-aircon[data-copied] b:after,.ux-st-row em[data-kind=ok]{color:#4ac26b}.ux-chip[data-kind=todo],.ux-st-row em[data-kind=todo]{color:#f0883e}.ux-chip[data-kind=wait],.ux-st-row em[data-kind=wait]{color:#d4a72c}}
+    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .ux-chip[data-kind=ok],:root:not([data-theme="light"]) .ux-aircon[data-copied] b:after,:root:not([data-theme="light"]) .ux-st-row em[data-kind=ok]{color:#4ac26b}:root:not([data-theme="light"]) .ux-chip[data-kind=todo],:root:not([data-theme="light"]) .ux-st-row em[data-kind=todo]{color:#f0883e}:root:not([data-theme="light"]) .ux-chip[data-kind=wait],:root:not([data-theme="light"]) .ux-st-row em[data-kind=wait]{color:#d4a72c}}
+    :root[data-theme="dark"] .ux-chip[data-kind=ok],:root[data-theme="dark"] .ux-aircon[data-copied] b:after,:root[data-theme="dark"] .ux-st-row em[data-kind=ok]{color:#4ac26b}
+    :root[data-theme="dark"] .ux-chip[data-kind=todo],:root[data-theme="dark"] .ux-st-row em[data-kind=todo]{color:#f0883e}
+    :root[data-theme="dark"] .ux-chip[data-kind=wait],:root[data-theme="dark"] .ux-st-row em[data-kind=wait]{color:#d4a72c}
   `;
   document.head.append(style);
   try { document.title = 'Wayon-edu'; } catch {}
@@ -506,7 +509,7 @@
       body.wayon-workbench #tabs button:active{transform:scale(.95)}
       body.wayon-workbench #tabs #nav-aircon,
       body.wayon-workbench #subtabs #tab-assigned{display:none!important}
-      body.wayon-workbench #tabs button.on,
+      body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) #tabs button.on,
       body.wayon-workbench[data-feedback-open] #tabs #nav-feedback,
       body.wayon-workbench[data-memo-open] #tabs #nav-memo,
       body.wayon-workbench[data-mocks-open] #tabs #nav-mocks,
@@ -521,7 +524,7 @@
           0 1px 2px var(--apple-glass-shadow-tight),
           0 0 0 .5px var(--apple-lens-hairline)!important;
       }
-      body.wayon-workbench #tabs button.on .ux-label,
+      body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) #tabs button.on .ux-label,
       body.wayon-workbench[data-feedback-open] #tabs #nav-feedback .ux-label,
       body.wayon-workbench[data-memo-open] #tabs #nav-memo .ux-label,
       body.wayon-workbench[data-mocks-open] #tabs #nav-mocks .ux-label,
@@ -753,22 +756,22 @@
             from{opacity:0;transform:translate3d(-6px,0,0)}
             to{opacity:1;transform:translate3d(0,0,0)}
           }
-          body.wayon-workbench:not(:has(#classroom-frame)) .app-brand .brand-title{
+          body.wayon-workbench .app-brand .brand-title{
             animation:wayon-brand-dock auto linear both;
             animation-timeline:scroll(block root);
             animation-range:0px 64px;
           }
-          body.wayon-workbench:not(:has(#classroom-frame)) .app-brand::before{
+          body.wayon-workbench .app-brand::before{
             animation:wayon-bar-scrim auto linear both;
             animation-timeline:scroll(block root);
             animation-range:8px 58px;
           }
-          body.wayon-workbench:not(:has(#classroom-frame)) .app-brand::after{
+          body.wayon-workbench .app-brand::after{
             animation:wayon-bar-glass auto linear both;
             animation-timeline:scroll(block root);
             animation-range:8px 64px;
           }
-          body.wayon-workbench:not(:has(#classroom-frame)) .ux-topbar-crumb{
+          body.wayon-workbench .ux-topbar-crumb{
             animation:wayon-crumb-in auto linear both;
             animation-timeline:scroll(block root);
             animation-range:34px 64px;
@@ -785,14 +788,14 @@
         html[data-scrolled="true"] body.wayon-workbench .app-brand::after,
         html[data-scrolled="true"] body.wayon-workbench .ux-topbar-crumb{opacity:1;transform:none}
       }
-      /* Classroom view docks topbar compact immediately for maximum calendar height */
-      body.wayon-workbench:has(#classroom-frame) .app-brand .brand-title{
+      /* Classroom view docks topbar compact immediately for maximum calendar height (only when classroom itself is active, not overlays) */
+      body.wayon-workbench[data-mode="classroom"]:not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]):has(#classroom-frame) .app-brand .brand-title{
         animation:none!important;
         transform:translate3d(4px,13px,0) scale(.45)!important;
       }
-      body.wayon-workbench:has(#classroom-frame) .app-brand::before,
-      body.wayon-workbench:has(#classroom-frame) .app-brand::after,
-      body.wayon-workbench:has(#classroom-frame) .ux-topbar-crumb{
+      body.wayon-workbench[data-mode="classroom"]:not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]):has(#classroom-frame) .app-brand::before,
+      body.wayon-workbench[data-mode="classroom"]:not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]):has(#classroom-frame) .app-brand::after,
+      body.wayon-workbench[data-mode="classroom"]:not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]):has(#classroom-frame) .ux-topbar-crumb{
         animation:none!important;
         opacity:1!important;
         transform:none!important;
@@ -801,7 +804,7 @@
         padding:92px clamp(20px,3vw,40px) 64px!important;
         max-width:none!important;
       }
-      body.wayon-workbench:has(#classroom-frame) .main-content{
+      body.wayon-workbench[data-mode="classroom"]:not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]):has(#classroom-frame) .main-content{
         padding:70px clamp(16px,2.4vw,32px) 16px!important;
       }
       body.wayon-workbench[data-mocks-open] .main-content{
@@ -858,16 +861,20 @@
         backdrop-filter:blur(24px) saturate(200%);
         -webkit-backdrop-filter:blur(24px) saturate(200%);
       }
-      body.wayon-workbench #tabs button.on,
+      body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) #tabs button.on,
       body.wayon-workbench[data-feedback-open] #tabs #nav-feedback,
       body.wayon-workbench[data-memo-open] #tabs #nav-memo,
       body.wayon-workbench[data-mocks-open] #tabs #nav-mocks,
       body.wayon-workbench[data-aircon-open] #tabs #nav-notice{
-        background:var(--accent-subtle)!important;
-        color:var(--accent)!important;
+        background:var(--wayon-brand-soft)!important;
+        color:var(--wayon-brand)!important;
         border-radius:12px!important;
       }
-      body.wayon-workbench[data-ledger-open] #tabs button:not(#nav-ledger){
+      body.wayon-workbench[data-feedback-open] #tabs button:not(#nav-feedback),
+      body.wayon-workbench[data-memo-open] #tabs button:not(#nav-memo),
+      body.wayon-workbench[data-mocks-open] #tabs button:not(#nav-mocks),
+      body.wayon-workbench[data-ledger-open] #tabs button:not(#nav-ledger),
+      body.wayon-workbench[data-aircon-open] #tabs button:not(#nav-notice){
         background:transparent!important;
         color:var(--muted)!important;
       }
@@ -944,14 +951,19 @@
       min-height:36px!important;
       border:0!important;
       border-radius:999px!important;
+      appearance:none!important;
+      -webkit-appearance:none!important;
+      -moz-appearance:none!important;
       background-color:var(--apple-surface)!important;
       box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
       padding-left:36px!important;
       padding-right:32px!important;
       font-weight:500!important;
     }
+    body.wayon-workbench #day-picker::picker-icon,
+    body.wayon-workbench #aircon-day-picker::picker-icon{display:none!important;content:none!important}
     body.wayon-workbench #day-picker:focus{
-      box-shadow:0 0 0 2.5px var(--accent-subtle),0 0 0 .5px var(--accent)!important;
+      box-shadow:0 0 0 2.5px var(--wayon-brand-soft,rgba(24,24,27,.1)),0 0 0 1px var(--wayon-brand-ring,rgba(24,24,27,.22))!important;
     }
     body.wayon-workbench #days .home-btn,
     body.wayon-workbench #study-add,
@@ -1132,6 +1144,2149 @@
     }
     body.wayon-workbench #tabs #nav-aircon,
     body.wayon-workbench #subtabs #tab-assigned{display:none!important}
+
+    /* ---- 2026-11-22 Architectural White Panels, Unified Monochrome Ink Palette & Focus Workbench ---- */
+    :root{
+      --wayon-name-font:ui-serif,"New York","Songti SC","STSong","Noto Serif SC","Source Han Serif SC",Georgia,serif;
+      --wayon-icon-check:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.6%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2012.5l4.5%204.5L19%207.5%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-x:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%207l10%2010M17%207L7%2017%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-check-all:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M18%206L7%2017l-5-5%22%2F%3E%3Cpath%20d%3D%22M22%2010l-7.5%207.5L13%2016%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-x-all:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.85%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M15%209l-6%206M9%209l6%206%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-chev-r:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%206l6%206-6%206%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-chev-d:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-bell-off:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M8.7%203A6%206%200%200%201%2018%208a21.3%2021.3%200%200%200%20.6%205%22%2F%3E%3Cpath%20d%20%3D%22M17%2017H3s3-2%203-9a4.67%204.67%200%200%201%20.3-1.7%22%2F%3E%3Cpath%20d%3D%22M10.3%2021a1.94%201.94%200%200%200%203.4%200%22%2F%3E%3Cpath%20d%3D%22M2%202l20%2020%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-canvas:#F2F3F6;
+      --apple-canvas:#F2F3F6;
+      --wayon-panel-bg:#FFFFFF;
+      --wayon-subtab-active:#FFFFFF;
+      --wayon-panel-border:rgba(15,23,42,.07);
+      --wayon-panel-shadow:0 1px 2px rgba(15,23,42,.03),0 6px 20px -10px rgba(15,23,42,.06);
+      --wayon-divider:#ECEEF2;
+      --wayon-btn-surface:#F3F4F6;
+      --wayon-btn-hover:#E8EAEE;
+      --wayon-btn-ring:rgba(15,23,42,.06);
+      --wayon-ring-idle:rgba(24,24,27,.24);
+      --wayon-ring-bg:transparent;
+      --wayon-brand:#18181B;
+      --wayon-brand-cta:#18181B;
+      --wayon-brand-cta-fg:#FFFFFF;
+      --wayon-brand-cta-hover:#2E2E34;
+      --wayon-brand-soft:#F2F3F6;
+      --wayon-brand-ring:rgba(24,24,27,.16);
+      --wayon-card-head-bg:transparent;
+      --wayon-card-head-line:#ECEEF2;
+      --wayon-pre-bg:#F8F9FB;
+      --wayon-sage:#15803D;
+      --wayon-sage-bg:#F8F9FB;
+      --wayon-sage-pill:#F0FDF4;
+      --wayon-sage-ring:rgba(15,23,42,.09);
+      --wayon-card-head-copied:transparent;
+      --wayon-card-head-copied-line:#ECEEF2;
+      --wayon-urgent:#DC2626;
+      --wayon-urgent-soft:#FEF2F2;
+      --wayon-card-head-urgent:transparent;
+      --wayon-card-head-urgent-line:#ECEEF2;
+    }
+    @media(prefers-color-scheme:dark){
+      :root:not([data-theme="light"]){
+        --wayon-canvas:#0B0C0E;
+        --apple-canvas:#0B0C0E;
+        --wayon-panel-bg:#16171A;
+        --wayon-subtab-active:#27282D;
+        --wayon-panel-border:rgba(255,255,255,.075);
+        --wayon-panel-shadow:0 1px 3px rgba(0,0,0,.35),0 10px 28px -12px rgba(0,0,0,.5);
+        --wayon-divider:rgba(255,255,255,.08);
+        --wayon-btn-surface:rgba(255,255,255,.07);
+        --wayon-btn-hover:rgba(255,255,255,.13);
+        --wayon-btn-ring:rgba(255,255,255,.09);
+        --wayon-ring-idle:rgba(255,255,255,.26);
+        --wayon-ring-bg:transparent;
+        --wayon-brand:#F4F4F5;
+        --wayon-brand-cta:#F4F4F5;
+        --wayon-brand-cta-fg:#111113;
+        --wayon-brand-cta-hover:#FFFFFF;
+        --wayon-brand-soft:rgba(255,255,255,.08);
+        --wayon-brand-ring:rgba(255,255,255,.18);
+        --wayon-card-head-bg:transparent;
+        --wayon-card-head-line:rgba(255,255,255,.08);
+        --wayon-pre-bg:rgba(255,255,255,.035);
+        --wayon-sage:#4ADE80;
+        --wayon-sage-bg:rgba(255,255,255,.04);
+        --wayon-sage-pill:rgba(74,222,128,.12);
+        --wayon-sage-ring:rgba(255,255,255,.1);
+        --wayon-card-head-copied:transparent;
+        --wayon-card-head-copied-line:rgba(255,255,255,.08);
+        --wayon-urgent:#F87171;
+        --wayon-urgent-soft:rgba(248,113,113,.14);
+        --wayon-card-head-urgent:transparent;
+        --wayon-card-head-urgent-line:rgba(255,255,255,.08);
+      }
+    }
+    :root[data-theme="dark"]{
+      --wayon-canvas:#0B0C0E;
+      --apple-canvas:#0B0C0E;
+      --wayon-panel-bg:#16171A;
+      --wayon-subtab-active:#27282D;
+      --wayon-panel-border:rgba(255,255,255,.075);
+      --wayon-panel-shadow:0 1px 3px rgba(0,0,0,.35),0 10px 28px -12px rgba(0,0,0,.5);
+      --wayon-divider:rgba(255,255,255,.08);
+      --wayon-btn-surface:rgba(255,255,255,.07);
+      --wayon-btn-hover:rgba(255,255,255,.13);
+      --wayon-btn-ring:rgba(255,255,255,.09);
+      --wayon-ring-idle:rgba(255,255,255,.26);
+      --wayon-ring-bg:transparent;
+      --wayon-brand:#F4F4F5;
+      --wayon-brand-cta:#F4F4F5;
+      --wayon-brand-cta-fg:#111113;
+      --wayon-brand-cta-hover:#FFFFFF;
+      --wayon-brand-soft:rgba(255,255,255,.08);
+      --wayon-brand-ring:rgba(255,255,255,.18);
+      --wayon-card-head-bg:transparent;
+      --wayon-card-head-line:rgba(255,255,255,.08);
+      --wayon-pre-bg:rgba(255,255,255,.035);
+      --wayon-sage:#4ADE80;
+      --wayon-sage-bg:rgba(255,255,255,.04);
+      --wayon-sage-pill:rgba(74,222,128,.12);
+      --wayon-sage-ring:rgba(255,255,255,.1);
+      --wayon-card-head-copied:transparent;
+      --wayon-card-head-copied-line:rgba(255,255,255,.08);
+      --wayon-urgent:#F87171;
+      --wayon-urgent-soft:rgba(248,113,113,.14);
+      --wayon-card-head-urgent:transparent;
+      --wayon-card-head-urgent-line:rgba(255,255,255,.08);
+    }
+
+    /* Instant zero-flash Light <-> Dark theme transitions */
+    html[data-ux-theme-switching],
+    html[data-ux-theme-switching] *,
+    html[data-ux-theme-switching] *::before,
+    html[data-ux-theme-switching] *::after{transition:none!important}
+
+    /* Unified cool-gray canvas + crisp pure-white panels across sidebar & top toolbar */
+    body.wayon-workbench{background:var(--wayon-canvas)!important}
+    body.wayon-workbench .sidebar{
+      background:var(--wayon-panel-bg)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+    }
+    body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button.on,
+    body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button[aria-current="page"],
+    body.wayon-workbench[data-feedback-open] .sidebar #tabs #nav-feedback,
+    body.wayon-workbench[data-memo-open] .sidebar #tabs #nav-memo,
+    body.wayon-workbench[data-mocks-open] .sidebar #tabs #nav-mocks,
+    body.wayon-workbench[data-aircon-open] .sidebar #tabs #nav-notice,
+    body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger,
+    body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger.ux-labelled{
+      background:var(--wayon-brand-soft)!important;
+      color:var(--wayon-brand)!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button.on svg,
+    body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button.on .ux-label,
+    body.wayon-workbench[data-feedback-open] .sidebar #tabs #nav-feedback svg,
+    body.wayon-workbench[data-feedback-open] .sidebar #tabs #nav-feedback .ux-label,
+    body.wayon-workbench[data-memo-open] .sidebar #tabs #nav-memo svg,
+    body.wayon-workbench[data-memo-open] .sidebar #tabs #nav-memo .ux-label,
+    body.wayon-workbench[data-mocks-open] .sidebar #tabs #nav-mocks svg,
+    body.wayon-workbench[data-mocks-open] .sidebar #tabs #nav-mocks .ux-label,
+    body.wayon-workbench[data-aircon-open] .sidebar #tabs #nav-notice svg,
+    body.wayon-workbench[data-aircon-open] .sidebar #tabs #nav-notice .ux-label,
+    body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger svg,
+    body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger .ux-label{
+      color:var(--wayon-brand)!important;
+      font-weight:650!important;
+    }
+    /* Keep sidebar footer icons (教务/同步/规则/设置) 100% locked at fixed Y across all tabs:
+       when classroom mounts #workflow-tools into .sidebar-footer, float it cleanly in the gap above .sidebar-footer with 0px shift */
+    @media(min-width:1024px){
+      body.wayon-workbench .sidebar-footer{
+        position:relative!important;
+      }
+      body.wayon-workbench .sidebar-footer>#workflow-tools{
+        position:absolute!important;
+        left:50%!important;
+        bottom:calc(100% + 14px)!important;
+        transform:translateX(-50%)!important;
+        margin:0!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        gap:6px!important;
+      }
+    }
+    @media(min-width:1024px) and (max-height:640px){
+      body.wayon-workbench .sidebar-footer>#workflow-tools{
+        bottom:calc(100% + 8px)!important;
+        gap:4px!important;
+      }
+      body.wayon-workbench .sidebar-footer>#workflow-tools .workflow-icon{
+        width:32px!important;
+        height:32px!important;
+      }
+    }
+    body.wayon-workbench[data-mocks-open] .sidebar #workflow-tools,
+    body.wayon-workbench[data-feedback-open] .sidebar #workflow-tools,
+    body.wayon-workbench[data-memo-open] .sidebar #workflow-tools,
+    body.wayon-workbench[data-ledger-open] .sidebar #workflow-tools,
+    body.wayon-workbench[data-aircon-open] .sidebar #workflow-tools{
+      display:none!important;
+    }
+    body.wayon-workbench .workflow-icon:hover:not(:disabled),
+    body.wayon-workbench #study-add:hover{
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+    body.wayon-workbench .ux-topbar-panel{
+      display:contents;
+    }
+    @media(min-width:900px){
+      body.wayon-workbench .main-content>.ux-topbar-panel{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:flex-start!important;
+        gap:10px!important;
+        flex-wrap:nowrap!important;
+        flex:0 0 auto!important;
+        width:100%!important;
+        background:var(--wayon-panel-bg)!important;
+        border:1px solid var(--wayon-panel-border)!important;
+        border-radius:18px!important;
+        box-shadow:var(--wayon-panel-shadow)!important;
+        padding:8px 12px!important;
+        margin:0 0 14px!important;
+        order:-6!important;
+      }
+      body.wayon-workbench[data-mode="classroom"] .ux-topbar-panel,
+      body.wayon-workbench[data-feedback-open] .ux-topbar-panel,
+      body.wayon-workbench[data-memo-open] .ux-topbar-panel,
+      body.wayon-workbench[data-mocks-open] .ux-topbar-panel,
+      body.wayon-workbench[data-ledger-open] .ux-topbar-panel,
+      body.wayon-workbench[data-aircon-open] .ux-topbar-panel{
+        display:none!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel>.workspace-top-bar,
+      body.wayon-workbench .main-content>.ux-topbar-panel>.workspace-sub-bar{
+        display:contents!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #subtabs{
+        order:-6!important;
+        flex:0 0 auto!important;
+        margin:0!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #subtabs,
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #study-slot{
+        display:none!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon{
+        order:-6!important;
+        flex:0 1 auto!important;
+        min-width:0!important;
+        margin:0!important;
+        padding:0 4px!important;
+        background:transparent!important;
+        border:0!important;
+        box-shadow:none!important;
+        border-radius:0!important;
+        display:flex!important;
+        align-items:center!important;
+        gap:10px!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon b{
+        font-size:13.5px!important;
+        font-weight:650!important;
+        color:var(--fg)!important;
+        white-space:nowrap!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon span{
+        font-size:13px!important;
+        color:var(--muted)!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button{
+        margin-left:2px!important;
+        height:32px!important;
+        min-height:32px!important;
+        padding:0 14px!important;
+        border-radius:999px!important;
+        border:0!important;
+        background:var(--wayon-brand-cta)!important;
+        color:var(--wayon-brand-cta-fg)!important;
+        font-size:12.5px!important;
+        font-weight:600!important;
+        box-shadow:none!important;
+        white-space:nowrap!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button:hover{
+        background:var(--wayon-brand-cta-hover)!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button{
+        background:var(--wayon-btn-surface)!important;
+        color:var(--fg)!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button:hover{
+        background:var(--wayon-btn-hover)!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #study-slot{
+        order:-5!important;
+        flex:0 0 auto!important;
+        margin:0!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #study-slot .meta{display:none!important}
+      body.wayon-workbench .main-content>.ux-topbar-panel #workflow-tools{
+        order:-4!important;
+        flex:0 0 auto!important;
+        margin:0 0 0 auto!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel .date-section{
+        order:-3!important;
+        flex:0 0 auto!important;
+        width:auto!important;
+        margin:0!important;
+      }
+      body.wayon-workbench .schedule-refresh-btn{
+        background:var(--wayon-btn-surface)!important;
+        border:1px solid var(--wayon-panel-border)!important;
+        color:var(--fg)!important;
+        border-radius:999px!important;
+        height:34px!important;
+        padding:0 13px!important;
+        box-shadow:none!important;
+      }
+      body.wayon-workbench .schedule-refresh-btn:hover:not(:disabled){
+        background:var(--wayon-btn-hover)!important;
+        border-color:var(--wayon-brand-ring)!important;
+        color:var(--fg)!important;
+      }
+      body.wayon-workbench:not([data-mode="classroom"]):not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]) .main-content{
+        min-height:calc(100dvh + 160px)!important;
+        padding-bottom:172px!important;
+      }
+      body.wayon-workbench .main-content:has(>#list.ux-focus-layout){
+        display:flex!important;
+        flex-direction:column!important;
+        flex-wrap:nowrap!important;
+        align-items:stretch!important;
+      }
+      body.wayon-workbench .main-content:has(>#list.ux-focus-layout)>#list.ux-focus-layout{
+        flex:1 1 auto!important;
+        min-height:calc(100dvh - 172px)!important;
+      }
+    }
+    body.wayon-workbench #subtabs{
+      background:var(--wayon-canvas)!important;
+      box-shadow:none!important;
+      border:0!important;
+    }
+    body.wayon-workbench #subtabs button.on{
+      background:var(--wayon-subtab-active)!important;
+      color:var(--wayon-brand)!important;
+      box-shadow:0 1px 3px rgba(15,23,42,.08),0 0 0 .5px var(--wayon-panel-border)!important;
+    }
+    body.wayon-workbench #feedback-panel .fb-tabs button.on{
+      background:var(--wayon-subtab-active)!important;
+      color:var(--wayon-brand)!important;
+      box-shadow:0 1px 3px rgba(15,23,42,.08),0 0 0 .5px var(--wayon-panel-border)!important;
+    }
+    body.wayon-workbench #memo-panel .memo-add button,
+    body.wayon-workbench #ledger-panel .ldg-btn.primary,
+    body.wayon-workbench .ldg-dialog .ldg-btn.primary,
+    body.wayon-workbench .fb-btn.pri{
+      border-radius:999px!important;
+      background:var(--wayon-brand-cta)!important;
+      border-color:transparent!important;
+      color:var(--wayon-brand-cta-fg)!important;
+    }
+    body.wayon-workbench #memo-panel .memo-add button:hover:not(:disabled),
+    body.wayon-workbench #ledger-panel .ldg-btn.primary:hover:not(:disabled),
+    body.wayon-workbench .ldg-dialog .ldg-btn.primary:hover:not(:disabled),
+    body.wayon-workbench .fb-btn.pri:hover:not(:disabled){
+      background:var(--wayon-brand-cta-hover)!important;
+    }
+    body.wayon-workbench #ledger-panel .ldg-state p{
+      text-wrap:balance;
+    }
+
+    /* Cloud sync notice -> sleek dismissible centered page popup modal */
+    body.wayon-workbench .ux-sync-backdrop{
+      position:fixed;
+      inset:0;
+      z-index:950;
+      background:rgba(15,23,42,.28);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      animation:ux-fade-in .18s ease both;
+    }
+    body.wayon-workbench .ux-sync-backdrop[hidden]{display:none!important}
+    body.wayon-workbench:has(dialog[open]) .ux-sync-backdrop,
+    body.wayon-workbench:has(dialog[open]) .wayon-sync-notice{display:none!important}
+    body.wayon-workbench .wayon-sync-notice[data-ux-dismissed="1"]{display:none!important}
+    body.wayon-workbench .wayon-sync-notice:not([hidden]):not([data-ux-dismissed="1"]){
+      position:fixed!important;
+      top:50%!important;
+      left:50%!important;
+      transform:translate(-50%,-50%)!important;
+      z-index:960!important;
+      width:min(400px,calc(100vw - 32px))!important;
+      height:auto!important;
+      min-height:0!important;
+      margin:0!important;
+      padding:20px 22px 18px!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:20px!important;
+      background:var(--wayon-panel-bg)!important;
+      color:var(--fg)!important;
+      box-shadow:0 24px 64px -16px rgba(15,23,42,.28),0 4px 16px -4px rgba(15,23,42,.08)!important;
+      display:flex!important;
+      flex-direction:column!important;
+      align-items:stretch!important;
+      gap:12px!important;
+      animation:ux-modal-pop .24s cubic-bezier(.22,1,.36,1) both!important;
+    }
+    body.wayon-workbench .wayon-sync-notice .ux-sync-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex:0 0 auto;
+    }
+    body.wayon-workbench .wayon-sync-notice .ux-sync-title-wrap{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    body.wayon-workbench .wayon-sync-notice .ux-sync-title{
+      font-family:var(--wayon-name-font);
+      font-size:16.5px;
+      font-weight:700;
+      color:var(--fg);
+      letter-spacing:-.01em;
+    }
+    body.wayon-workbench .wayon-sync-notice .ux-sync-close{
+      width:28px;
+      height:28px;
+      min-width:28px;
+      min-height:28px;
+      padding:0;
+      border:0;
+      border-radius:999px;
+      background:var(--wayon-btn-surface);
+      color:var(--muted);
+      font-size:16px;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:background-color .15s ease,color .15s ease;
+    }
+    body.wayon-workbench .wayon-sync-notice .ux-sync-close:hover{
+      background:var(--wayon-btn-hover);
+      color:var(--fg);
+    }
+    body.wayon-workbench .wayon-sync-notice>span:not(.wayon-sync-actions):not(.wayon-sync-dot){
+      flex:0 0 auto!important;
+      min-height:0!important;
+      font-size:13.5px!important;
+      line-height:1.58!important;
+      color:var(--fg-secondary)!important;
+    }
+    body.wayon-workbench .wayon-sync-notice .wayon-sync-actions{
+      flex:0 0 auto!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:flex-end!important;
+      gap:8px!important;
+      padding-top:4px;
+      margin-left:0!important;
+    }
+    body.wayon-workbench .wayon-sync-notice .wayon-sync-cta{
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      border:0!important;
+      border-radius:999px!important;
+      padding:0 16px!important;
+      height:34px!important;
+      font-weight:600!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench .wayon-sync-notice .wayon-sync-cta:hover{background:var(--wayon-brand-cta-hover)!important}
+    body.wayon-workbench .wayon-sync-notice .wayon-sync-retry{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+      border:0!important;
+      border-radius:999px!important;
+      padding:0 14px!important;
+      height:34px!important;
+      font-weight:550!important;
+      box-shadow:none!important;
+    }
+    body.wayon-workbench .wayon-sync-notice .wayon-sync-retry:hover{background:var(--wayon-btn-hover)!important}
+    @keyframes ux-fade-in{from{opacity:0}to{opacity:1}}
+    @keyframes ux-modal-pop{
+      from{opacity:0;transform:translate(-50%,-48%) scale(.96)}
+      to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    }
+
+    /* Portrait multi-column card grid (notice & fallback) + Three-Column Architectural White Panels (plan / done / chasing on desktop >= 900px) */
+    :root{view-transition-name:none}
+    ::view-transition{pointer-events:none}
+    ::view-transition-old(ux-stage-card),
+    ::view-transition-new(ux-stage-card){
+      animation-duration:.24s;
+      animation-timing-function:cubic-bezier(.22,1,.36,1);
+    }
+    body.wayon-workbench[data-mode=plan] #list,
+    body.wayon-workbench[data-mode=done] #list,
+    body.wayon-workbench[data-mode=notice] #list{
+      display:grid!important;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))!important;
+      gap:16px!important;
+      align-items:stretch!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list{
+      display:grid!important;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr))!important;
+      gap:16px!important;
+      align-items:stretch!important;
+    }
+    body.wayon-workbench #list>.sub,
+    body.wayon-workbench #list>.ux-aircon,
+    body.wayon-workbench #list>.ux-past,
+    body.wayon-workbench #list>.chasing-stopped,
+    body.wayon-workbench #list>.study-form,
+    body.wayon-workbench #list>.assigned-status{
+      grid-column:1/-1!important;
+    }
+    body.wayon-workbench[data-mode=notice] #list:has(>.ux-folded-rail){
+      grid-template-columns:minmax(0,1fr) 168px!important;
+      align-items:start!important;
+    }
+    body.wayon-workbench #list>.ux-active-grid{
+      grid-column:1;
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));
+      gap:16px;
+      align-items:stretch;
+      min-width:0;
+    }
+
+    /* Three-Column Architectural Pure-White Panels (desktop >= 900px): Left Panel | Center Main Panel | Right Panel */
+    @media(min-width:900px){
+      body.wayon-workbench[data-mode=plan] #list.ux-focus-layout,
+      body.wayon-workbench[data-mode=done] #list.ux-focus-layout,
+      body.wayon-workbench[data-mode=chasing] #list.ux-focus-layout{
+        display:grid!important;
+        grid-template-columns:224px minmax(0,1fr) 184px!important;
+        grid-template-rows:minmax(0,1fr)!important;
+        grid-auto-rows:auto!important;
+        gap:16px!important;
+        align-items:stretch!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout:has(>.ux-past,>.chasing-stopped){
+        grid-template-rows:minmax(0,1fr) auto!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-past,
+      body.wayon-workbench #list.ux-focus-layout>.chasing-stopped{
+        background:var(--wayon-panel-bg)!important;
+        border:1px solid var(--wayon-panel-border)!important;
+        box-shadow:var(--wayon-panel-shadow)!important;
+        border-radius:16px!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-pending-rail{
+        grid-column:1;
+        background:var(--wayon-panel-bg);
+        border:1px solid var(--wayon-panel-border);
+        border-radius:18px;
+        box-shadow:var(--wayon-panel-shadow);
+        min-height:0;
+        max-height:none;
+        position:static;
+        align-self:stretch;
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+        padding:14px 10px 14px;
+        min-width:0;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-focus-stage{
+        grid-column:2;
+        background:var(--wayon-panel-bg);
+        border:1px solid var(--wayon-panel-border);
+        border-radius:18px;
+        box-shadow:var(--wayon-panel-shadow);
+        min-height:0;
+        align-self:stretch;
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+        min-width:0;
+        padding:0;
+        overflow:hidden;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-focus-stage>.item:not(.folded){
+        width:100%!important;
+        max-width:none!important;
+        margin:0!important;
+        flex:1 1 auto!important;
+        background:transparent!important;
+        border:0!important;
+        border-radius:0!important;
+        box-shadow:none!important;
+        padding:26px 30px 22px!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-focus-stage>.item:not(.folded) .head{
+        margin:0 0 4px!important;
+        padding:0 0 16px!important;
+        border-radius:0!important;
+        background:transparent!important;
+        border-bottom:1px solid var(--wayon-divider)!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-focus-stage>.item[data-ux-stage-hidden="1"]{
+        display:none!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-folded-rail{
+        grid-column:3!important;
+        background:var(--wayon-panel-bg);
+        border:1px solid var(--wayon-panel-border);
+        border-radius:18px;
+        box-shadow:var(--wayon-panel-shadow);
+        min-height:0;
+        max-height:none;
+        position:static;
+        align-self:stretch;
+        display:flex;
+        flex-direction:column;
+        gap:7px;
+        padding:14px 10px 14px;
+        min-width:0;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-focus-stage>.item:not(.folded) .head>.name{
+        font-size:24px!important;
+      }
+      body.wayon-workbench[data-mode=chasing] #list.ux-focus-layout>.ux-focus-stage>.item:not(.folded) .head>.name{
+        font-size:22px!important;
+      }
+    }
+    @media(min-width:900px) and (max-width:1160px){
+      body.wayon-workbench[data-mode=plan] #list.ux-focus-layout,
+      body.wayon-workbench[data-mode=done] #list.ux-focus-layout,
+      body.wayon-workbench[data-mode=chasing] #list.ux-focus-layout{
+        grid-template-columns:192px minmax(0,1fr) 156px!important;
+        gap:12px!important;
+      }
+    }
+
+    /* Panel column headers & calm empty placeholders */
+    body.wayon-workbench #list .ux-rail-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      padding:2px 8px 11px;
+      margin:0 0 6px;
+      border-bottom:1px solid var(--wayon-divider);
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:.02em;
+      color:var(--muted);
+      user-select:none;
+    }
+    body.wayon-workbench #list .ux-rail-count{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:22px;
+      height:19px;
+      padding:0 6px;
+      border-radius:999px;
+      background:var(--wayon-btn-surface);
+      color:var(--fg-secondary);
+      font-size:11px;
+      font-weight:650;
+      font-variant-numeric:tabular-nums;
+    }
+    body.wayon-workbench #list .ux-folded-rail .ux-rail-count{
+      background:var(--wayon-btn-surface);
+      color:var(--muted);
+    }
+    body.wayon-workbench #list .ux-folded-rail .ux-rail-count[data-has-items="1"]{
+      background:var(--wayon-sage-pill);
+      color:var(--wayon-sage);
+    }
+    body.wayon-workbench #list .ux-rail-empty{
+      margin:auto 6px;
+      padding:24px 10px;
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.5;
+      text-align:center;
+      user-select:none;
+      opacity:.8;
+    }
+    body.wayon-workbench #list .ux-pending-rail .ux-rail-empty{
+      color:var(--wayon-sage);
+      font-weight:550;
+      opacity:1;
+    }
+    body.wayon-workbench #list .ux-rail-tip{
+      margin-top:auto;
+      padding:10px 6px 2px;
+      text-align:center;
+      font-size:11px;
+      color:var(--muted);
+      opacity:.72;
+      user-select:none;
+    }
+    body.wayon-workbench .ux-undo-toast{
+      position:fixed;
+      left:50%;
+      bottom:24px;
+      transform:translate(-50%,10px);
+      z-index:970;
+      padding:9px 16px;
+      border-radius:999px;
+      background:var(--wayon-brand-cta);
+      color:var(--wayon-brand-cta-fg);
+      font-size:13px;
+      font-weight:550;
+      letter-spacing:-.01em;
+      box-shadow:0 12px 32px -8px rgba(15,23,42,.36);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease,transform .24s cubic-bezier(.22,1,.36,1);
+    }
+    body.wayon-workbench .ux-undo-toast.show{
+      opacity:1;
+      transform:translate(-50%,0);
+    }
+    /* Classroom embedded iframe: hide redundant outer fullscreen link bar (moved inline inside rooms header) & match sidebar height */
+    body.wayon-workbench[data-mode=classroom] #list:has(>#classroom-frame)>div:has(>a[href*="rooms.html"]){
+      display:none!important;
+    }
+    @media(min-width:900px){
+      body.wayon-workbench[data-mode=classroom] #classroom-frame{
+        height:calc(100dvh - 86px)!important;
+        min-height:620px!important;
+      }
+    }
+
+    /* Left Panel: Clean Monochrome Pending Student Roster */
+    body.wayon-workbench #list .ux-roster-btn{
+      position:relative;
+      width:100%;
+      margin:0;
+      padding:9px 10px 9px 13px;
+      border:0;
+      border-radius:11px;
+      background:transparent;
+      color:var(--fg);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      text-align:left;
+      cursor:pointer;
+      overflow:hidden;
+      transition:transform .2s cubic-bezier(.22,1,.36,1),background-color .16s ease!important;
+    }
+    body.wayon-workbench #list .ux-roster-btn::before{
+      content:'';
+      position:absolute;
+      left:3px;
+      top:50%;
+      width:3px;
+      height:18px;
+      border-radius:999px;
+      background:var(--wayon-brand);
+      transform:translateY(-50%) scaleY(0);
+      opacity:0;
+      transition:transform .22s cubic-bezier(.22,1,.36,1),opacity .16s ease;
+    }
+    body.wayon-workbench #list .ux-roster-btn[data-urgent="1"]::before{background:var(--wayon-urgent)}
+    @media(hover:hover){
+      body.wayon-workbench #list .ux-roster-btn:not(.on):hover{
+        background:var(--wayon-brand-soft);
+      }
+    }
+    body.wayon-workbench #list .ux-roster-btn.on{
+      background:var(--wayon-brand-soft);
+      box-shadow:none;
+      transform:none;
+    }
+    body.wayon-workbench #list .ux-roster-btn.on[data-urgent="1"]{
+      background:var(--wayon-urgent-soft);
+      box-shadow:none;
+    }
+    body.wayon-workbench #list .ux-roster-btn.on::before{
+      transform:translateY(-50%) scaleY(1);
+      opacity:1;
+    }
+    body.wayon-workbench #list .ux-roster-btn:active{transform:scale(.985)}
+    body.wayon-workbench #list .ux-roster-main{
+      min-width:0;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      flex:1 1 auto;
+    }
+    body.wayon-workbench #list .ux-roster-dot{
+      flex:0 0 auto;
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--wayon-urgent);
+      box-shadow:0 0 0 3px var(--wayon-urgent-soft);
+    }
+    body.wayon-workbench #list .ux-roster-name{
+      font-family:var(--wayon-name-font);
+      font-size:15px;
+      font-weight:500;
+      letter-spacing:-.01em;
+      line-height:1.3;
+      color:var(--fg-secondary);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      transition:color .16s ease;
+    }
+    body.wayon-workbench #list .ux-roster-btn.on .ux-roster-name,
+    body.wayon-workbench #list .ux-roster-btn:hover .ux-roster-name{
+      color:var(--fg);
+      font-weight:700;
+    }
+    body.wayon-workbench #list .ux-roster-sub{
+      flex:0 0 auto;
+      font-size:11px;
+      font-weight:550;
+      font-variant-numeric:tabular-nums;
+      color:var(--muted);
+      padding:2px 6px;
+      border-radius:999px;
+      background:var(--wayon-btn-surface);
+      white-space:nowrap;
+      transition:background-color .16s ease,color .16s ease;
+    }
+    body.wayon-workbench #list .ux-roster-btn.on .ux-roster-sub:not(.is-ready):not(.is-urgent){
+      background:var(--wayon-panel-bg);
+      color:var(--fg);
+    }
+    body.wayon-workbench #list .ux-roster-sub.is-ready{
+      background:var(--wayon-sage-pill);
+      color:var(--wayon-sage);
+    }
+    body.wayon-workbench #list .ux-roster-sub.is-urgent{
+      background:var(--wayon-urgent-soft);
+      color:var(--wayon-urgent);
+    }
+
+    /* Center Panel Empty Celebration State */
+    body.wayon-workbench #list .ux-stage-empty{
+      width:100%;
+      max-width:380px;
+      margin:auto;
+      padding:40px 24px;
+      border-radius:18px;
+      background:transparent;
+      box-shadow:none;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      animation:ux-stage-rise .32s cubic-bezier(.22,1,.36,1) both;
+    }
+    body.wayon-workbench #list .ux-stage-empty-icon{
+      width:44px;
+      height:44px;
+      border-radius:50%;
+      background:var(--wayon-sage-pill);
+      color:var(--wayon-sage);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    body.wayon-workbench #list .ux-stage-empty-icon::before{
+      content:'';
+      width:20px;
+      height:20px;
+      background:currentColor;
+      mask:var(--wayon-icon-check) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-check) center/contain no-repeat;
+    }
+    body.wayon-workbench #list .ux-stage-empty b{
+      font-family:var(--wayon-name-font);
+      font-size:19px;
+      font-weight:700;
+      color:var(--fg);
+      letter-spacing:-.01em;
+    }
+    body.wayon-workbench #list .ux-stage-empty span{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    /* Right Panel Proxy Card for an Expanded Completed Student */
+    body.wayon-workbench #list .ux-folded-rail>.ux-rail-open{
+      width:100%;
+      min-height:40px;
+      margin:0;
+      padding:9px 12px;
+      border:0;
+      border-radius:11px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:7px;
+      background:var(--wayon-sage-bg);
+      box-shadow:0 0 0 1px var(--wayon-sage-ring);
+      color:var(--fg);
+      cursor:pointer;
+      overflow:hidden;
+      transition:transform .18s cubic-bezier(.22,1,.36,1),background-color .16s ease,box-shadow .18s cubic-bezier(.22,1,.36,1);
+    }
+    body.wayon-workbench #list .ux-folded-rail>.ux-rail-open::before{
+      content:'';
+      flex:0 0 auto;
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--wayon-sage);
+    }
+    body.wayon-workbench #list .ux-folded-rail>.ux-rail-open.on{
+      background:var(--wayon-brand-soft);
+      transform:none;
+      box-shadow:0 0 0 1.5px var(--wayon-brand);
+    }
+    @media(hover:hover){
+      body.wayon-workbench #list .ux-folded-rail>.ux-rail-open:not(.on):hover{
+        background:var(--wayon-brand-soft);
+        box-shadow:0 0 0 1px var(--wayon-brand-ring);
+      }
+    }
+
+    /* Smooth 60fps Compositor Animations (transform + opacity only, GPU-accelerated) */
+    @keyframes ux-stage-from-left{
+      from{opacity:0;transform:translate3d(-16px,5px,0) scale(.986)}
+      to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+    }
+    @keyframes ux-stage-from-right{
+      from{opacity:0;transform:translate3d(16px,5px,0) scale(.986)}
+      to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+    }
+    @keyframes ux-stage-rise{
+      from{opacity:0;transform:translate3d(0,14px,0) scale(.984)}
+      to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+    }
+    @keyframes ux-card-fly-out{
+      from{opacity:1;transform:translate3d(0,0,0) scale(1)}
+      to{opacity:.25;transform:translate3d(28px,-4px,0) scale(.965)}
+    }
+    @keyframes ux-rail-arrive{
+      0%{opacity:0;transform:translate3d(-28px,0,0) scale(.9)}
+      65%{opacity:1;transform:translate3d(2px,0,0) scale(1.015)}
+      100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
+    }
+    @keyframes ux-rail-bloom{
+      0%{box-shadow:inset 0 1px 0 var(--apple-card-rim),0 0 0 4px var(--wayon-sage-pill),0 0 0 1.5px var(--wayon-sage)}
+      100%{box-shadow:inset 0 1px 0 var(--apple-card-rim),0 2px 8px -2px var(--apple-card-shadow-1),0 0 0 1px var(--wayon-sage-ring)}
+    }
+    body.wayon-workbench #list .item.ux-anim-from-left{animation:ux-stage-from-left .26s cubic-bezier(.22,1,.36,1) both}
+    body.wayon-workbench #list .item.ux-anim-from-right{animation:ux-stage-from-right .26s cubic-bezier(.22,1,.36,1) both}
+    body.wayon-workbench #list .item.ux-anim-next{animation:ux-stage-rise .3s cubic-bezier(.22,1,.36,1) both}
+    body.wayon-workbench #list .item.ux-anim-fly-out{animation:ux-card-fly-out .18s cubic-bezier(.4,0,.2,1) forwards;pointer-events:none}
+    body.wayon-workbench #list .ux-folded-rail>.item.folded.ux-anim-rail-in{
+      animation:ux-rail-arrive .38s cubic-bezier(.22,1,.36,1) both,ux-rail-bloom .75s ease-out both!important;
+    }
+    @media(prefers-reduced-motion:reduce){
+      ::view-transition-old(ux-stage-card),
+      ::view-transition-new(ux-stage-card){animation:none!important}
+      body.wayon-workbench #list .item.ux-anim-from-left,
+      body.wayon-workbench #list .item.ux-anim-from-right,
+      body.wayon-workbench #list .item.ux-anim-next,
+      body.wayon-workbench #list .item.ux-anim-fly-out,
+      body.wayon-workbench #list .ux-folded-rail>.item.folded.ux-anim-rail-in,
+      body.wayon-workbench #list .ux-stage-empty{animation:none!important}
+    }
+
+    /* Portrait card shell with container queries (natural content height, zero artificial blank void) */
+    body.wayon-workbench[data-mode=plan] #list .item:not(.folded),
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded),
+    body.wayon-workbench[data-mode=notice] #list .item:not(.folded),
+    body.wayon-workbench[data-mode=chasing] #list .item:not(.folded){
+      container-type:inline-size;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:12px!important;
+      padding:20px 20px 16px!important;
+      border-radius:22px!important;
+      min-width:0!important;
+    }
+
+    /* Editorial stacked card header with soft tinted edge-to-edge card cap & serif student name */
+    body.wayon-workbench[data-mode=plan] #list .item:not(.folded) .head,
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .head,
+    body.wayon-workbench[data-mode=notice] #list .item:not(.folded) .head,
+    body.wayon-workbench[data-mode=chasing] #list .item:not(.folded) .head{
+      display:flex!important;
+      flex-wrap:wrap!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      gap:5px 8px!important;
+      margin:-20px -20px 0!important;
+      padding:16px 20px 13px!important;
+      border-radius:22px 22px 0 0!important;
+      background:var(--wayon-card-head-bg)!important;
+      border-bottom:1px solid var(--wayon-card-head-line)!important;
+    }
+    body.wayon-workbench[data-mode=plan] #list .item.copied:not(.folded) .head,
+    body.wayon-workbench[data-mode=done] #list .item.copied:not(.folded) .head,
+    body.wayon-workbench[data-mode=notice] #list .item.copied:not(.folded) .head,
+    body.wayon-workbench[data-mode=chasing] #list .item.copied:not(.folded) .head{
+      background:var(--wayon-card-head-copied)!important;
+      border-bottom-color:var(--wayon-card-head-copied-line)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .item:not(.folded) .head:has(>.name[style*="bad"]){
+      background:var(--wayon-card-head-urgent)!important;
+      border-bottom-color:var(--wayon-card-head-urgent-line)!important;
+    }
+    body.wayon-workbench #list .item:not(.folded) .head>.name{
+      flex:1 0 100%!important;
+      order:0!important;
+      font-family:var(--wayon-name-font)!important;
+      font-size:21px!important;
+      font-weight:700!important;
+      letter-spacing:-.015em!important;
+      line-height:1.3!important;
+      font-variant-numeric:lining-nums tabular-nums!important;
+      color:var(--fg)!important;
+      text-align:left!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .item:not(.folded) .head>.name{
+      font-size:19.5px!important;
+      line-height:1.32!important;
+    }
+    @container (inline-size < 270px){
+      body.wayon-workbench #list .item:not(.folded) .head>.name{font-size:20px!important}
+    }
+    body.wayon-workbench #list .item:not(.folded) .head>.meta{
+      flex:0 1 auto!important;
+      order:1!important;
+      font-size:12px!important;
+      font-weight:500!important;
+      color:var(--muted)!important;
+      letter-spacing:.005em!important;
+      text-align:left!important;
+    }
+    body.wayon-workbench #list .item:not(.folded) .head>.state{
+      order:2!important;
+      margin-inline-start:auto!important;
+      font-size:11px!important;
+      padding:2px 9px!important;
+      background:var(--wayon-sage-pill)!important;
+      color:var(--wayon-sage)!important;
+      font-weight:600!important;
+    }
+    body.wayon-workbench #list .item:not(.folded) .ux-card-prog{
+      flex:1 0 100%;
+      order:3;
+      height:3px;
+      margin-top:4px;
+      border-radius:999px;
+      background:var(--wayon-card-head-line);
+      overflow:hidden;
+    }
+    body.wayon-workbench #list .item:not(.folded) .ux-card-prog>i{
+      display:block;
+      height:100%;
+      width:0;
+      border-radius:999px;
+      background:var(--wayon-brand);
+      transition:width .24s var(--apple-ease-out),background-color .2s ease;
+    }
+    body.wayon-workbench #list .item:not(.folded) .ux-card-prog[data-complete="1"]>i{background:var(--wayon-sage)}
+
+    /* Status chips & card body fill */
+    body.wayon-workbench[data-mode=plan] #list .item:not(.folded) .ux-assign,
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .ux-assign{margin:-2px 0 0!important}
+    body.wayon-workbench[data-mode=plan] #list .item:not(.folded)>pre,
+    body.wayon-workbench[data-mode=notice] #list .item:not(.folded)>pre{
+      flex:1 1 auto!important;
+      margin:0!important;
+      padding:14px 15px!important;
+      font-size:13.5px!important;
+      line-height:1.72!important;
+      border-radius:14px!important;
+      background:var(--wayon-pre-bg)!important;
+      box-shadow:inset 0 0 0 .5px var(--wayon-card-head-line)!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .tasks{
+      flex:1 1 auto!important;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:0!important;
+      margin-top:0!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task{
+      position:relative;
+      padding:8px 2px!important;
+      min-height:42px!important;
+      border-bottom:1px solid var(--apple-hairline)!important;
+      column-gap:8px!important;
+    }
+    @media(hover:hover) and (pointer:fine){
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task){
+        grid-template-columns:minmax(0,1fr) auto!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task):has(.note-disclosure:not([open])>summary.has-note){
+        grid-template-columns:minmax(0,1fr) auto auto!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task)>.mark{
+        grid-area:1/-2!important;
+        justify-self:end!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task)>.note-disclosure:not([open]):has(>summary.has-note){
+        grid-column:2!important;
+        grid-row:1!important;
+        position:static!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task)>.note-disclosure:not([open]):not(:has(>summary.has-note)){
+        position:absolute!important;
+        right:64px!important;
+        top:50%!important;
+        transform:translateY(-50%)!important;
+        z-index:2;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task)>.del-btn{
+        position:absolute!important;
+        right:34px!important;
+        top:50%!important;
+        transform:translateY(-50%)!important;
+        z-index:2;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task):hover>.note-disclosure:not([open]):not(:has(>summary.has-note))>summary,
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task):focus-within>.note-disclosure:not([open]):not(:has(>summary.has-note))>summary,
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task):hover>.del-btn,
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task:not(.study-task):focus-within>.del-btn{
+        background:var(--apple-surface)!important;
+        box-shadow:0 1px 6px rgba(0,0,0,.08),0 0 0 .5px var(--apple-hairline)!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task.study-task{
+        grid-template-columns:minmax(0,1fr) auto!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task.study-task:has(.note-disclosure:not([open])>summary.has-note){
+        grid-template-columns:minmax(0,1fr) auto auto!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task.study-task>.study-marks{
+        grid-area:1/-2!important;
+        justify-self:end!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task.study-task>.note-disclosure:not([open]):not(:has(>summary.has-note)){
+        position:absolute!important;
+        right:96px!important;
+        top:50%!important;
+        transform:translateY(-50%)!important;
+        z-index:2;
+      }
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task.study-task>.del-btn{
+        position:absolute!important;
+        right:66px!important;
+        top:50%!important;
+        transform:translateY(-50%)!important;
+        z-index:2;
+      }
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task .txt{
+      font-size:14px!important;
+      line-height:1.48!important;
+      min-height:26px!important;
+      field-sizing:content;
+      padding:3px 2px!important;
+      transition:color .16s ease;
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .task.ok .txt{
+      color:var(--muted)!important;
+      text-decoration:line-through;
+      text-decoration-color:rgba(110,110,115,.42);
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .tasks>div:last-child,
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .study-op-row{
+      margin-top:auto!important;
+      padding-top:10px!important;
+      gap:6px!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .tasks>div:last-child>.sub{
+      font-size:11.5px!important;
+      color:var(--muted)!important;
+      opacity:.85;
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn{
+      margin-top:0!important;
+      width:auto!important;
+      min-width:0!important;
+      height:28px!important;
+      min-height:28px!important;
+      padding:0 9px!important;
+      border-radius:999px!important;
+      gap:4px!important;
+      color:var(--muted)!important;
+      opacity:1!important;
+      background:transparent!important;
+      transition:background-color .16s ease,color .16s ease!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn svg{width:13px!important;height:13px!important}
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn::after{content:'添加任务';font-size:12px;font-weight:500}
+    body.wayon-workbench[data-mode=done] #list .item:not(.folded) .add-btn:hover{
+      background:var(--accent-subtle)!important;
+      color:var(--accent)!important;
+    }
+
+    /* Refined jewel-like circular check controls (26px visual ring, generous touch area via ::after) */
+    body.wayon-workbench[data-mode=done] #list .task button.mark,
+    body.wayon-workbench[data-mode=done] #list .study-mark{
+      position:relative!important;
+      width:26px!important;
+      height:26px!important;
+      min-width:26px!important;
+      min-height:26px!important;
+      padding:0!important;
+      border-radius:50%!important;
+      border:1.5px solid var(--wayon-ring-idle)!important;
+      background:var(--wayon-ring-bg)!important;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.04)!important;
+      transition:background-color .16s var(--apple-ease),border-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease),transform .12s var(--apple-ease)!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark::after,
+    body.wayon-workbench[data-mode=done] #list .study-mark::after{
+      content:'';
+      position:absolute;
+      inset:-7px;
+      border-radius:50%;
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark:active,
+    body.wayon-workbench[data-mode=done] #list .study-mark:active{transform:scale(.88)!important}
+    @media(hover:hover){
+      body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Unmarked"]:hover{
+        border-color:var(--wayon-sage)!important;
+        background:var(--wayon-sage-bg)!important;
+      }
+      body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Unmarked"]:hover::before{
+        content:'';
+        width:13px;
+        height:13px;
+        background:var(--wayon-sage);
+        opacity:.65;
+        mask:var(--wayon-icon-check) center/contain no-repeat;
+        -webkit-mask:var(--wayon-icon-check) center/contain no-repeat;
+      }
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Done"],
+    body.wayon-workbench[data-mode=done] #list .study-mark.on[aria-label$="完成"]:not([aria-label$="未完成"]){
+      background:var(--wayon-sage)!important;
+      border-color:transparent!important;
+      box-shadow:0 2px 8px -1px rgba(46,125,91,.36),inset 0 1px 0 rgba(255,255,255,.24)!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Not Done"],
+    body.wayon-workbench[data-mode=done] #list .study-mark.on[aria-label$="未完成"]{
+      background:var(--wayon-urgent)!important;
+      border-color:transparent!important;
+      box-shadow:0 2px 8px -1px rgba(200,67,57,.32),inset 0 1px 0 rgba(255,255,255,.2)!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Done"] .wayon-emoji:before,
+    body.wayon-workbench[data-mode=done] #list .study-mark:before{
+      content:''!important;
+      width:14px;
+      height:14px;
+      background:currentColor;
+      mask:var(--wayon-icon-check) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-check) center/contain no-repeat;
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Done"] .wayon-emoji:before{background:#fff!important}
+    body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Not Done"] .wayon-emoji:before,
+    body.wayon-workbench[data-mode=done] #list .study-mark[aria-label$="未完成"]:before{
+      content:''!important;
+      width:12px;
+      height:12px;
+      background:currentColor;
+      mask:var(--wayon-icon-x) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-x) center/contain no-repeat;
+    }
+    body.wayon-workbench[data-mode=done] #list .task button.mark[data-icon-action="Not Done"] .wayon-emoji:before{background:#fff!important}
+    body.wayon-workbench[data-mode=done] #list .study-mark{color:var(--muted)}
+    body.wayon-workbench[data-mode=done] #list .study-mark.on{color:#fff}
+    body.wayon-workbench[data-mode=done] #list .study-marks{gap:6px!important}
+    body.wayon-workbench[data-mode=done] #list .task .note-disclosure>summary.wayon-icon-control,
+    body.wayon-workbench[data-mode=done] #list .task .del-btn{
+      width:28px!important;
+      min-width:28px!important;
+      height:28px!important;
+      min-height:28px!important;
+      border-radius:999px!important;
+    }
+    body.wayon-workbench[data-mode=done] #list .task .note-disclosure>summary.wayon-icon-control svg{width:15px!important;height:15px!important}
+    @media(hover:none){
+      body.wayon-workbench[data-mode=done] #list .task .del-btn,
+      body.wayon-workbench[data-mode=done] #list .task .note-disclosure:not([open])>summary[data-icon-action="Add Note"]{opacity:.65}
+    }
+
+    /* Card footer action dock (.ux-card-foot): refined squircle tools + primary Copy pill */
+    body.wayon-workbench #list .ux-card-foot{
+      margin-top:auto;
+      padding-top:12px;
+      border-top:1px solid var(--apple-hairline);
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    body.wayon-workbench #list .ux-card-foot .study-actions{
+      display:inline-flex!important;
+      align-items:center!important;
+      gap:6px!important;
+      margin:0!important;
+      padding:0!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control,
+    body.wayon-workbench #list .ux-card-foot button.small{
+      width:32px!important;
+      min-width:32px!important;
+      height:32px!important;
+      min-height:32px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:10px!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg-secondary)!important;
+      box-shadow:inset 0 0 0 .5px var(--wayon-btn-ring)!important;
+      transition:background-color .16s var(--apple-ease),color .16s var(--apple-ease),transform .12s var(--apple-ease),box-shadow .16s var(--apple-ease)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.small svg{width:15.5px!important;height:15.5px!important;stroke-width:1.8!important}
+    body.wayon-workbench #list .ux-card-foot button.small:hover{
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.small:active,
+    body.wayon-workbench #list .ux-card-foot button.copy:active{transform:scale(.94)!important}
+    /* True vector CheckCheck & CircleX icons for All Done / All Not Done (calm monochrome at rest, semantic on hover) */
+    body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control[data-icon-action="All Done"],
+    body.wayon-workbench #list .ux-card-foot button.small[data-icon-action="All Done"]{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg-secondary)!important;
+      box-shadow:inset 0 0 0 .5px var(--wayon-btn-ring)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control[data-icon-action="All Done"]:hover,
+    body.wayon-workbench #list .ux-card-foot button.small[data-icon-action="All Done"]:hover{
+      background:var(--wayon-sage-pill)!important;
+      color:var(--wayon-sage)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot [data-icon-action="All Done"] .wayon-emoji,
+    body.wayon-workbench #list .ux-card-foot [data-icon-action="All Not Done"] .wayon-emoji{
+      font-size:0!important;
+      line-height:0!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+    }
+    body.wayon-workbench #list .ux-card-foot [data-icon-action="All Done"] .wayon-emoji:before{
+      content:''!important;
+      margin:0!important;
+      letter-spacing:0!important;
+      width:17px!important;
+      height:17px!important;
+      background:currentColor!important;
+      mask:var(--wayon-icon-check-all) center/contain no-repeat!important;
+      -webkit-mask:var(--wayon-icon-check-all) center/contain no-repeat!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control[data-icon-action="All Not Done"],
+    body.wayon-workbench #list .ux-card-foot button.small[data-icon-action="All Not Done"]{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg-secondary)!important;
+      box-shadow:inset 0 0 0 .5px var(--wayon-btn-ring)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control[data-icon-action="All Not Done"]:hover,
+    body.wayon-workbench #list .ux-card-foot button.small[data-icon-action="All Not Done"]:hover{
+      background:var(--wayon-urgent-soft)!important;
+      color:var(--wayon-urgent)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot [data-icon-action="All Not Done"] .wayon-emoji:before{
+      content:''!important;
+      margin:0!important;
+      letter-spacing:0!important;
+      width:16px!important;
+      height:16px!important;
+      background:currentColor!important;
+      mask:var(--wayon-icon-x-all) center/contain no-repeat!important;
+      -webkit-mask:var(--wayon-icon-x-all) center/contain no-repeat!important;
+    }
+    /* Chasing: replace emoji hand with crisp bell-off vector icon, strip full-row red box, refine check circle */
+    body.wayon-workbench #list .ux-card-foot [data-icon-action="Stop Reminders"] .wayon-emoji{
+      font-size:0!important;
+      line-height:0!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+    }
+    body.wayon-workbench #list .ux-card-foot [data-icon-action="Stop Reminders"] .wayon-emoji:before{
+      content:''!important;
+      width:15.5px!important;
+      height:15.5px!important;
+      background:currentColor!important;
+      mask:var(--wayon-icon-bell-off) center/contain no-repeat!important;
+      -webkit-mask:var(--wayon-icon-bell-off) center/contain no-repeat!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .item:not(.folded) .tasks{
+      flex:1 1 auto!important;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:0!important;
+      margin-top:0!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.no,
+    body.wayon-workbench[data-mode=chasing] #list .task.ok{
+      background:transparent!important;
+      border:0!important;
+      border-bottom:1px solid var(--apple-hairline)!important;
+      border-radius:0!important;
+      padding:9px 2px!important;
+      gap:6px 8px!important;
+      min-height:42px;
+      align-items:center!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .tasks>.task:last-child{border-bottom-color:transparent!important}
+    body.wayon-workbench[data-mode=chasing] #list .task>.txt{
+      font-size:13.5px!important;
+      line-height:1.48!important;
+      color:var(--fg)!important;
+      padding:2px 0!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.ok>.txt{
+      color:var(--muted)!important;
+      text-decoration:line-through;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task>.mark{
+      min-height:24px!important;
+      height:24px!important;
+      padding:0 8px!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--wayon-urgent-soft)!important;
+      color:var(--wayon-urgent)!important;
+      font-size:11px!important;
+      font-weight:600!important;
+      font-variant-numeric:tabular-nums!important;
+      letter-spacing:0!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.no>button.small{
+      position:relative!important;
+      width:26px!important;
+      min-width:26px!important;
+      height:26px!important;
+      min-height:26px!important;
+      padding:0!important;
+      border-radius:50%!important;
+      border:1.5px solid var(--wayon-ring-idle)!important;
+      background:var(--wayon-ring-bg)!important;
+      color:var(--muted)!important;
+      font-size:0!important;
+      line-height:0!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.04)!important;
+      transition:background-color .16s var(--apple-ease),border-color .16s var(--apple-ease),color .16s ease,transform .12s var(--apple-ease)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.no>button.small::after{
+      content:'';
+      position:absolute;
+      inset:-7px;
+      border-radius:50%;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.no>button.small::before{
+      content:'';
+      width:13px;
+      height:13px;
+      background:currentColor;
+      opacity:.5;
+      mask:var(--wayon-icon-check) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-check) center/contain no-repeat;
+      transition:opacity .16s ease;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.no>button.small:not(:disabled):hover{
+      background:var(--wayon-sage)!important;
+      border-color:transparent!important;
+      color:#fff!important;
+      box-shadow:0 2px 8px -1px rgba(46,125,91,.34)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .task.no>button.small:not(:disabled):hover::before{opacity:1}
+    body.wayon-workbench[data-mode=chasing] #list .task.no>button.small:active{transform:scale(.88)}
+    body.wayon-workbench[data-mode=chasing] #list .task.ok>button.small{
+      width:28px!important;
+      min-width:28px!important;
+      height:28px!important;
+      min-height:28px!important;
+      padding:0!important;
+      border-radius:999px!important;
+      border:0!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--muted)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped-items,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-completed-items{
+      margin-top:4px;
+      padding:6px 10px;
+      border-radius:12px;
+      background:var(--code-bg);
+      font-size:12px;
+      color:var(--muted);
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped-items>summary,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-completed-items>summary{
+      cursor:pointer;
+      font-weight:500;
+      padding:2px 0;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped{
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:18px!important;
+      background:var(--wayon-panel-bg)!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+      padding:4px 16px!important;
+      margin:0!important;
+      color:var(--fg-secondary);
+      font-size:13.5px;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past[open],
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped[open]{
+      padding:4px 16px 16px!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past>summary,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>summary{
+      cursor:pointer;
+      padding:11px 2px;
+      margin:0;
+      font-size:13.5px;
+      font-weight:550;
+      color:var(--fg-secondary);
+      list-style-position:inside;
+      user-select:none;
+      transition:color .16s ease;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past>summary:hover,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>summary:hover{
+      color:var(--fg);
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past[open]>summary,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped[open]>summary{
+      border-bottom:1px solid var(--wayon-divider);
+      margin-bottom:12px;
+    }
+    @supports selector(::details-content){
+      body.wayon-workbench[data-mode=chasing] #list .ux-past[open]::details-content,
+      body.wayon-workbench[data-mode=chasing] #list .chasing-stopped[open]::details-content{
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));
+        gap:12px;
+        align-items:stretch;
+      }
+      body.wayon-workbench[data-mode=chasing] #list .ux-past>.item,
+      body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item{
+        margin-top:0!important;
+      }
+    }
+    /* Cards inside .ux-past & .chasing-stopped drawers: clean vertical portrait cards (never horizontal folded rows) */
+    body.wayon-workbench[data-mode=chasing] #list .ux-past>.item,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded{
+      display:flex!important;
+      flex-direction:column!important;
+      align-items:stretch!important;
+      justify-content:flex-start!important;
+      gap:10px!important;
+      padding:16px 18px 14px!important;
+      border-radius:14px!important;
+      background:var(--wayon-canvas)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      box-shadow:none!important;
+      cursor:default!important;
+      transform:none!important;
+      min-width:0!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past>.item .head,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head{
+      display:flex!important;
+      flex-wrap:wrap!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      gap:4px 8px!important;
+      margin:0!important;
+      padding:0 0 10px!important;
+      border-radius:0!important;
+      background:transparent!important;
+      border-bottom:1px solid var(--wayon-divider)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-past>.item .head>.name,
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head>.name{
+      flex:1 1 auto!important;
+      order:0!important;
+      font-family:var(--wayon-name-font)!important;
+      font-size:17.5px!important;
+      font-weight:700!important;
+      line-height:1.3!important;
+      color:var(--fg)!important;
+      white-space:normal!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head>.meta{
+      flex:1 0 100%!important;
+      order:2!important;
+      font-size:12px!important;
+      color:var(--muted)!important;
+      line-height:1.4!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head>button.small{
+      order:1!important;
+      margin-left:auto!important;
+      width:auto!important;
+      min-width:0!important;
+      height:30px!important;
+      min-height:30px!important;
+      padding:0 11px!important;
+      gap:5px!important;
+      border-radius:999px!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      background:var(--wayon-panel-bg)!important;
+      color:var(--fg)!important;
+      box-shadow:none!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      flex:0 0 auto!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head>button.small svg{
+      width:12px!important;
+      height:12px!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head>button.small[data-icon-action="Resume Reminders"]::after{
+      content:'恢复催缴';
+      font-size:12px;
+      font-weight:550;
+      white-space:nowrap;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .head>button.small:hover{
+      background:var(--wayon-brand-cta)!important;
+      border-color:transparent!important;
+      color:var(--wayon-brand-cta-fg)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .tasks{
+      display:flex!important;
+      flex-direction:column!important;
+      gap:0!important;
+      width:100%!important;
+      margin:0!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .task.no{
+      grid-template-columns:minmax(0,1fr) auto!important;
+      padding:7px 0!important;
+      min-height:34px!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .task.no>button.small:disabled{
+      display:none!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .chasing-stopped>.item.folded .task>.mark{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--muted)!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-folded-rail>.item.folded[data-ux-chasing-name]{
+      font-size:0!important;
+      line-height:0!important;
+    }
+    body.wayon-workbench[data-mode=chasing] #list .ux-folded-rail>.item.folded[data-ux-chasing-name]::before{
+      content:attr(data-ux-chasing-name);
+      font-family:var(--wayon-name-font);
+      font-size:15px;
+      font-weight:700;
+      line-height:1.3;
+      letter-spacing:-.01em;
+      color:var(--fg);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:100%;
+    }
+
+    /* Quiz (单词抽背): portrait multi-column card grid + editorial serif names + right vertical folded rail (mobile top strip) */
+    body.wayon-workbench[data-mode=quiz] #list .quiz{
+      display:grid!important;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))!important;
+      gap:18px!important;
+      align-items:stretch!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz:has(>.ux-quiz-rail){
+      grid-template-columns:minmax(0,1fr) 136px!important;
+      align-items:start!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head{
+      grid-column:1/-1!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:flex-end!important;
+      gap:10px!important;
+      padding:0!important;
+      margin:0!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head>h2,
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head>.meta,
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head:not(:has(>.vq-add-student)){
+      display:none!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head .vq-add-student{
+      height:32px!important;
+      min-height:32px!important;
+      padding:0 13px!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:999px!important;
+      background:var(--wayon-panel-bg)!important;
+      color:var(--fg)!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+      font-size:12.5px!important;
+      font-weight:550!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head .vq-add-student:hover{
+      background:var(--wayon-brand-soft)!important;
+      border-color:var(--wayon-brand-ring)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid{
+      grid-column:1;
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));
+      gap:18px;
+      align-items:stretch;
+      min-width:0;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){
+      container-type:inline-size;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:12px!important;
+      padding:20px 20px 16px!important;
+      margin:0!important;
+      border-radius:22px!important;
+      min-width:0!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed)>.qhead{
+      display:flex!important;
+      flex-direction:column!important;
+      align-items:stretch!important;
+      gap:8px!important;
+      margin:-20px -20px 0!important;
+      padding:16px 48px 13px 20px!important;
+      border-radius:22px 22px 0 0!important;
+      background:var(--wayon-card-head-bg)!important;
+      border-bottom:1px solid var(--wayon-card-head-line)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-student-name,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed)>.qhead{
+      font-family:var(--wayon-name-font)!important;
+      font-size:21px!important;
+      font-weight:700!important;
+      letter-spacing:-.015em!important;
+      line-height:1.28!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-meta{
+      font-family:var(--apple-sans)!important;
+      font-size:12px!important;
+      font-weight:500!important;
+      justify-content:flex-start!important;
+      width:100%!important;
+      gap:6px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-session{
+      width:100%!important;
+      gap:6px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-check{
+      height:26px!important;
+      min-height:26px!important;
+      padding:0 9px!important;
+      font-size:11.5px!important;
+      border-color:var(--wayon-btn-ring)!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg-secondary)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-check.on{
+      background:var(--done-bg)!important;
+      border-color:var(--done-border)!important;
+      color:var(--done)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold{
+      top:16px!important;
+      right:14px!important;
+      width:30px!important;
+      height:30px!important;
+      border-radius:10px!important;
+      background:var(--wayon-btn-surface)!important;
+      color:var(--muted)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold:hover{
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq{
+      flex:1 1 auto!important;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:10px!important;
+      font-family:var(--apple-sans)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar{
+      gap:8px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-tabs{
+      border:0!important;
+      border-radius:999px!important;
+      padding:2.5px!important;
+      background:var(--apple-seg-track)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-tabs button{
+      border-radius:999px!important;
+      min-height:28px!important;
+      height:28px!important;
+      padding:0 11px!important;
+      font-size:12.5px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-actions button,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-result-actions .fb-btn{
+      height:30px!important;
+      min-height:30px!important;
+      border-radius:999px!important;
+      padding:0 12px!important;
+      font-size:12.5px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-done{
+      grid-template-columns:minmax(0,1fr)!important;
+      gap:10px!important;
+      border-radius:14px!important;
+      padding:12px 14px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-result-actions{
+      justify-content:flex-end!important;
+      flex-wrap:wrap!important;
+      gap:6px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-rail{
+      grid-column:2;
+      position:sticky;
+      top:76px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+      align-self:start;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed{
+      width:100%!important;
+      min-height:42px!important;
+      margin:0!important;
+      padding:10px 14px!important;
+      border:0!important;
+      border-radius:14px!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      background:var(--wayon-sage-bg)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 2px 8px -2px var(--apple-card-shadow-1),0 0 0 1px var(--wayon-sage-ring)!important;
+      cursor:pointer!important;
+      transition:transform .16s var(--apple-ease),background-color .16s ease,box-shadow .18s var(--apple-ease)!important;
+    }
+    @media(hover:hover){
+      body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed:hover{
+        background:var(--apple-surface)!important;
+        transform:translateX(-3px);
+        box-shadow:inset 0 1px 0 var(--apple-card-rim),0 8px 18px -6px rgba(46,125,91,.18),0 0 0 1px var(--wayon-sage)!important;
+      }
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed>.qhead{
+      margin:0!important;
+      padding:0!important;
+      border:0!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      width:100%!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed .vq-student-name{
+      font-family:var(--wayon-name-font)!important;
+      font-size:15px!important;
+      font-weight:700!important;
+      letter-spacing:-.01em!important;
+      color:var(--fg)!important;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:100%;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed .vq-fold-note,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed .vq-meta,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed .vq-fold{
+      display:none!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.copy,
+    body.wayon-workbench #list .ux-card-foot button.copy.wayon-icon-control{
+      margin-inline-start:auto!important;
+      width:auto!important;
+      min-width:78px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0 15px!important;
+      gap:6px!important;
+      border-radius:999px!important;
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      box-shadow:0 2px 8px -2px rgba(15,23,42,.24)!important;
+      transition:background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease),transform .12s var(--apple-ease)!important;
+    }
+    body.wayon-workbench #list .ux-card-foot button.copy svg{width:14px!important;height:14px!important;stroke-width:1.95!important}
+    body.wayon-workbench #list .ux-card-foot button.copy::after{content:'复制';font-size:12.5px;font-weight:600;letter-spacing:-.01em}
+    body.wayon-workbench[data-mode=chasing] #list .ux-card-foot button.copy::after{content:'催交'}
+    body.wayon-workbench #list .item.copied .ux-card-foot button.copy{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-btn-ring)!important;
+    }
+    body.wayon-workbench #list .item.copied .ux-card-foot button.copy::after{content:'再复制'}
+    body.wayon-workbench #list .ux-card-foot button.copy[data-icon-action="Retry Copy"]::after{content:none!important}
+    body.wayon-workbench #list .ux-card-foot button.copy:hover{
+      background:var(--wayon-brand-cta-hover)!important;
+      box-shadow:0 4px 12px -2px rgba(15,23,42,.32)!important;
+    }
+    body.wayon-workbench #list .item.copied .ux-card-foot button.copy:hover{
+      background:var(--wayon-btn-hover)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+
+    /* Right-side vertical folded stack (.ux-folded-rail): monochrome pure-name pills inside crisp white panel */
+    body.wayon-workbench #list>.ux-folded-rail{
+      grid-column:2;
+      position:sticky;
+      top:76px;
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+      min-width:0;
+      align-self:start;
+    }
+    body.wayon-workbench #list>.ux-folded-rail[data-only-folded="1"]{
+      grid-column:2;
+      justify-self:stretch;
+    }
+    body.wayon-workbench #list .ux-folded-rail>.item.folded{
+      grid-column:auto!important;
+      width:100%!important;
+      min-height:40px!important;
+      margin:0!important;
+      padding:9px 12px!important;
+      border:0!important;
+      border-radius:11px!important;
+      display:flex!important;
+      flex-direction:row!important;
+      align-items:center!important;
+      justify-content:center!important;
+      gap:6px!important;
+      background:var(--wayon-sage-bg)!important;
+      box-shadow:0 0 0 1px var(--wayon-sage-ring)!important;
+      color:var(--fg)!important;
+      cursor:pointer!important;
+      overflow:hidden;
+      transition:transform .16s var(--apple-ease),background-color .16s ease,box-shadow .18s var(--apple-ease)!important;
+    }
+    body.wayon-workbench #list .ux-folded-rail>.item.folded.study-folded{
+      box-shadow:0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+    @media(hover:hover){
+      body.wayon-workbench #list .ux-folded-rail>.item.folded:hover{
+        background:var(--wayon-brand-soft)!important;
+        transform:none;
+        box-shadow:0 0 0 1px var(--wayon-brand-ring)!important;
+      }
+      body.wayon-workbench #list .ux-folded-rail>.item.folded.study-folded:hover{
+        box-shadow:0 0 0 1px var(--wayon-brand)!important;
+      }
+    }
+    body.wayon-workbench #list .ux-folded-rail>.item.folded:active{transform:scale(.98)}
+    body.wayon-workbench #list .ux-folded-rail .ux-fp-name{
+      font-family:var(--wayon-name-font);
+      font-size:14.5px;
+      font-weight:600;
+      letter-spacing:-.01em;
+      color:var(--fg);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:100%;
+    }
+    body.wayon-workbench[data-mode=plan] #list .item.copied:not(.folded),
+    body.wayon-workbench[data-mode=done] #list .item.copied:not(.folded),
+    body.wayon-workbench[data-mode=notice] #list .item.copied:not(.folded),
+    body.wayon-workbench[data-mode=chasing] #list .item.copied:not(.folded){
+      box-shadow:var(--wayon-panel-shadow),0 0 0 1px var(--wayon-panel-border)!important;
+    }
+    body.wayon-workbench #list .ux-past>.item,
+    body.wayon-workbench #list .chasing-stopped>.item{margin-top:12px}
+
+    @media(max-width:899px){
+      body.wayon-workbench .workspace-top-bar{
+        padding:8px 10px!important;
+        border-radius:16px!important;
+      }
+      body.wayon-workbench[data-mode=plan] #list:has(>.ux-folded-rail),
+      body.wayon-workbench[data-mode=done] #list:has(>.ux-folded-rail),
+      body.wayon-workbench[data-mode=notice] #list:has(>.ux-folded-rail),
+      body.wayon-workbench[data-mode=chasing] #list:has(>.ux-folded-rail),
+      body.wayon-workbench #list.ux-focus-layout,
+      body.wayon-workbench[data-mode=quiz] #list .quiz:has(>.ux-quiz-rail){
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:stretch!important;
+      }
+      body.wayon-workbench #list>.ux-pending-rail,
+      body.wayon-workbench #list .ux-rail-head,
+      body.wayon-workbench #list .ux-rail-empty,
+      body.wayon-workbench #list .ux-rail-tip,
+      body.wayon-workbench #list .ux-rail-open,
+      body.wayon-workbench #list .ux-stage-empty,
+      body.wayon-workbench #list>.ux-folded-rail[data-empty-folded="1"]{
+        display:none!important;
+      }
+      body.wayon-workbench #list>.ux-aircon,
+      body.wayon-workbench #list>.study-form,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.head{order:0}
+      body.wayon-workbench #list>.ux-folded-rail,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-rail{
+        order:1;
+        position:static!important;
+        background:transparent!important;
+        border:0!important;
+        box-shadow:none!important;
+        min-height:0!important;
+        max-height:none!important;
+        flex-direction:row!important;
+        flex-wrap:nowrap!important;
+        overflow-x:auto!important;
+        scroll-snap-type:x proximity;
+        scrollbar-width:none;
+        -webkit-overflow-scrolling:touch;
+        gap:8px!important;
+        padding:2px 1px!important;
+      }
+      body.wayon-workbench #list>.ux-folded-rail::-webkit-scrollbar,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-rail::-webkit-scrollbar{display:none}
+      body.wayon-workbench #list>.ux-focus-stage{
+        order:2;
+        background:transparent!important;
+        border:0!important;
+        box-shadow:none!important;
+        min-height:0!important;
+        padding:0!important;
+        display:flex!important;
+        flex-direction:column!important;
+        gap:14px!important;
+        min-width:0;
+      }
+      body.wayon-workbench #list>.ux-focus-stage>.item:not(.folded){
+        background:var(--wayon-panel-bg)!important;
+        border:1px solid var(--wayon-panel-border)!important;
+        box-shadow:var(--wayon-panel-shadow)!important;
+      }
+      body.wayon-workbench #list>.ux-active-grid,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid{order:2}
+      body.wayon-workbench #list>.ux-past,
+      body.wayon-workbench #list>.chasing-stopped{order:3}
+      body.wayon-workbench #list .ux-folded-rail>.item.folded,
+      body.wayon-workbench[data-mode=quiz] #list .quiz .ux-quiz-rail>.qgroup.vq-collapsed{
+        flex:0 0 auto!important;
+        scroll-snap-align:start;
+        width:auto!important;
+        min-height:36px!important;
+        padding:7px 14px!important;
+        border-radius:999px!important;
+        background:var(--wayon-panel-bg)!important;
+      }
+    }
+
+    @media(max-width:599px){
+      body.wayon-workbench .main-content .ux-topbar-panel>.workspace-top-bar,
+      body.wayon-workbench .main-content .ux-topbar-panel>.workspace-sub-bar{display:contents!important}
+      body.wayon-workbench[data-mode=plan] #list,
+      body.wayon-workbench[data-mode=done] #list,
+      body.wayon-workbench[data-mode=notice] #list,
+      body.wayon-workbench[data-mode=chasing] #list,
+      body.wayon-workbench[data-mode=quiz] #list .quiz,
+      body.wayon-workbench #list>.ux-active-grid,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid{
+        grid-template-columns:minmax(0,1fr)!important;
+        gap:14px!important;
+      }
+      body.wayon-workbench[data-mode=plan] #list .item:not(.folded),
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded),
+      body.wayon-workbench[data-mode=notice] #list .item:not(.folded),
+      body.wayon-workbench[data-mode=chasing] #list .item:not(.folded){
+        padding:16px 16px 14px!important;
+        border-radius:18px!important;
+      }
+      body.wayon-workbench[data-mode=plan] #list .item:not(.folded) .head,
+      body.wayon-workbench[data-mode=done] #list .item:not(.folded) .head,
+      body.wayon-workbench[data-mode=notice] #list .item:not(.folded) .head,
+      body.wayon-workbench[data-mode=chasing] #list .item:not(.folded) .head{
+        margin:-16px -16px 0!important;
+        padding:14px 16px 11px!important;
+        border-radius:18px 18px 0 0!important;
+      }
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){
+        padding:16px 16px 14px!important;
+        border-radius:18px!important;
+      }
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed)>.qhead{
+        margin:-16px -16px 0!important;
+        padding:14px 44px 11px 16px!important;
+        border-radius:18px 18px 0 0!important;
+      }
+      body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control,
+      body.wayon-workbench #list .ux-card-foot button.small{
+        width:38px!important;
+        min-width:38px!important;
+        height:38px!important;
+        min-height:38px!important;
+      }
+      body.wayon-workbench #list .ux-card-foot button.copy,
+      body.wayon-workbench #list .ux-card-foot button.copy.wayon-icon-control{
+        height:38px!important;
+        min-height:38px!important;
+        padding:0 15px!important;
+      }
+    }
+
+    /* Full-page overlay panels (反馈 / 备忘 / 模考 / 教务 / 空调) must always hide #list regardless of underlying data-mode on desktop and mobile */
+    body.wayon-workbench[data-feedback-open] .main-content #list,
+    body.wayon-workbench[data-mode][data-feedback-open] .main-content #list.ux-focus-layout,
+    body.wayon-workbench[data-memo-open] .main-content #list,
+    body.wayon-workbench[data-mode][data-memo-open] .main-content #list.ux-focus-layout,
+    body.wayon-workbench[data-mocks-open] .main-content #list,
+    body.wayon-workbench[data-mode][data-mocks-open] .main-content #list.ux-focus-layout,
+    body.wayon-workbench[data-ledger-open] .main-content #list,
+    body.wayon-workbench[data-mode][data-ledger-open] .main-content #list.ux-focus-layout,
+    body.wayon-workbench[data-aircon-open] .main-content #list,
+    body.wayon-workbench[data-mode][data-aircon-open] .main-content #list.ux-focus-layout,
+    body.wayon-workbench[data-feedback-open] .main-content .ux-topbar-panel,
+    body.wayon-workbench[data-memo-open] .main-content .ux-topbar-panel,
+    body.wayon-workbench[data-mocks-open] .main-content .ux-topbar-panel,
+    body.wayon-workbench[data-ledger-open] .main-content .ux-topbar-panel,
+    body.wayon-workbench[data-aircon-open] .main-content .ux-topbar-panel{
+      display:none!important;
+    }
   `;
   document.head.append(appleStyle);
 
@@ -1376,8 +3531,9 @@
     const brand = $('.app-brand');
     if (brand) {
       const ds = document.body?.dataset || {};
+      const subLabel = {plan: '安排', done: '完成', quiz: '抽背', chasing: '待催'}[page.mode];
       const sectionName = ds.feedbackOpen ? '反馈' : ds.memoOpen ? '备忘' : ds.mocksOpen ? '模考' : ds.ledgerOpen ? (ds.ledgerSpace === 'private' ? '个人私密' : '教务')
-        : ds.airconOpen ? '空调加时' : page.mode === 'notice' ? '通知' : page.mode === 'classroom' ? '教室' : '今天';
+        : ds.airconOpen ? '空调加时' : page.mode === 'notice' ? '通知' : page.mode === 'classroom' ? '教室' : (subLabel || '今天');
       let crumb = $(':scope > .ux-topbar-crumb', brand);
       if (!crumb) {
         crumb = make('span', 'ux-topbar-crumb');
@@ -1436,16 +3592,572 @@
     }
   }
 
+  // ---- portrait cards: move card controls into a dedicated footer dock + thin progress bar ----
+  function decorateCardFooters() {
+    const m = page.mode;
+    if (!['plan', 'done', 'notice', 'chasing'].includes(m)) return;
+    const list = $('#list'); if (!list) return;
+    const cards = $$('.item', list);
+    for (const card of cards) {
+      if (card.classList.contains('folded') || card.classList.contains('study-form') || card.classList.contains('aircon-card')) continue;
+      const kids = [...(card.children || [])];
+      const head = kids.find(c => c.classList?.contains('head'));
+      if (!head) continue;
+      const headKids = [...(head.children || [])];
+      const actions = headKids.filter(c =>
+        c.classList?.contains('study-actions')
+        || (c.tagName === 'BUTTON' && (c.classList?.contains('small') || c.classList?.contains('copy')))
+      );
+      if (actions.length) {
+        let foot = kids.find(c => c.classList?.contains('ux-card-foot'));
+        if (!foot) { foot = make('div', 'ux-card-foot'); card.append(foot); }
+        const secondary = actions.filter(a => !a.classList?.contains('copy'));
+        const primary = actions.filter(a => a.classList?.contains('copy'));
+        for (const el of secondary) {
+          const existingCopy = [...(foot.children || [])].find(c => c.classList?.contains('copy'));
+          if (existingCopy && existingCopy.before) existingCopy.before(el); else foot.append(el);
+        }
+        for (const el of primary) foot.append(el);
+      }
+      if (m === 'done') {
+        const tasksWrap = kids.find(c => c.classList?.contains('tasks'));
+        if (tasksWrap) {
+          const rows = [...(tasksWrap.children || [])].filter(c => c.classList?.contains('task'));
+          const existingProg = [...(head.children || [])].find(c => c.classList?.contains('ux-card-prog'));
+          if (rows.length) {
+            const okCount = rows.filter(r => r.classList?.contains('ok')).length;
+            const pct = Math.round(okCount / rows.length * 100);
+            const prog = existingProg || (() => {
+              const p = make('div', 'ux-card-prog'); p.setAttribute('aria-hidden', 'true');
+              p.append(make('i')); head.append(p); return p;
+            })();
+            const bar = prog.children?.[0];
+            if (bar && bar.style) bar.style.width = pct + '%';
+            if (okCount === rows.length) prog.dataset.complete = '1'; else delete prog.dataset.complete;
+          } else {
+            existingProg?.remove();
+          }
+        }
+      }
+    }
+  }
+
+  // ---- Three-Column Focus Workbench (plan / done / chasing) & right vertical folded rail ----
+  const FOCUS_MODES = new Set(['plan', 'done', 'chasing']);
+  const focusSelected = new Map();
+  const focusLastAnimated = new Map();
+  let focusNavIntent = null;
+  let pendingCopyFly = null;
+  const focusScope = () => (page.mode || '') + '|' + (page.cur || page.today || '');
+  const prefersReducedMotion = () => {
+    try { return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch { return false; }
+  };
+  const isDesktopFocus = () => {
+    try { return typeof window === 'undefined' || typeof window.innerWidth !== 'number' || window.innerWidth >= 900; }
+    catch { return true; }
+  };
+  function withViewTransition(prevCard, nextCard, fn) {
+    if (typeof document.startViewTransition !== 'function' || prefersReducedMotion() || !isDesktopFocus()) {
+      fn();
+      return;
+    }
+    try {
+      if (prevCard && prevCard.style) prevCard.style.viewTransitionName = 'ux-stage-card';
+      const vt = document.startViewTransition(() => {
+        if (prevCard && prevCard.style) prevCard.style.viewTransitionName = '';
+        fn();
+        if (nextCard && nextCard.style) nextCard.style.viewTransitionName = 'ux-stage-card';
+      });
+      vt?.finished?.finally?.(() => {
+        if (prevCard && prevCard.style) prevCard.style.viewTransitionName = '';
+        if (nextCard && nextCard.style) nextCard.style.viewTransitionName = '';
+      });
+    } catch {
+      if (prevCard && prevCard.style) prevCard.style.viewTransitionName = '';
+      if (nextCard && nextCard.style) nextCard.style.viewTransitionName = '';
+      fn();
+    }
+  }
+  function cleanCardDisplayName(raw) {
+    const stripped = String(raw || '')
+      .replace(/^\d+\.\s*/, '')
+      .replace(/\s*[（(][^）)]*(?:考|冲刺|在即|仅剩)[^）)]*[）)]/g, '')
+      .replace(/\s*考期[：:]\s*\d{4}-\d{2}-\d{2}/g, '')
+      .replace(/\s*·\s*自习/, '')
+      .replace(/\s*✅.*$/, '')
+      .replace(/\s*\[(?:已停止|已停止催缴|本人已确认完成)[^\]]*\]/g, '')
+      .replace(/\s*▸$/, '')
+      .trim();
+    return shown(stripped) || stripped;
+  }
+  function cardBaseIdentity(el) {
+    const isStudy = el.classList?.contains('study-card') || el.classList?.contains('study-folded');
+    let raw = '';
+    if (el.classList?.contains('folded')) {
+      raw = el.getAttribute?.('aria-label') || el.dataset?.uxChasingName || el.textContent || '';
+    } else {
+      const head = [...(el.children || [])].find(c => c.classList?.contains('head'));
+      const nameEl = head ? [...(head.children || [])].find(c => c.classList?.contains('name')) : null;
+      raw = nameEl?.textContent || '';
+    }
+    const base = cleanCardDisplayName(raw);
+    return (base || 'card') + (isStudy ? '|study' : '');
+  }
+  function assignCardKeys(cards) {
+    const seen = new Map();
+    for (const el of cards) {
+      const base = cardBaseIdentity(el);
+      const count = (seen.get(base) || 0) + 1;
+      seen.set(base, count);
+      const key = count > 1 ? base + '#' + count : base;
+      if (el.dataset) el.dataset.uxKey = key;
+    }
+  }
+  function rosterMetaFor(card, mode) {
+    const kids = [...(card.children || [])];
+    const head = kids.find(c => c.classList?.contains('head'));
+    const headKids = head ? [...(head.children || [])] : [];
+    const nameEl = headKids.find(c => c.classList?.contains('name'));
+    const metaEl = headKids.find(c => c.classList?.contains('meta'));
+    const isStudy = card.classList?.contains('study-card');
+    const nameText = nameEl?.textContent || '';
+    const metaText = (metaEl?.textContent || '').trim();
+    const displayName = cleanCardDisplayName(nameText) || nameText.trim();
+    const urgent = mode === 'chasing' && (
+      String(nameEl?.style?.color || '').includes('bad')
+      || /考试冲刺|考试在即/.test(nameText)
+    );
+    let badgeText = '', badgeKind = '';
+    if (mode === 'done') {
+      const tasksWrap = kids.find(c => c.classList?.contains('tasks'));
+      const rows = tasksWrap ? [...(tasksWrap.children || [])].filter(c => c.classList?.contains('task')) : [];
+      if (rows.length) {
+        const okCount = rows.filter(r => r.classList?.contains('ok')).length;
+        badgeText = okCount + '/' + rows.length;
+        if (okCount === rows.length) badgeKind = 'is-ready';
+      } else if (isStudy) {
+        badgeText = '自习';
+      }
+    } else if (mode === 'plan') {
+      const tm = metaText.match(/\d{1,2}:\d{2}\s*[-–~～]\s*\d{1,2}:\d{2}/);
+      badgeText = tm ? tm[0].replace(/\s+/g, '') : (isStudy ? '自习' : '');
+    } else if (mode === 'chasing') {
+      const cnt = metaText.match(/欠交\s*(\d+)\s*项/);
+      badgeText = cnt ? '欠' + cnt[1] + '项' : '';
+      if (urgent) badgeKind = 'is-urgent';
+    }
+    return {displayName, isStudy, urgent, badgeText, badgeKind};
+  }
+  function formatFoldedNameOnly(el) {
+    if (el.dataset?.uxFoldFmt === '1') return;
+    const raw = (el.textContent || '').trim();
+    if (!raw) return;
+    const timeMatch = raw.match(/已复制\s*([0-9:：]+|[^\s▸]+)\s*▸?$/);
+    const timeText = timeMatch ? timeMatch[1].trim() : '';
+    const isStudy = el.classList.contains('study-folded') || /·\s*自习/.test(raw);
+    const labelPart = raw.replace(/^\d+\.\s*/, '').replace(/\s*·\s*自习/, '').replace(/\s*✅.*$/, '').replace(/\s*\[(?:已停止|已停止催缴)[^\]]*\]/, '').replace(/\s*▸$/, '').trim();
+    const displayName = shown(labelPart) || labelPart;
+    el.dataset.uxFoldFmt = '1';
+    el.setAttribute('aria-label', raw);
+    el.title = (isStudy ? '自习 · ' : '') + (timeText ? '已复制 ' + timeText + ' · 单击展开 · 双击撤回' : '已收纳 · 单击展开 · 双击撤回');
+    if (page.mode === 'chasing') {
+      // Preserve original text node for chasing numbering assertions; render name-only visually via ::before.
+      el.dataset.uxChasingName = displayName;
+      return;
+    }
+    el.replaceChildren(make('span', 'ux-fp-name', displayName));
+  }
+  function clearAnimClasses(el) {
+    if (!el?.classList) return;
+    el.classList.remove('ux-anim-from-left', 'ux-anim-from-right', 'ux-anim-next', 'ux-anim-fly-out');
+  }
+  function resizeVisibleTextareas(root) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    for (const ta of root.querySelectorAll('textarea.txt')) {
+      if (!ta.style) continue;
+      ta.style.height = 'auto';
+      if (ta.scrollHeight > 0) ta.style.height = ta.scrollHeight + 'px';
+    }
+  }
+  function applyStageSelection(list, activeCards, pendingRail, foldedRail, selectedKey, animDir) {
+    const scope = focusScope();
+    const prevKey = focusLastAnimated.get(scope);
+    const changed = Boolean(selectedKey) && selectedKey !== prevKey;
+    let visibleCard = null;
+    for (const card of activeCards) {
+      const isSelected = Boolean(selectedKey) && card.dataset?.uxKey === selectedKey;
+      if (isSelected) {
+        visibleCard = card;
+        if (card.hasAttribute?.('data-ux-stage-hidden')) card.removeAttribute('data-ux-stage-hidden');
+        if (changed && animDir) {
+          clearAnimClasses(card);
+          const cls = animDir === 'right' ? 'ux-anim-from-right' : animDir === 'next' ? 'ux-anim-next' : 'ux-anim-from-left';
+          card.classList.add(cls);
+        }
+      } else {
+        card.setAttribute?.('data-ux-stage-hidden', '1');
+        clearAnimClasses(card);
+      }
+    }
+    if (visibleCard) resizeVisibleTextareas(visibleCard);
+    if (!isDesktopFocus()) resizeVisibleTextareas(list);
+    if (selectedKey) focusLastAnimated.set(scope, selectedKey); else focusLastAnimated.delete(scope);
+    if (pendingRail) {
+      for (const btn of [...(pendingRail.children || [])].filter(c => c.classList?.contains('ux-roster-btn'))) {
+        const on = btn.dataset?.uxKey === selectedKey;
+        if (on) btn.classList.add('on'); else btn.classList.remove('on');
+        btn.setAttribute?.('aria-current', on ? 'true' : 'false');
+      }
+    }
+    if (foldedRail) {
+      for (const btn of [...(foldedRail.children || [])].filter(c => c.classList?.contains('ux-rail-open'))) {
+        const on = btn.dataset?.uxKey === selectedKey;
+        if (on) btn.classList.add('on'); else btn.classList.remove('on');
+        btn.setAttribute?.('aria-pressed', on ? 'true' : 'false');
+      }
+    }
+    const stage = [...(list.children || [])].find(c => c.classList?.contains('ux-focus-stage'));
+    if (stage) {
+      let empty = [...(stage.children || [])].find(c => c.classList?.contains('ux-stage-empty'));
+      if (!selectedKey) {
+        if (!empty) {
+          empty = make('div', 'ux-stage-empty');
+          empty.append(make('span', 'ux-stage-empty-icon'), make('b', '', '本页已全部处理完'), make('span', '', '点击右侧姓名可随时展开查看或再复制'));
+          stage.append(empty);
+        }
+      } else if (empty) {
+        empty.remove();
+      }
+    }
+  }
+  function selectFocusCard(targetKey, dir) {
+    const list = $('#list'); if (!list || !list.classList?.contains('ux-focus-layout')) return;
+    const scope = focusScope();
+    const stage = [...(list.children || [])].find(c => c.classList?.contains('ux-focus-stage'));
+    const pendingRail = [...(list.children || [])].find(c => c.classList?.contains('ux-pending-rail'));
+    const foldedRail = [...(list.children || [])].find(c => c.classList?.contains('ux-folded-rail'));
+    if (!stage) return;
+    const activeCards = [...(stage.children || [])].filter(c => c.classList?.contains('item') && !c.classList?.contains('folded'));
+    const prevKey = focusSelected.get(scope);
+    if (prevKey === targetKey) return;
+    const prevCard = activeCards.find(c => c.dataset?.uxKey === prevKey) || null;
+    const nextCard = activeCards.find(c => c.dataset?.uxKey === targetKey) || null;
+    if (!nextCard) return;
+    focusSelected.set(scope, targetKey);
+    focusNavIntent = {scope, key: targetKey, dir: dir || 'left', ts: Date.now()};
+    withViewTransition(prevCard, nextCard, () => {
+      applyStageSelection(list, activeCards, pendingRail, foldedRail, targetKey, dir || 'left');
+    });
+  }
+  function decorateFocusWorkbench(list, m) {
+    const direct = [...(list.children || [])];
+    let pendingRail = direct.find(c => c.classList?.contains('ux-pending-rail'));
+    let stage = direct.find(c => c.classList?.contains('ux-focus-stage'));
+    let rail = direct.find(c => c.classList?.contains('ux-folded-rail'));
+    let oldGrid = direct.find(c => c.classList?.contains('ux-active-grid'));
+    const folded = [
+      ...(rail ? [...(rail.children || [])].filter(c => c.classList?.contains('folded')) : []),
+      ...direct.filter(c => c.classList?.contains('item') && c.classList?.contains('folded'))
+    ];
+    const activeCards = [
+      ...(stage ? [...(stage.children || [])].filter(c => c.classList?.contains('item') && !c.classList?.contains('folded')) : []),
+      ...(oldGrid ? [...(oldGrid.children || [])].filter(c => c.classList?.contains('item') && !c.classList?.contains('folded')) : []),
+      ...direct.filter(c => c.classList?.contains('item') && !c.classList?.contains('folded') && !c.classList?.contains('study-form') && !c.classList?.contains('aircon-card'))
+    ];
+    if (oldGrid) {
+      for (const card of activeCards) oldGrid.before(card);
+      oldGrid.remove();
+    }
+    if (!activeCards.length && !folded.length) {
+      list.classList.remove('ux-focus-layout');
+      pendingRail?.remove();
+      stage?.remove();
+      rail?.remove();
+      return;
+    }
+    list.classList.add('ux-focus-layout');
+    for (const item of folded) formatFoldedNameOnly(item);
+    assignCardKeys([...activeCards, ...folded]);
+    const pendingCards = activeCards.filter(c => !c.classList?.contains('copied'));
+    const expandedCopied = activeCards.filter(c => c.classList?.contains('copied'));
+    const shelfAnchor = direct.find(c => c.classList?.contains('ux-past') || c.classList?.contains('chasing-stopped'));
+
+    // Ensure 3-column order: .ux-pending-rail -> .ux-focus-stage -> .ux-folded-rail
+    if (!pendingRail) {
+      pendingRail = make('aside', 'ux-pending-rail');
+      pendingRail.setAttribute('aria-label', '待处理名单');
+      if (stage && stage.parentElement === list) stage.before(pendingRail);
+      else if (rail && rail.parentElement === list) rail.before(pendingRail);
+      else if (shelfAnchor) shelfAnchor.before(pendingRail);
+      else list.append(pendingRail);
+    }
+    if (!stage) {
+      stage = make('div', 'ux-focus-stage');
+      if (rail && rail.parentElement === list) rail.before(stage);
+      else if (shelfAnchor) shelfAnchor.before(stage);
+      else list.append(stage);
+    }
+    for (const card of activeCards) {
+      if (card.parentElement !== stage) stage.append(card);
+    }
+    if (!rail) {
+      rail = make('aside', 'ux-folded-rail');
+      rail.setAttribute('aria-label', '已收纳');
+      if (shelfAnchor) shelfAnchor.before(rail); else list.append(rail);
+    }
+
+    // Resolve selection & animation direction (including post-copy auto-advance & right-rail arrival pulse)
+    const scope = focusScope();
+    let arrivedFoldedKey = '';
+    let animDir = '';
+    if (pendingCopyFly && pendingCopyFly.scope === scope && Date.now() - pendingCopyFly.ts < 3000) {
+      const landedInFolded = folded.some(f => f.dataset?.uxKey === pendingCopyFly.copiedKey);
+      const landedInCopied = expandedCopied.some(c => c.dataset?.uxKey === pendingCopyFly.copiedKey);
+      if (landedInFolded || landedInCopied) {
+        if (landedInFolded) arrivedFoldedKey = pendingCopyFly.copiedKey;
+        const nextExists = pendingCopyFly.nextKey && pendingCards.some(c => c.dataset?.uxKey === pendingCopyFly.nextKey);
+        const target = nextExists ? pendingCopyFly.nextKey : (pendingCards[0]?.dataset?.uxKey || '');
+        if (target) focusSelected.set(scope, target); else focusSelected.delete(scope);
+        animDir = 'next';
+        pendingCopyFly = null;
+      }
+    }
+    let selectedKey = focusSelected.get(scope) || '';
+    if (!selectedKey || !activeCards.some(c => c.dataset?.uxKey === selectedKey)) {
+      selectedKey = pendingCards[0]?.dataset?.uxKey || expandedCopied[0]?.dataset?.uxKey || '';
+      if (selectedKey) focusSelected.set(scope, selectedKey); else focusSelected.delete(scope);
+      if (!animDir && focusLastAnimated.has(scope) && selectedKey) animDir = 'next';
+    }
+    if (!animDir && focusNavIntent && focusNavIntent.scope === scope && focusNavIntent.key === selectedKey && Date.now() - focusNavIntent.ts < 2000) {
+      animDir = focusNavIntent.dir;
+      focusNavIntent = null;
+    }
+
+    // Build / sync left pending roster (signature-checked so MutationObserver stays silent)
+    const leftTitle = m === 'plan' ? '待安排' : m === 'chasing' ? '待催交' : '待核对';
+    const rosterData = pendingCards.map(c => ({key: c.dataset?.uxKey || '', ...rosterMetaFor(c, m)}));
+    const leftSig = leftTitle + '|' + rosterData.map(r => [r.key, r.displayName, r.urgent ? 1 : 0, r.badgeText, r.badgeKind].join('~')).join(';');
+    if (pendingRail.dataset?.sig !== leftSig) {
+      pendingRail.dataset.sig = leftSig;
+      const head = make('div', 'ux-rail-head');
+      head.append(make('span', '', leftTitle), make('span', 'ux-rail-count', String(rosterData.length)));
+      const nodes = [head];
+      if (!rosterData.length) {
+        nodes.push(make('div', 'ux-rail-empty', '全部已处理'));
+      } else {
+        for (const r of rosterData) {
+          const btn = make('button', 'ux-roster-btn');
+          btn.type = 'button';
+          btn.dataset.uxKey = r.key;
+          if (r.urgent) btn.dataset.urgent = '1';
+          const main = make('span', 'ux-roster-main');
+          if (r.urgent) { const dot = make('span', 'ux-roster-dot'); dot.setAttribute('aria-hidden', 'true'); main.append(dot); }
+          main.append(make('span', 'ux-roster-name', r.displayName + (r.isStudy ? ' · 自习' : '')));
+          btn.append(main);
+          if (r.badgeText) {
+            const sub = make('span', 'ux-roster-sub' + (r.badgeKind ? ' ' + r.badgeKind : ''), r.badgeText);
+            btn.append(sub);
+          }
+          btn.onclick = () => selectFocusCard(r.key, 'left');
+          nodes.push(btn);
+        }
+      }
+      pendingRail.replaceChildren(...nodes);
+    }
+
+    // Build / sync right completed rail (head + active expanded proxies + real folded cards)
+    const rightTitle = m === 'chasing' ? '已催交' : '已复制';
+    const completedTotal = folded.length + expandedCopied.length;
+    let rightHead = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-head'));
+    const rightHeadSig = rightTitle + '|' + completedTotal;
+    if (!rightHead || rightHead.dataset?.sig !== rightHeadSig) {
+      rightHead?.remove();
+      rightHead = make('div', 'ux-rail-head');
+      rightHead.dataset.sig = rightHeadSig;
+      const cnt = make('span', 'ux-rail-count', String(completedTotal));
+      if (completedTotal > 0) cnt.dataset.hasItems = '1';
+      rightHead.append(make('span', '', rightTitle), cnt);
+      rail.prepend(rightHead);
+    }
+    const proxySig = expandedCopied.map(c => c.dataset?.uxKey + ':' + cleanCardDisplayName($('.head .name', c)?.textContent || '')).join(';');
+    if (rail.dataset?.proxySig !== proxySig) {
+      rail.dataset.proxySig = proxySig;
+      for (const old of [...(rail.children || [])].filter(c => c.classList?.contains('ux-rail-open'))) old.remove();
+      let anchor = rightHead;
+      for (const card of expandedCopied) {
+        const key = card.dataset?.uxKey || '';
+        const name = cleanCardDisplayName($('.head .name', card)?.textContent || '');
+        const proxy = make('button', 'ux-rail-open');
+        proxy.type = 'button';
+        proxy.dataset.uxKey = key;
+        proxy.title = '单击查看/收起 · 双击撤回 ' + name;
+        proxy.append(make('span', 'ux-fp-name', name));
+        proxy.onclick = () => {
+          if (focusSelected.get(focusScope()) === key) {
+            const collapseBtn = [...(card.querySelectorAll?.('button') || [])].find(b =>
+              b.dataset?.iconAction === 'Collapse' || /收起/.test(b.textContent || '') || /收起/.test(b.getAttribute?.('aria-label') || '')
+            );
+            if (collapseBtn && typeof collapseBtn.click === 'function') collapseBtn.click();
+          } else {
+            selectFocusCard(key, 'right');
+          }
+        };
+        if (anchor && typeof anchor.after === 'function') { anchor.after(proxy); anchor = proxy; }
+        else rail.append(proxy);
+      }
+    }
+    for (const item of folded) {
+      if (item.parentElement !== rail) rail.append(item);
+      if (arrivedFoldedKey && item.dataset?.uxKey === arrivedFoldedKey) {
+        item.classList.remove('ux-anim-rail-in');
+        item.classList.add('ux-anim-rail-in');
+      }
+    }
+    let railEmpty = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-empty'));
+    let railTip = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-tip'));
+    if (completedTotal === 0) {
+      if (!railEmpty) {
+        railEmpty = make('div', 'ux-rail-empty', m === 'chasing' ? '催交后收纳于此' : '复制后收纳于此');
+        rail.append(railEmpty);
+      }
+      railTip?.remove();
+    } else {
+      railEmpty?.remove();
+      if (!railTip) {
+        railTip = make('div', 'ux-rail-tip', '双击姓名撤回');
+        rail.append(railTip);
+      } else if (rail.lastElementChild !== railTip) {
+        rail.append(railTip);
+      }
+    }
+    rail.dataset.onlyFolded = activeCards.length ? '0' : '1';
+    rail.dataset.emptyFolded = folded.length ? '0' : '1';
+
+    applyStageSelection(list, activeCards, pendingRail, rail, selectedKey, animDir);
+  }
+  function decorateFoldedRail() {
+    const m = page.mode;
+    const list = $('#list'); if (!list) return;
+    if (FOCUS_MODES.has(m)) {
+      decorateFocusWorkbench(list, m);
+      return;
+    }
+    list.classList?.remove?.('ux-focus-layout');
+    if (m !== 'notice') return;
+    const direct = [...(list.children || [])];
+    direct.find(c => c.classList?.contains('ux-pending-rail'))?.remove();
+    const oldStage = direct.find(c => c.classList?.contains('ux-focus-stage'));
+    if (oldStage) {
+      for (const c of [...(oldStage.children || [])].filter(x => x.classList?.contains('item'))) {
+        c.removeAttribute?.('data-ux-stage-hidden');
+        oldStage.before(c);
+      }
+      oldStage.remove();
+    }
+    let rail = direct.find(c => c.classList?.contains('ux-folded-rail'));
+    let activeGrid = direct.find(c => c.classList?.contains('ux-active-grid'));
+    const folded = [
+      ...(rail ? [...(rail.children || [])].filter(c => c.classList?.contains('folded')) : []),
+      ...direct.filter(c => c.classList?.contains('item') && c.classList?.contains('folded'))
+    ];
+    const activeCards = [
+      ...(activeGrid ? [...(activeGrid.children || [])].filter(c => c.classList?.contains('item') && !c.classList?.contains('folded')) : []),
+      ...direct.filter(c => c.classList?.contains('item') && !c.classList?.contains('folded') && !c.classList?.contains('study-form'))
+    ];
+    if (!folded.length) {
+      if (activeGrid) {
+        for (const card of activeCards) activeGrid.before(card);
+        activeGrid.remove();
+      }
+      rail?.remove();
+      return;
+    }
+    const shelfAnchor = direct.find(c => c.classList?.contains('ux-past') || c.classList?.contains('chasing-stopped'));
+    if (activeCards.length) {
+      if (!activeGrid) {
+        activeGrid = make('div', 'ux-active-grid');
+        if (rail && rail.parentElement === list) rail.before(activeGrid);
+        else if (shelfAnchor) shelfAnchor.before(activeGrid);
+        else list.append(activeGrid);
+      }
+      for (const card of activeCards) {
+        if (card.parentElement !== activeGrid) activeGrid.append(card);
+      }
+    } else if (activeGrid) {
+      activeGrid.remove();
+    }
+    if (!rail) {
+      rail = make('div', 'ux-folded-rail');
+      rail.setAttribute('aria-label', '已收纳');
+      if (shelfAnchor) shelfAnchor.before(rail); else list.append(rail);
+    }
+    for (const item of folded) {
+      formatFoldedNameOnly(item);
+      if (item.parentElement !== rail) rail.append(item);
+    }
+    let tip = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-tip'));
+    if (!tip) { tip = make('div', 'ux-rail-tip', '双击姓名撤回'); rail.append(tip); }
+    else if (rail.lastElementChild !== tip) rail.append(tip);
+    rail.dataset.onlyFolded = activeCards.length ? '0' : '1';
+  }
+  function decorateQuizRail() {
+    if (page.mode !== 'quiz') return;
+    const quiz = $('#list .quiz'); if (!quiz) return;
+    const direct = [...(quiz.children || [])];
+    let rail = direct.find(c => c.classList?.contains('ux-quiz-rail'));
+    let grid = direct.find(c => c.classList?.contains('ux-quiz-grid'));
+    const allGroups = [
+      ...(grid ? [...(grid.children || [])].filter(c => c.classList?.contains('qgroup')) : []),
+      ...(rail ? [...(rail.children || [])].filter(c => c.classList?.contains('qgroup')) : []),
+      ...direct.filter(c => c.classList?.contains('qgroup'))
+    ];
+    const folded = allGroups.filter(g => g.classList?.contains('vq-collapsed'));
+    const active = allGroups.filter(g => !g.classList?.contains('vq-collapsed'));
+    if (!folded.length) {
+      if (grid) {
+        for (const g of active) grid.before(g);
+        grid.remove();
+      }
+      rail?.remove();
+      return;
+    }
+    if (active.length) {
+      if (!grid) {
+        grid = make('div', 'ux-quiz-grid');
+        if (rail && rail.parentElement === quiz) rail.before(grid); else quiz.append(grid);
+      }
+      for (const g of active) {
+        if (g.parentElement !== grid) grid.append(g);
+      }
+    } else if (grid) {
+      grid.remove();
+    }
+    if (!rail) {
+      rail = make('div', 'ux-quiz-rail');
+      rail.setAttribute('aria-label', '已收纳');
+      quiz.append(rail);
+    }
+    for (const g of folded) {
+      g.title = '单击展开 · 双击撤回至未完成';
+      if (g.parentElement !== rail) rail.append(g);
+    }
+    let tip = [...(rail.children || [])].find(c => c.classList?.contains('ux-rail-tip'));
+    if (!tip) { tip = make('div', 'ux-rail-tip', '双击姓名撤回'); rail.append(tip); }
+    else if (rail.lastElementChild !== tip) rail.append(tip);
+  }
+
   // ---- notices carry the air-conditioning request ---------------------------------
   function decorateNotice() {
-    const old = $('#list > .ux-aircon');
+    const topPanel = $('.ux-topbar-panel');
+    const old = (topPanel && [...(topPanel.children || [])].find(c => c.classList?.contains('ux-aircon'))) || $('#list > .ux-aircon');
     if (page.mode !== 'notice') { old?.remove(); return; }
     const list = $('#list'); if (!list) return;
     const air = airconNoticeEntry();
     if (!air) { old?.remove(); return; }
     const status = air.request.status;
     const sig = [air.day, status, air.request.text || '', air.copied].join('|');
-    if (old?.dataset.sig === sig) return;
+    if (old?.dataset.sig === sig && (!topPanel || old.parentElement === topPanel)) return;
     old?.remove();
     const row = make('div', 'ux-aircon'); row.dataset.sig = sig;
     if (status === 'ready' && air.copied) row.dataset.copied = '';
@@ -1461,14 +4173,23 @@
       if (typeof globalThis.wayonAircon?.open === 'function') globalThis.wayonAircon.open(air.day);
       else document.getElementById('nav-aircon')?.click();
     };
-    row.append(open); list.prepend(row);
+    row.append(open);
+    if (topPanel) topPanel.prepend(row); else list.prepend(row);
   }
 
   // ---- reminders: exam already over goes to the bottom, collapsed -------------------
   function decorateChasing() {
     if (page.mode !== 'chasing') return;
     const list = $('#list'); if (!list) return;
-    const past = $$(':scope > .item:not(.folded)', list).filter(card => {
+    const findLiveChasing = () => {
+      const stage = [...(list.children || [])].find(c => c.classList?.contains('ux-focus-stage') || c.classList?.contains('ux-active-grid'));
+      return [
+        ...(stage ? [...(stage.children || [])].filter(c => c.classList?.contains('item') && !c.classList?.contains('folded')) : []),
+        ...$$(':scope > .item:not(.folded)', list)
+      ];
+    };
+    const activeChasing = findLiveChasing();
+    const past = activeChasing.filter(card => {
       const date = ($('.head .name', card)?.textContent.match(/考期[：:]\s*(\d{4}-\d{2}-\d{2})/) || [])[1];
       return date && date < page.today;
     });
@@ -1482,7 +4203,14 @@
       box.remove(); box = null;
     }
     if (box) $('summary', box).textContent = '考期已过 · ' + $$('.item', box).length + ' 人（展开查看；仍可复制催交或停止催交）';
-    for (const folded of $$(':scope > .item.folded', list)) {
+    const foldedChasing = (() => {
+      const rail = [...(list.children || [])].find(c => c.classList?.contains('ux-folded-rail'));
+      return [
+        ...(rail ? [...(rail.children || [])].filter(c => c.classList?.contains('folded')) : []),
+        ...$$(':scope > .item.folded', list)
+      ];
+    })();
+    for (const folded of foldedChasing) {
       for (const node of folded.childNodes) {
         if (node.nodeType !== 3) continue;
         const next = node.textContent.replace(/^\d+\.\s*/, '');
@@ -1495,7 +4223,8 @@
       if (name && name.textContent !== next) name.textContent = next;
     }
     // Keep active chasing cards cleanly numbered 1..N without colliding with folded shelves.
-    $$(':scope > .item:not(.folded)', list).forEach((card, i) => {
+    const liveChasing = findLiveChasing();
+    liveChasing.forEach((card, i) => {
       const name = $('.head .name', card); if (!name) return;
       const text = (i + 1) + '. ' + name.textContent.replace(/^\d+\.\s*/, '');
       if (name.textContent !== text) name.textContent = text;
@@ -1536,7 +4265,8 @@
         + '.ux-mark .ux-mark-hit{cursor:default;outline:none;-webkit-tap-highlight-color:transparent}'
         + '.ux-mark .ux-mark-hit:focus-visible{stroke:var(--accent,#0071e3);stroke-width:6}'
         + '@media (prefers-reduced-motion:reduce){.ux-mark *{transition:none!important}}'
-        + '@media (prefers-color-scheme:dark){.ux-mark{color:#f5f5f7}}';
+        + '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ux-mark{color:#f5f5f7}}'
+        + ':root[data-theme="dark"] .ux-mark{color:#f5f5f7}';
       document.head.append(css);
     }
     h.innerHTML = MARK;   // fixed markup above, no data
@@ -1646,6 +4376,239 @@
     const name = event.target.closest?.('#list .item .head .name');
     if (name && !event.target.closest('button,a,input,textarea,summary')) { void studentPage(name.textContent); return; }
   });
+  // ---- Double-click right completed rail to undo back to pending across all 5 views ----
+  let undoToastTimer = 0, pendingRailClick = null, lastUndoAt = 0;
+  function showUndoToast(text) {
+    if (!document.body) return;
+    let toast = $('.ux-undo-toast');
+    if (!toast) { toast = make('div', 'ux-undo-toast'); toast.setAttribute('role', 'status'); document.body.append(toast); }
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(undoToastTimer);
+    undoToastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+  function matchDisplayName(raw, target) {
+    const a = cleanCardDisplayName(raw), b = cleanCardDisplayName(target);
+    return Boolean(a && b) && (a === b || clean(a) === clean(b));
+  }
+  function undoCompletedEntry(mode, el) {
+    if (!el || Date.now() - lastUndoAt < 350) return false;
+    lastUndoAt = Date.now();
+    const key = el.dataset?.uxKey || '';
+    const isStudy = el.classList?.contains('study-folded') || key.endsWith('|study');
+    const rawLabel = el.classList?.contains('qgroup')
+      ? ($('.vq-student-name', el)?.textContent || $('.qhead', el)?.textContent || '')
+      : (el.dataset?.uxChasingName || $('.ux-fp-name', el)?.textContent || el.getAttribute?.('aria-label') || el.textContent || '');
+    const displayName = cleanCardDisplayName(rawLabel);
+    if (!displayName) return false;
+    const scope = focusScope();
+    let undone = false;
+    try {
+      if (mode === 'plan') {
+        const day = page.cur || page.today;
+        if (isStudy && typeof study !== 'undefined' && typeof study.cards === 'function' && typeof StudyTasks !== 'undefined') {
+          const card = study.cards(day).find(c => matchDisplayName(c.studentName, displayName));
+          if (card) {
+            study.open?.delete?.(day + ':' + card.id + ':plan');
+            study.commit(day, f => { delete f[StudyTasks.key('study-copy', card.id, 'plan')]; });
+            undone = true;
+          }
+        } else {
+          const rows = planRowsFor(day);
+          const p = rows.find(row => matchDisplayName(row[0], displayName));
+          if (p && typeof ps !== 'undefined') {
+            const meta = p[5], cardKey = (meta && meta.isGroup) ? meta.key : p[0];
+            delete ps[cardKey];
+            if (meta?.isGroup) for (const mName of meta.members || []) delete ps[mName];
+            if (typeof openCards !== 'undefined') openCards.delete('plan:' + day + ':' + cardKey);
+            if (typeof psave === 'function') psave();
+            undone = true;
+          }
+        }
+      } else if (mode === 'done') {
+        const day = page.cur || page.today;
+        if (isStudy && typeof study !== 'undefined' && typeof study.cards === 'function' && typeof StudyTasks !== 'undefined') {
+          const card = study.cards(day).find(c => matchDisplayName(c.studentName, displayName));
+          if (card) {
+            study.open?.delete?.(day + ':' + card.id + ':done');
+            study.commit(day, f => { delete f[StudyTasks.key('study-copy', card.id, 'done')]; });
+            undone = true;
+          }
+        } else {
+          const rows = page.data[day] || [];
+          const row = rows.find(r => matchDisplayName(r[0], displayName));
+          if (row && typeof get === 'function') {
+            get(row[0]).c = '';
+            if (typeof openCards !== 'undefined') openCards.delete('done:' + day + ':' + row[0]);
+            if (typeof save === 'function') save();
+            undone = true;
+          }
+        }
+      } else if (mode === 'chasing') {
+        const rows = typeof chasingRows === 'function' ? chasingRows(page.chasing || []) : (page.chasing || []);
+        const row = rows.find(r => matchDisplayName(r.name, displayName) || (r.chasing_aliases || []).some(a => matchDisplayName(a, displayName)));
+        if (row && typeof ch !== 'undefined') {
+          const keys = [row.name, ...(row.chasing_aliases || [])];
+          let hadToday = false;
+          for (const k of keys) if (Object.hasOwn(ch, k)) { delete ch[k]; hadToday = true; }
+          if (typeof openCards !== 'undefined') openCards.delete('chasing:' + page.today + ':' + row.name);
+          if (hadToday && typeof chsave === 'function') { chsave(); undone = true; }
+        }
+      } else if (mode === 'notice') {
+        const nDay = noticeDay() || page.tomorrow;
+        const rows = (typeof NOTICE !== 'undefined' ? NOTICE[nDay] : page.data._notice?.[nDay]) || [];
+        const row = rows.find(r => matchDisplayName(r[0], displayName));
+        if (row && typeof nc !== 'undefined' && typeof noticeKey === 'function') {
+          delete nc[noticeKey(row)];
+          if (typeof openCards !== 'undefined') openCards.delete('notice:' + nDay + ':' + row[0]);
+          if (typeof nsave === 'function') nsave();
+          undone = true;
+        }
+      } else if (mode === 'quiz') {
+        const day = page.cur || page.today;
+        const rows = typeof quizRows === 'function' ? quizRows(page.data[day] || []) : [];
+        let touched = false;
+        for (const r of rows) {
+          if (!matchDisplayName(r[0], displayName)) continue;
+          if (typeof qget === 'function' && typeof qk === 'function') {
+            const rec = qget(qk(r));
+            rec.pre = false; rec.post = false;
+            if (rec.vocabEvidence) delete rec.vocabEvidence;
+            touched = true;
+          }
+        }
+        if (touched && typeof qsave === 'function') qsave();
+        const foldBtn = $('.vq-fold', el);
+        if (el.classList?.contains('vq-collapsed') && foldBtn && typeof foldBtn.click === 'function') {
+          foldBtn.dataset.uxReplayClick = '1';
+          foldBtn.click();
+        }
+        undone = touched || el.classList?.contains('vq-collapsed');
+      }
+    } catch (e) { console.warn('ux undo:', e); }
+    if (undone) {
+      if (FOCUS_MODES.has(mode) && key) {
+        focusSelected.set(scope, key);
+        focusNavIntent = {scope, key, dir: 'right', ts: Date.now()};
+      }
+      if (!((mode === 'plan' || mode === 'done') && isStudy)) {
+        try { page.render(); } catch {}
+      }
+      setTimeout(schedule, 0);
+      showUndoToast('已撤回「' + displayName + '」到未完成');
+    } else if (mode === 'chasing') {
+      showUndoToast('「' + displayName + '」为前两日已催记录，可单击展开查看');
+    }
+    return undone;
+  }
+
+  // Capture phase so vocab.js fold.onclick (which calls stopPropagation) still triggers right-rail sync,
+  // right-rail items cleanly distinguish single-click (expand) vs double-click (undo to pending),
+  // and three-column focus views capture copy-to-right flyout before render().
+  const RAIL_HIT_SEL = '#list .ux-folded-rail > .item.folded, #list .ux-folded-rail > .ux-rail-open, #list .ux-quiz-rail > .qgroup.vq-collapsed';
+  document.addEventListener('click', event => {
+    const railHit = event.target.closest?.(RAIL_HIT_SEL);
+    if (railHit) {
+      if (railHit.dataset?.uxReplayClick === '1' || event.target.closest?.('[data-ux-replay-click="1"]')) {
+        delete railHit.dataset.uxReplayClick;
+        if (railHit.classList?.contains('qgroup')) setTimeout(schedule, 0);
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const hitId = railHit.dataset?.uxKey || railHit.getAttribute?.('aria-label') || $('.vq-student-name', railHit)?.textContent || railHit.textContent || '';
+      if ((pendingRailClick && pendingRailClick.id === hitId && Date.now() - pendingRailClick.ts < 380) || event.detail >= 2) {
+        if (pendingRailClick) { clearTimeout(pendingRailClick.timer); pendingRailClick = null; }
+        undoCompletedEntry(page.mode, railHit);
+        return;
+      }
+      if (pendingRailClick) { clearTimeout(pendingRailClick.timer); pendingRailClick = null; }
+      const snapEl = railHit, snapMode = page.mode;
+      pendingRailClick = {
+        id: hitId,
+        ts: Date.now(),
+        timer: setTimeout(() => {
+          pendingRailClick = null;
+          if (!snapEl.isConnected && snapEl.parentElement == null) return;
+          if (snapMode === 'quiz' && snapEl.classList?.contains('qgroup')) {
+            const unfoldBtn = $('.vq-fold', snapEl) || $('.qhead', snapEl) || snapEl;
+            if (unfoldBtn.dataset) unfoldBtn.dataset.uxReplayClick = '1';
+            if (snapEl.dataset) snapEl.dataset.uxReplayClick = '1';
+            if (typeof unfoldBtn.click === 'function') unfoldBtn.click();
+            setTimeout(schedule, 0);
+            return;
+          }
+          if (FOCUS_MODES.has(snapMode) && snapEl.classList?.contains('folded') && snapEl.dataset?.uxKey) {
+            const scope = focusScope();
+            focusSelected.set(scope, snapEl.dataset.uxKey);
+            focusNavIntent = {scope, key: snapEl.dataset.uxKey, dir: 'right', ts: Date.now()};
+          }
+          if (snapEl.dataset) snapEl.dataset.uxReplayClick = '1';
+          if (typeof snapEl.click === 'function') snapEl.click();
+          else snapEl.onclick?.();
+        }, 220)
+      };
+      return;
+    }
+    if (event.target.closest?.('#list .quiz .vq-fold, #list .quiz .qgroup.vq-collapsed')) { setTimeout(schedule, 0); }
+    if (!FOCUS_MODES.has(page.mode)) return;
+    const copyBtn = event.target.closest?.('#list .ux-focus-stage .item:not(.folded) button.copy');
+    if (copyBtn) {
+      const card = copyBtn.closest?.('.item');
+      if (card && !card.classList?.contains('copied') && card.dataset?.uxKey) {
+        const list = $('#list');
+        const pendingRail = list ? [...(list.children || [])].find(c => c.classList?.contains('ux-pending-rail')) : null;
+        const keys = pendingRail ? [...(pendingRail.children || [])].filter(c => c.classList?.contains('ux-roster-btn')).map(b => b.dataset?.uxKey).filter(Boolean) : [];
+        const idx = keys.indexOf(card.dataset.uxKey);
+        const nextKey = idx >= 0 ? (keys[idx + 1] || keys[idx - 1] || '') : '';
+        pendingCopyFly = {scope: focusScope(), copiedKey: card.dataset.uxKey, nextKey, ts: Date.now()};
+        if (isDesktopFocus() && !prefersReducedMotion()) {
+          clearAnimClasses(card);
+          card.classList.add('ux-anim-fly-out');
+          setTimeout(() => card.classList?.remove('ux-anim-fly-out'), 600);
+        }
+      }
+    }
+  }, true);
+  document.addEventListener('dblclick', event => {
+    const railHit = event.target.closest?.(RAIL_HIT_SEL);
+    if (!railHit) return;
+    if (pendingRailClick) { clearTimeout(pendingRailClick.timer); pendingRailClick = null; }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    undoCompletedEntry(page.mode, railHit);
+  }, true);
+  // Keyboard Up/Down stepping through pending students + Escape to dismiss sync popup.
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      const notice = $('.wayon-sync-notice');
+      if (notice && !notice.hidden && notice.dataset?.uxDismissed !== '1') {
+        notice.dataset.uxDismissed = '1';
+        const bd = $('.ux-sync-backdrop'); if (bd) bd.hidden = true;
+        return;
+      }
+    }
+    if ((event.key !== 'ArrowDown' && event.key !== 'ArrowUp') || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!FOCUS_MODES.has(page.mode) || !isDesktopFocus()) return;
+    const active = document.activeElement;
+    if (active && (/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName) || active.isContentEditable)) return;
+    if ($('dialog[open], .vx-overlay') || document.body.dataset.airconOpen || document.body.dataset.memoOpen
+        || document.body.dataset.feedbackOpen || document.body.dataset.mocksOpen || document.body.dataset.ledgerOpen) return;
+    const list = $('#list'); if (!list?.classList?.contains('ux-focus-layout')) return;
+    const pendingRail = [...(list.children || [])].find(c => c.classList?.contains('ux-pending-rail'));
+    const btns = pendingRail ? [...(pendingRail.children || [])].filter(c => c.classList?.contains('ux-roster-btn')) : [];
+    if (btns.length < 2) return;
+    const curKey = focusSelected.get(focusScope());
+    const idx = btns.findIndex(b => b.dataset?.uxKey === curKey);
+    const nextIdx = event.key === 'ArrowDown'
+      ? (idx < 0 ? 0 : Math.min(btns.length - 1, idx + 1))
+      : (idx < 0 ? 0 : Math.max(0, idx - 1));
+    if (nextIdx !== idx && btns[nextIdx]?.dataset?.uxKey) {
+      event.preventDefault();
+      selectFocusCard(btns[nextIdx].dataset.uxKey, 'left');
+      btns[nextIdx].scrollIntoView?.({block: 'nearest', behavior: 'smooth'});
+    }
+  });
   // A task delete sits right beside the completion mark: ask first.
   document.addEventListener('click', event => {
     const del = event.target.closest?.('#list .del-btn');
@@ -1662,6 +4625,23 @@
   const cardName = el => { const card = el.closest('.item'); return card ? ($('.head .name', card)?.textContent || '') : ''; };
   const detailKey = el => [page.mode, page.cur, el.className, cardName(el),
     ($(':scope > summary', el)?.textContent || '').replace(/[0-9]+/g, '').trim().slice(0, 24)].join('|').replace(/^([^|]*\|[^|]*\|[^|]*\|)[0-9]+\.\s*/, '$1');
+  const syncDetailsIntent = el => {
+    if (!el || el.tagName !== 'DETAILS' || !el.closest?.('#list')) return;
+    lastUser = Date.now();
+    const key = detailKey(el);
+    // Capture runs before the browser toggles `open`: if currently open, user is collapsing it.
+    if (el.open) userOpened.delete(key);
+    else userOpened.add(key);
+  };
+  document.addEventListener('click', event => {
+    const sum = event.target?.closest?.('#list details > summary');
+    if (sum?.parentElement) syncDetailsIntent(sum.parentElement);
+  }, true);
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const sum = event.target?.closest?.('#list details > summary');
+    if (sum?.parentElement) syncDetailsIntent(sum.parentElement);
+  }, true);
   document.addEventListener('toggle', event => {
     const el = event.target;
     if (!(el instanceof HTMLDetailsElement) || !el.closest('#list') || Date.now() - lastUser > 800) return;   // only the user's own click
@@ -1672,6 +4652,55 @@
     for (const el of $$('#list details')) if (!el.open && userOpened.has(detailKey(el))) el.open = true;
   }
 
+  function decorateTopBarPanel() {
+    const topBar = $('.workspace-top-bar');
+    if (!topBar || topBar.parentElement?.classList?.contains('ux-topbar-panel')) return;
+    const subBar = $('.workspace-sub-bar');
+    const wrap = make('div', 'ux-topbar-panel');
+    if (typeof topBar.before === 'function') topBar.before(wrap);
+    else return;
+    wrap.append(topBar);
+    if (subBar) wrap.append(subBar);
+  }
+  // ---- sync notice popup: present unauthenticated cloud notice as a dismissible modal popup ----
+  function decorateSyncPopup() {
+    const notice = $('.wayon-sync-notice');
+    let backdrop = $('.ux-sync-backdrop');
+    if (!notice) { backdrop?.remove(); return; }
+    const dismiss = () => {
+      if (notice.dataset) notice.dataset.uxDismissed = '1';
+      if (backdrop) backdrop.hidden = true;
+    };
+    if (notice.dataset?.uxModal !== '1') {
+      if (notice.dataset) notice.dataset.uxModal = '1';
+      const head = make('div', 'ux-sync-head');
+      const titleWrap = make('div', 'ux-sync-title-wrap');
+      const dot = [...(notice.children || [])].find(c => c.classList?.contains('wayon-sync-dot'));
+      if (dot) titleWrap.append(dot);
+      titleWrap.append(make('span', 'ux-sync-title', '尚未连接云端同步'));
+      const closeBtn = make('button', 'ux-sync-close', '×');
+      closeBtn.type = 'button';
+      closeBtn.setAttribute('aria-label', '稍后再说');
+      closeBtn.title = '稍后再说';
+      closeBtn.onclick = dismiss;
+      head.append(titleWrap, closeBtn);
+      notice.prepend(head);
+      const cta = [...(notice.querySelectorAll?.('button') || [])].find(b => b.classList?.contains('wayon-sync-cta'));
+      cta?.addEventListener?.('click', dismiss, true);
+    }
+    const visible = !notice.hidden && notice.dataset?.uxDismissed !== '1' && !$('dialog[open]');
+    if (visible) {
+      if (!backdrop) {
+        backdrop = make('div', 'ux-sync-backdrop');
+        backdrop.onclick = dismiss;
+        document.body.append(backdrop);
+      }
+      if (backdrop.hidden) backdrop.hidden = false;
+    } else if (backdrop && !backdrop.hidden) {
+      backdrop.hidden = true;
+    }
+  }
+
   // ---- keep everything applied as the page re-renders --------------------------------
   let queued = false;
   function apply() {
@@ -1680,7 +4709,7 @@
     // The cloud copy has just been applied: count every view once on it, then let the numbers show.
     if (!cloudCounted && cloudReady()) { readyAt ||= Date.now(); if (cloudComplete()) { probe(); cloudCounted = probed > 0 && Date.now() - probed < 50; } }
     if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen && !document.body.dataset.ledgerOpen) readCount(page.mode);
-    try { decorateNav(); decorateCards(); decorateNotice(); decorateChasing(); reopen(); brandMark(); } catch (e) { console.warn('ux:', e); }
+    try { decorateNav(); decorateTopBarPanel(); decorateSyncPopup(); decorateCards(); decorateNotice(); decorateChasing(); decorateFoldedRail(); decorateQuizRail(); decorateCardFooters(); reopen(); brandMark(); } catch (e) { console.warn('ux:', e); }
   }
   function initScrollDock() {
     const docEl = document.documentElement;
@@ -1702,9 +4731,25 @@
       if (!rafId) rafId = requestAnimationFrame(syncScroll);
     }, {passive: true});
   }
+  function initThemeSync() {
+    const docEl = document.documentElement;
+    if (!docEl || typeof MutationObserver !== 'function') return;
+    let timer = 0;
+    let lastTheme = docEl.getAttribute?.('data-theme') || '';
+    new MutationObserver(() => {
+      const next = docEl.getAttribute?.('data-theme') || '';
+      if (next === lastTheme) return;
+      lastTheme = next;
+      docEl.setAttribute?.('data-ux-theme-switching', '1');
+      try { void docEl.offsetHeight; } catch {}
+      clearTimeout(timer);
+      timer = setTimeout(() => { docEl.removeAttribute?.('data-ux-theme-switching'); }, 60);
+    }).observe(docEl, {attributes: true, attributeFilter: ['data-theme']});
+  }
   const schedule = () => { if (!queued && !probing) { queued = true; requestAnimationFrame(apply); } };
   function start() {
     initScrollDock();
+    initThemeSync();
     // A count read for a view you are not on goes stale when marks change underneath it — the cloud copy arriving
     // after the first count, or another device. When the list redraws on its own (not right after a tap or a key),
     // count every view again once it has settled.
@@ -1713,7 +4758,7 @@
     const inList = n => (n.nodeType === 1 ? n : n.parentElement)?.closest?.('#list');
     const inNav = n => (n.nodeType === 1 ? n : n.parentElement)?.closest?.('#tabs, #subtabs, .sidebar-footer');
     new MutationObserver(records => {
-      if (records.some(r => inNav(r.target))) {
+      if (records.some(r => r.target === document.body || inNav(r.target))) {
         try {
           if (page.mode && !document.body.dataset.airconOpen && !document.body.dataset.memoOpen && !document.body.dataset.feedbackOpen && !document.body.dataset.mocksOpen && !document.body.dataset.ledgerOpen) readCount(page.mode);
           decorateNav();
@@ -1723,13 +4768,18 @@
       if (probing || Date.now() - probed < 1000 || Date.now() - lastUser < 800 || !records.some(r => inList(r.target))) return;
       clearTimeout(recount);
       recount = setTimeout(() => { if (Date.now() - lastUser >= 800) { probe(); apply(); } }, 1200);
-    }).observe(document.body, {childList: true, subtree: true, characterData: true});
+    }).observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden', 'data-mode', 'data-feedback-open', 'data-memo-open', 'data-mocks-open', 'data-ledger-open', 'data-ledger-space', 'data-aircon-open']});
     apply();
     setTimeout(() => { probe(); apply(); }, 1200);
     setTimeout(apply, 6100);   // no cloud copy came: show this device's counts
     // Local marks may have changed elsewhere (another tab, a cloud sync): recount when the page is looked at again.
     const again = () => { if (document.visibilityState === 'visible' && Date.now() - probed > 60000) { probe(); apply(); } };
     document.addEventListener('visibilitychange', again); window.addEventListener('focus', again);
+    let resizeRaf = 0;
+    window.addEventListener('resize', () => {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; resizeVisibleTextareas($('#list')); });
+    }, {passive: true});
     // A lesson ending turns into something due without a redraw; re-check the clock once a minute.
     setInterval(() => {
       if (document.hidden || probing) return;

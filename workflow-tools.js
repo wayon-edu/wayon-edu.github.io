@@ -183,7 +183,8 @@
   window.addEventListener('wayon-rules-saved',()=>{if(globalThis.wayonRefreshAPI?.enabled===true)void runRefresh();});
   const mount=()=>{
     const bar=document.querySelector('.workspace-sub-bar')||document.querySelector('.workspace-top-bar');
-    const rooms=document.body.dataset.mode==='classroom';
+    const ds=document.body.dataset||{};
+    const rooms=ds.mode==='classroom'&&!ds.airconOpen&&!ds.memoOpen&&!ds.feedbackOpen&&!ds.mocksOpen&&!ds.ledgerOpen;
     const target=rooms?(document.querySelector('.sidebar-footer')||document.querySelector('.sidebar')):bar;
     tools.style.flexDirection=rooms?'column':'row';
     if(target&&tools.parentNode!==target)target.append(tools);
@@ -194,7 +195,7 @@
     if(status.parentNode!==checksPanel)checksPanel.append(status);
   };
   new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
-  new MutationObserver(syncScheduleVisibility).observe(document.body,{attributes:true,attributeFilter:['data-mode','data-aircon-open','data-memo-open','data-feedback-open','data-mocks-open','data-ledger-open']});
+  new MutationObserver(mount).observe(document.body,{attributes:true,attributeFilter:['data-mode','data-aircon-open','data-memo-open','data-feedback-open','data-mocks-open','data-ledger-open']});
   mount();
   // One read per page load; this does not start a refresh or poll a backend.
   fetch('completion-refresh-status.json?v='+Date.now(),{cache:'no-store',credentials:'omit'}).then(r=>r.ok?r.json():null).then(value=>{

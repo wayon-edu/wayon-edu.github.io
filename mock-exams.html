@@ -41,17 +41,17 @@
       --radius-ctrl: 999px;
       --target-size: 36px;
 
-      /* Raw Light Palette (Apple Cupertino Studio) */
-      --canvas-light: #F5F5F7;
+      /* Raw Light Palette (Wayon Architectural Monochrome) */
+      --canvas-light: #F2F3F6;
       --surface-light: #FFFFFF;
       --surface-elevated-light: #FFFFFF;
-      --fg-light: #1D1D1F;
-      --fg-secondary-light: #6E6E73;
-      --fg-tertiary-light: #86868B;
-      --accent-light: #0071E3;
-      --accent-hover-light: #0077ED;
+      --fg-light: #18181B;
+      --fg-secondary-light: #52525B;
+      --fg-tertiary-light: #71717A;
+      --accent-light: #18181B;
+      --accent-hover-light: #27272A;
       --accent-fg-light: #FFFFFF;
-      --accent-subtle-light: rgba(0, 113, 227, 0.11);
+      --accent-subtle-light: rgba(24, 24, 27, 0.08);
 
       --glow-key-light: rgba(255, 255, 255, 0.96);
       --glow-sky-light: rgba(212, 229, 252, 0.40);
@@ -84,10 +84,10 @@
       --card-shadow-hover-1-light: rgba(0, 0, 0, 0.092);
       --card-shadow-hover-2-light: rgba(0, 0, 0, 0.042);
 
-      --pill-idle-bg-light: #F5F5F7;
-      --pill-idle-fg-light: #1D1D1F;
-      --chip-pill-bg-light: rgba(255, 255, 255, 0.78);
-      --chip-pill-hover-light: rgba(255, 255, 255, 0.98);
+      --pill-idle-bg-light: rgba(15, 23, 42, 0.05);
+      --pill-idle-fg-light: #18181B;
+      --chip-pill-bg-light: rgba(15, 23, 42, 0.045);
+      --chip-pill-hover-light: rgba(15, 23, 42, 0.09);
       --input-bg-light: rgba(255, 255, 255, 0.78);
       --input-focus-bg-light: #FFFFFF;
       --input-ring-light: rgba(0, 0, 0, 0.08);
@@ -105,17 +105,17 @@
       --scrollbar-thumb-light: rgba(29, 29, 31, 0.24);
       --scrollbar-track-light: transparent;
 
-      /* Raw Dark Palette (True-Black Apple Dark Mode) */
-      --canvas-dark: #000000;
-      --surface-dark: #1C1C1E;
-      --surface-elevated-dark: #242426;
-      --fg-dark: #F5F5F7;
-      --fg-secondary-dark: #98989D;
-      --fg-tertiary-dark: #6E6E73;
-      --accent-dark: #2997FF;
-      --accent-hover-dark: #4CA8FF;
-      --accent-fg-dark: #FFFFFF;
-      --accent-subtle-dark: rgba(41, 151, 255, 0.18);
+      /* Raw Dark Palette (Wayon Monochrome Dark) */
+      --canvas-dark: #0B0C0E;
+      --surface-dark: #16171A;
+      --surface-elevated-dark: #1F2024;
+      --fg-dark: #F4F4F5;
+      --fg-secondary-dark: #A1A1AA;
+      --fg-tertiary-dark: #71717A;
+      --accent-dark: #F4F4F5;
+      --accent-hover-dark: #FFFFFF;
+      --accent-fg-dark: #111113;
+      --accent-subtle-dark: rgba(255, 255, 255, 0.12);
 
       --glow-key-dark: rgba(41, 151, 255, 0.085);
       --glow-sky-dark: rgba(255, 255, 255, 0.035);
@@ -744,8 +744,47 @@
     html[data-embed="1"] .controls-panel {
       gap: 10px;
       margin-bottom: 14px;
-      padding: 0 0 8px;
-      border-bottom: 0.5px solid var(--hairline);
+      padding: 14px 16px 12px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      box-shadow: 0 1px 2px var(--card-shadow-2), 0 6px 18px -12px var(--card-shadow-1);
+    }
+
+    html[data-embed="1"] .search-input,
+    html[data-embed="1"] .inviter-field {
+      background: var(--canvas);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: inset 0 0 0 1px var(--hairline);
+    }
+
+    html[data-embed="1"] .embed-only-actions .btn-glass,
+    html[data-embed="1"] .embed-only-actions .apple-link {
+      min-block-size: max(38px, var(--target-size));
+      padding: 0 13px;
+      border-radius: 999px;
+      border: 1px solid var(--hairline);
+      background: var(--pill-idle-bg);
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      text-decoration: none;
+    }
+
+    html[data-embed="1"] .embed-only-actions .btn-glass:hover,
+    html[data-embed="1"] .embed-only-actions .apple-link:hover {
+      background: var(--seg-track);
+      color: var(--fg);
+      text-decoration: none;
+    }
+
+    html[data-embed="1"] .embed-only-actions {
+      display: flex;
+      gap: 8px;
     }
 
     html[data-embed="1"] .filter-rows {
@@ -753,7 +792,7 @@
     }
 
     html[data-embed="1"] .status-row {
-      padding-top: 0;
+      padding-top: 2px;
       font-size: 12.5px;
     }
 
@@ -763,6 +802,9 @@
 
     html[data-embed="1"] .exam-card {
       padding: 20px 20px 17px;
+      border-radius: 18px;
+      border: 1px solid var(--hairline);
+      box-shadow: 0 1px 2px var(--card-shadow-2), 0 6px 18px -12px var(--card-shadow-1);
     }
 
     html[data-embed="1"] .site-footer {
@@ -771,14 +813,10 @@
       padding-inline: 6px;
     }
 
-    html[data-embed="1"] .embed-only-actions {
-      display: flex;
-    }
-
     .embed-only-actions {
       display: none;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -1347,7 +1385,8 @@
     }
 
     .pill-cat[aria-pressed="true"] .pill-count {
-      color: rgba(255, 255, 255, 0.86);
+      color: var(--accent-fg);
+      opacity: 0.78;
     }
 
     @media (pointer: coarse) {
@@ -1612,6 +1651,14 @@
       align-items: center;
       gap: 12px;
       margin-left: auto;
+    }
+
+    .card-links .apple-link {
+      color: var(--fg-secondary);
+    }
+
+    .card-links .apple-link:hover {
+      color: var(--fg);
     }
 
     @container (inline-size < 310px) {

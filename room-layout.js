@@ -243,7 +243,10 @@
   .wayon-room .legend i{width:8px!important;height:8px!important;border-radius:999px!important;flex:none}
   .wayon-room .legend .lg-hall-note{margin-left:0;color:var(--rm-fg2);opacity:.92}
   .wayon-room .legend .lg-hall-swatch{width:10px!important;height:10px!important;border-radius:3px!important;border:1.5px dashed var(--rm-accent);background:transparent!important;box-sizing:border-box}
+  .wayon-room .top .tl-fullscreen{order:3;margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 11px;border-radius:999px;background:var(--rm-surface);border:1px solid var(--rm-line);color:var(--rm-fg);font-size:12px;font-weight:550;text-decoration:none;white-space:nowrap;transition:background-color .16s ease,border-color .16s ease,color .16s ease}
+  .wayon-room .top .tl-fullscreen:hover{background:var(--rm-seg-track);border-color:var(--rm-fg2)}
   .wayon-room .top .tl-summary{order:3;margin-left:auto;font-size:12px;font-weight:450;color:var(--rm-fg2);font-variant-numeric:tabular-nums;letter-spacing:-.005em;white-space:nowrap}
+  .wayon-room .top .tl-fullscreen+.tl-summary{margin-left:0}
   .wayon-room .top .tl-summary:empty{display:none}
 
   /* Apple Cupertino physical-spring sliding segmented date control */
@@ -460,6 +463,14 @@
     const place = (node, row1, row2, col) => { node.style.gridRow = row1 + ' / ' + row2; node.style.gridColumn = String(col); return node; };
 
     // Quiet right-aligned summary (only shown in the single-row micro-bar; stays silent about conflict-free status).
+    const inFrame = (() => { try { return typeof window !== 'undefined' && window.self !== window.top; } catch { return true; } })();
+    if (top && inFrame && !top.querySelector('.tl-fullscreen')) {
+      const full = el('a', 'tl-fullscreen', '全屏新窗口打开 ↗');
+      full.href = (typeof window !== 'undefined' && window.location?.href) || './rooms.html';
+      full.target = '_blank';
+      full.rel = 'noopener noreferrer';
+      top.append(full);
+    }
     const summaryEl = el('span', 'tl-summary', '');
     if (top) top.append(summaryEl);
 

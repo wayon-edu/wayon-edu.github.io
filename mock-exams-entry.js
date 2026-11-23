@@ -29,52 +29,57 @@
   const style = make('style');
   style.id = 'wayon-mocks-style';
   style.textContent = `
-    :root{--mocks-accent:#0071e3;--mocks-accent-hover:#0077ed;--mocks-ok-bg:rgba(52,199,89,.14);--mocks-ok-fg:#1b7f37;--mocks-bad-bg:rgba(255,59,48,.12);--mocks-bad-fg:#d70015;--mocks-sheet:rgba(255,255,255,.86);--mocks-ring:rgba(0,0,0,.08);--mocks-input:rgba(118,118,128,.1)}
-    @supports(color:light-dark(white,black)){:root{--mocks-accent:light-dark(#0071e3,#2997ff);--mocks-accent-hover:light-dark(#0077ed,#4ca8ff);--mocks-ok-bg:light-dark(rgba(52,199,89,.14),rgba(48,209,88,.2));--mocks-ok-fg:light-dark(#1b7f37,#32d74b);--mocks-bad-bg:light-dark(rgba(255,59,48,.12),rgba(255,69,58,.2));--mocks-bad-fg:light-dark(#d70015,#ff453a);--mocks-sheet:light-dark(rgba(255,255,255,.86),rgba(28,28,30,.92));--mocks-ring:light-dark(rgba(0,0,0,.08),rgba(255,255,255,.14));--mocks-input:light-dark(rgba(118,118,128,.1),rgba(118,118,128,.24))}}
-    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--mocks-accent:#2997ff;--mocks-accent-hover:#4ca8ff;--mocks-ok-bg:rgba(48,209,88,.2);--mocks-ok-fg:#32d74b;--mocks-bad-bg:rgba(255,69,58,.2);--mocks-bad-fg:#ff453a;--mocks-sheet:rgba(28,28,30,.92);--mocks-ring:rgba(255,255,255,.14);--mocks-input:rgba(118,118,128,.24)}}
-    :root[data-theme="light"]{color-scheme:light;--mocks-accent:#0071e3;--mocks-accent-hover:#0077ed;--mocks-ok-bg:rgba(52,199,89,.14);--mocks-ok-fg:#1b7f37;--mocks-bad-bg:rgba(255,59,48,.12);--mocks-bad-fg:#d70015;--mocks-sheet:rgba(255,255,255,.86);--mocks-ring:rgba(0,0,0,.08);--mocks-input:rgba(118,118,128,.1)}
-    :root[data-theme="dark"]{color-scheme:dark;--mocks-accent:#2997ff;--mocks-accent-hover:#4ca8ff;--mocks-ok-bg:rgba(48,209,88,.2);--mocks-ok-fg:#32d74b;--mocks-bad-bg:rgba(255,69,58,.2);--mocks-bad-fg:#ff453a;--mocks-sheet:rgba(28,28,30,.92);--mocks-ring:rgba(255,255,255,.14);--mocks-input:rgba(118,118,128,.24)}
+    :root{--mocks-accent:#18181b;--mocks-accent-hover:#27272a;--mocks-accent-fg:#fff;--mocks-panel:#fff;--mocks-panel-border:rgba(15,23,42,.075);--mocks-panel-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px -12px rgba(15,23,42,.08);--mocks-pill-bg:rgba(15,23,42,.048);--mocks-pill-hover:rgba(15,23,42,.09);--mocks-ok-bg:rgba(46,125,91,.13);--mocks-ok-fg:#1b7f37;--mocks-bad-bg:rgba(215,0,21,.1);--mocks-bad-fg:#d70015;--mocks-sheet:rgba(255,255,255,.92);--mocks-ring:rgba(15,23,42,.1);--mocks-input:rgba(118,118,128,.1)}
+    @supports(color:light-dark(white,black)){:root{--mocks-accent:light-dark(#18181b,#f4f4f5);--mocks-accent-hover:light-dark(#27272a,#ffffff);--mocks-accent-fg:light-dark(#fff,#111113);--mocks-panel:light-dark(#fff,#16171a);--mocks-panel-border:light-dark(rgba(15,23,42,.075),rgba(255,255,255,.08));--mocks-panel-shadow:light-dark(0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(0,0,0,.35));--mocks-pill-bg:light-dark(rgba(15,23,42,.048),rgba(255,255,255,.08));--mocks-pill-hover:light-dark(rgba(15,23,42,.09),rgba(255,255,255,.14));--mocks-ok-bg:light-dark(rgba(46,125,91,.13),rgba(74,222,128,.16));--mocks-ok-fg:light-dark(#1b7f37,#4ade80);--mocks-bad-bg:light-dark(rgba(215,0,21,.1),rgba(248,113,113,.16));--mocks-bad-fg:light-dark(#d70015,#f87171);--mocks-sheet:light-dark(rgba(255,255,255,.92),rgba(22,23,26,.94));--mocks-ring:light-dark(rgba(15,23,42,.1),rgba(255,255,255,.14));--mocks-input:light-dark(rgba(118,118,128,.1),rgba(118,118,128,.24))}}
+    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--mocks-accent:#f4f4f5;--mocks-accent-hover:#ffffff;--mocks-accent-fg:#111113;--mocks-panel:#16171a;--mocks-panel-border:rgba(255,255,255,.08);--mocks-panel-shadow:0 1px 3px rgba(0,0,0,.35);--mocks-pill-bg:rgba(255,255,255,.08);--mocks-pill-hover:rgba(255,255,255,.14);--mocks-ok-bg:rgba(74,222,128,.16);--mocks-ok-fg:#4ade80;--mocks-bad-bg:rgba(248,113,113,.16);--mocks-bad-fg:#f87171;--mocks-sheet:rgba(22,23,26,.94);--mocks-ring:rgba(255,255,255,.14);--mocks-input:rgba(118,118,128,.24)}}
+    :root[data-theme="light"]{color-scheme:light;--mocks-accent:#18181b;--mocks-accent-hover:#27272a;--mocks-accent-fg:#fff;--mocks-panel:#fff;--mocks-panel-border:rgba(15,23,42,.075);--mocks-panel-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px -12px rgba(15,23,42,.08);--mocks-pill-bg:rgba(15,23,42,.048);--mocks-pill-hover:rgba(15,23,42,.09);--mocks-ok-bg:rgba(46,125,91,.13);--mocks-ok-fg:#1b7f37;--mocks-bad-bg:rgba(215,0,21,.1);--mocks-bad-fg:#d70015;--mocks-sheet:rgba(255,255,255,.92);--mocks-ring:rgba(15,23,42,.1);--mocks-input:rgba(118,118,128,.1)}
+    :root[data-theme="dark"]{color-scheme:dark;--mocks-accent:#f4f4f5;--mocks-accent-hover:#ffffff;--mocks-accent-fg:#111113;--mocks-panel:#16171a;--mocks-panel-border:rgba(255,255,255,.08);--mocks-panel-shadow:0 1px 3px rgba(0,0,0,.35);--mocks-pill-bg:rgba(255,255,255,.08);--mocks-pill-hover:rgba(255,255,255,.14);--mocks-ok-bg:rgba(74,222,128,.16);--mocks-ok-fg:#4ade80;--mocks-bad-bg:rgba(248,113,113,.16);--mocks-bad-fg:#f87171;--mocks-sheet:rgba(22,23,26,.94);--mocks-ring:rgba(255,255,255,.14);--mocks-input:rgba(118,118,128,.24)}
     #nav-mocks:before{display:none!important}#nav-mocks svg{width:19px;height:19px;flex:none}
     body[data-mocks-open] #tabs button:not(#nav-mocks){background:transparent!important;color:var(--fg-secondary)!important}
     body[data-mocks-open] #list,body[data-mocks-open] .workspace-top-bar,body[data-mocks-open] .workspace-sub-bar,body[data-mocks-open] #aircon-panel,body[data-mocks-open] #memo-panel,body[data-mocks-open] #feedback-panel,body[data-mocks-open] #ledger-panel,body[data-mocks-open] .sidebar-footer .bar{display:none!important}
     body[data-aircon-open] #mocks-panel,body[data-memo-open] #mocks-panel,body[data-feedback-open] #mocks-panel,body[data-ledger-open] #mocks-panel{display:none!important}
     body[data-mocks-open] .main-content{padding-bottom:24px}
-    #mocks-panel{display:flex;flex-direction:column;gap:6px;width:100%;min-width:0}
+    #mocks-panel{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0}
     #mocks-panel[hidden]{display:none!important}
-    .mocks-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px 14px;flex-wrap:wrap;min-width:0;padding:0 2px}
-    .mocks-actions{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;margin-left:auto;min-width:0}
-    .mocks-link{display:inline-flex;align-items:center;gap:4px;min-block-size:34px;padding:0 6px;border:0;border-radius:999px;background:transparent;color:var(--mocks-accent);font:500 13.5px/1 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;transition:color .18s cubic-bezier(.28,.11,.32,1)}
-    .mocks-link-arrow{display:inline-block;font-size:13px;line-height:1}
+    .mocks-bar{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;min-width:0;padding:10px 14px;border-radius:18px;background:var(--wayon-panel-bg,var(--mocks-panel));border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));box-shadow:var(--wayon-panel-shadow,var(--mocks-panel-shadow))}
+    .mocks-bar-head{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}
+    .mocks-bar-title{font:650 14px/1.2 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);color:var(--fg,#18181b);letter-spacing:-.01em;white-space:nowrap}
+    .mocks-bar-sub{font:450 12.5px/1.2 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);color:var(--muted,#6e6e73);white-space:nowrap}
+    .mocks-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-left:auto;min-width:0}
+    .mocks-link{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-block-size:34px;padding:0 13px;border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));border-radius:999px;background:var(--wayon-btn-surface,var(--mocks-pill-bg));color:var(--fg,#18181b);font:500 13px/1 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color .18s cubic-bezier(.28,.11,.32,1),border-color .18s cubic-bezier(.28,.11,.32,1),color .18s cubic-bezier(.28,.11,.32,1)}
+    .mocks-link-arrow{display:inline-block;font-size:12.5px;line-height:1;opacity:.75}
     .mocks-copy-wrap{position:relative;display:inline-flex;align-items:center;gap:8px}
-    .mocks-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-inline-size:36px;min-block-size:36px;padding:0 16px;border-radius:999px;border:0;background:var(--mocks-accent);color:#fff;font:500 13px/1 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 2px 8px rgba(0,113,227,.24);transition:background-color .2s cubic-bezier(.28,.11,.32,1),color .2s cubic-bezier(.28,.11,.32,1),box-shadow .2s cubic-bezier(.28,.11,.32,1)}
+    .mocks-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-inline-size:34px;min-block-size:34px;padding:0 15px;border-radius:999px;border:0;background:var(--wayon-brand-cta,var(--mocks-accent));color:var(--wayon-brand-cta-fg,var(--mocks-accent-fg));font:550 13px/1 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;box-shadow:none;transition:background-color .2s cubic-bezier(.28,.11,.32,1),color .2s cubic-bezier(.28,.11,.32,1),box-shadow .2s cubic-bezier(.28,.11,.32,1)}
     .mocks-btn-copy[data-copied]{background:var(--mocks-ok-bg);color:var(--mocks-ok-fg);box-shadow:none}
     .mocks-btn-copy[data-failed]{background:var(--mocks-bad-bg);color:var(--mocks-bad-fg);box-shadow:none}
     .mocks-btn-ico{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;flex:none;pointer-events:none}
     .mocks-btn-ico svg{width:14px;height:14px;pointer-events:none}
     .mocks-check-path{stroke-dasharray:26;stroke-dashoffset:0}
-    .mocks-btn:focus-visible,.mocks-link:focus-visible{outline:2px solid var(--mocks-accent);outline-offset:2px}
+    .mocks-btn:focus-visible,.mocks-link:focus-visible{outline:2px solid var(--wayon-brand,var(--mocks-accent));outline-offset:2px}
     @media(prefers-reduced-motion:no-preference){
       .mocks-btn{transition:background-color .2s cubic-bezier(.28,.11,.32,1),color .2s cubic-bezier(.28,.11,.32,1),box-shadow .2s cubic-bezier(.28,.11,.32,1),transform .16s cubic-bezier(.28,.11,.32,1)}
-      .mocks-btn:active{transform:scale(.97)}
+      .mocks-btn:active,.mocks-link:active{transform:scale(.97)}
       .mocks-link-arrow{transition:transform .2s cubic-bezier(.28,.11,.32,1)}
       @keyframes mocks-check-draw{from{stroke-dashoffset:26}to{stroke-dashoffset:0}}
       .mocks-btn-copy[data-copied] .mocks-check-path{animation:mocks-check-draw .34s cubic-bezier(.22,1,.36,1) forwards}
     }
     @media(hover:hover){
-      .mocks-btn-copy:hover{background:var(--mocks-accent-hover)}
+      .mocks-btn-copy:hover{background:var(--wayon-brand-cta-hover,var(--mocks-accent-hover))}
       .mocks-btn-copy[data-copied]:hover{background:var(--mocks-ok-bg);color:var(--mocks-ok-fg)}
-      .mocks-link:hover{color:var(--mocks-accent-hover);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
-      @media(prefers-reduced-motion:no-preference){.mocks-link:hover .mocks-link-arrow{transform:translate(2px,-1px)}}
+      .mocks-link:hover{background:var(--wayon-btn-hover,var(--mocks-pill-hover));border-color:var(--wayon-brand-ring,var(--mocks-ring));color:var(--fg,#18181b);text-decoration:none}
+      @media(prefers-reduced-motion:no-preference){.mocks-link:hover .mocks-link-arrow{transform:translate(1.5px,-1px)}}
     }
     .mocks-copy-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-    .mocks-fallback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:0;border-radius:16px;background:var(--mocks-sheet);box-shadow:0 4px 18px -4px rgba(0,0,0,.08),0 0 0 .5px var(--mocks-ring);font-size:12.5px;color:var(--muted,#6e6e73)}
+    .mocks-fallback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));border-radius:16px;background:var(--mocks-sheet);box-shadow:var(--mocks-panel-shadow);font-size:12.5px;color:var(--muted,#6e6e73)}
     .mocks-fallback[hidden]{display:none!important}
     .mocks-fallback input{flex:1 1 220px;min-width:0;min-block-size:36px;padding:6px 12px;border:0;border-radius:10px;background:var(--mocks-input);color:var(--fg,#1d1d1f);font:inherit;font-size:13.5px}
     .mocks-frame{display:block;width:calc(100% + 12px);margin-inline:-6px;height:600px;min-height:360px;border:0;border-radius:0;background:transparent;overflow:hidden;overflow:clip}
     @media(pointer:coarse),(max-width:599px){
-      .mocks-actions{gap:10px}
-      .mocks-link{min-block-size:44px;padding:0 8px}
-      .mocks-btn{min-inline-size:44px;min-block-size:44px;padding:0 16px;font-size:13.5px}
+      .mocks-bar{padding:10px 12px;border-radius:16px}
+      .mocks-bar-sub{display:none}
+      .mocks-actions{gap:8px}
+      .mocks-link{min-block-size:40px;padding:0 12px}
+      .mocks-btn{min-inline-size:40px;min-block-size:40px;padding:0 15px;font-size:13px}
       .mocks-fallback input{min-block-size:44px;font-size:16px}
       .mocks-frame{min-height:360px;border-radius:0}
     }
@@ -260,6 +265,8 @@
     section.setAttribute('aria-label', '入学模考');
 
     const bar = make('div', 'mocks-bar');
+    const barHead = make('div', 'mocks-bar-head');
+    barHead.append(make('b', 'mocks-bar-title', '入学模考'), make('span', 'mocks-bar-sub', '选好试卷一键复制文案发给学生'));
     const actions = make('div', 'mocks-actions');
 
     const openLink = make('a', 'mocks-link');
@@ -288,7 +295,7 @@
     copyWrap.append(copyBtn, liveEl);
 
     actions.append(openLink, copyWrap);
-    bar.append(actions);
+    bar.append(barHead, actions);
 
     fallbackBox = make('div', 'mocks-fallback');
     fallbackBox.hidden = true;
