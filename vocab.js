@@ -1248,7 +1248,7 @@
     (Array.isArray(cloudRows) ? cloudRows : []).forEach(put);
     return [...byKey.values()].sort((a, b) => sessionTime(a).localeCompare(sessionTime(b)));
   }
-  const suppCloudCache = new Map(), freshSuppLists = new Set();
+  const suppCloudCache = new Map(), sessionCloudCache = new Map(), freshSuppLists = new Set();
   async function retireDraft(key) {
     if (!key) return;
     try {
@@ -3190,8 +3190,11 @@
     const suppKey = activeOwner ? suppHistoryKey(activeOwner, day, student) : null;
     let localDraft = null, previousResult = null, localSuppHistory = null;
     try {
-      if (localKey) { localDraft = await localRecord(localKey); previousResult = await localRecord('result:' + localKey); }
-      if (suppKey) localSuppHistory = await localRecord(suppKey);
+      [localDraft, previousResult, localSuppHistory] = await Promise.all([
+        localKey ? localRecord(localKey) : null,
+        localKey ? localRecord('result:' + localKey) : null,
+        suppKey ? localRecord(suppKey) : null
+      ]);
     } catch (e) { flash(e.message, true); }
     if (staleDay()) return;
     let lists = cachedLists, learners, listsLoadFailed = false;
@@ -3214,32 +3217,37 @@
     // Repair the display of lists saved by older clients without a cloud write.
     // Supplemental pasted words keep the user's own input order.
     if (!hydrated.has(phase) && phase !== '补充') {
-      try {
-        const ordered = await feedbackOrder(items);
-        if (staleDay()) return;
-        items.splice(0, items.length, ...ordered);
-        for (const id of new Set(items.map(x => x.lesson_id).filter(Boolean))) {
-          if (!(index || []).some(l => l.id === id)) continue;
-          const byWord = new Map((await lessonWords(id)).map(w => [wordKey(w.word), w]));
-          if (staleDay()) return;
-          items.filter(x => x.lesson_id === id).forEach(it => {
-            const fresh = byWord.get(wordKey(it.word));
-            if (!fresh) return;
-            if (!it.extra) it.extra = fresh.extra || '';
-            else if (isUneditedFrom(it, fresh) && (it.word !== fresh.word || (it.pos || '') !== (fresh.pos || '') || (it.meaning || '') !== (fresh.meaning || '') || (it.extra || '') !== (fresh.extra || ''))) {
-              Object.assign(it, reread(fresh)); healVocab(it.vocab_id, fresh);
-            }
-          });
-        }
+      if (!items.length) {
         hydrated.add(phase);
+      } else {
+        try {
+          const ordered = await feedbackOrder(items);
+          if (staleDay()) return;
+          items.splice(0, items.length, ...ordered);
+          const lessonIds = [...new Set(items.map(x => x.lesson_id).filter(Boolean))].filter(id => (index || []).some(l => l.id === id));
+          const loaded = await Promise.all(lessonIds.map(async id => [id, new Map((await lessonWords(id)).map(w => [wordKey(w.word), w]))]));
+          if (staleDay()) return;
+          for (const [id, byWord] of loaded) {
+            items.filter(x => x.lesson_id === id).forEach(it => {
+              const fresh = byWord.get(wordKey(it.word));
+              if (!fresh) return;
+              if (!it.extra) it.extra = fresh.extra || '';
+              else if (isUneditedFrom(it, fresh) && (it.word !== fresh.word || (it.pos || '') !== (fresh.pos || '') || (it.meaning || '') !== (fresh.meaning || '') || (it.extra || '') !== (fresh.extra || ''))) {
+                Object.assign(it, reread(fresh)); healVocab(it.vocab_id, fresh);
+              }
+            });
+          }
+          hydrated.add(phase);
+        }
+        catch (e) { if (!staleDay()) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取反馈词序失败：' + (e.message || e))); } return; }
       }
-      catch (e) { if (!staleDay()) { vq.textContent = ''; vq.append(make('div', 'vq-empty', '读取反馈词序失败：' + (e.message || e))); } return; }
     }
     const wordsOf = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()));
     const wordSetSig = list => JSON.stringify((list || []).map(x => String(x.word || '').trim().toLowerCase()).sort());
     const sameList = (a, b) => phase === '补充' ? wordsOf(a) === wordsOf(b) : wordSetSig(a) === wordSetSig(b);
     const draft = localDraft?.value?.state === 'draft' ? localDraft.value : null;
-    const redraw = () => fillLists(vq, student);
+    const suppCacheKey = day + '|' + student;
+    const redraw = () => { sessionCloudCache.delete(suppCacheKey); fillLists(vq, student); };
     const keep = async () => {
       hydrated.delete(phase);
       saveList(day, student, phase);
@@ -3249,22 +3257,30 @@
       redraw();
     };
     let finished = previousResult?.value?.state === 'completed' && previousResult.value.payload?.day === day && !previousResult.value.payload?.re_quiz ? previousResult.value : null;
-    const suppCacheKey = day + '|' + student;
     let cloudSuppRows = suppCloudCache.get(suppCacheKey) || [];
     let cloudRows = [];
     if (mode === 'cloud') {
-      try {
-        const {data, error} = await vocabDeadline(client().from('wayon_vocab_sessions').select('id,session_id,phase,state,payload,created_at').eq('day', day).eq('student', student).eq('state', 'completed').order('created_at', {ascending: false}).limit(50));
+      const cachedSess = cachedLists ? sessionCloudCache.get(suppCacheKey) : null;
+      if (cachedSess && Date.now() - cachedSess.at < 60000) {
+        cloudRows = cachedSess.rows;
+        const cloudMatch = cloudRows.find(r => (r.phase || r.payload?.phase) === phase && !r.payload?.re_quiz) || null;
+        if (cloudMatch && (!finished || sessionTime(cloudMatch) > sessionTime(finished))) finished = cloudMatch;
+        cloudSuppRows = cloudRows.filter(r => (r.phase || r.payload?.phase) === '补充' && !r.payload?.re_quiz);
+      } else {
+        try {
+          const {data, error} = await vocabDeadline(client().from('wayon_vocab_sessions').select('id,session_id,phase,state,payload,created_at').eq('day', day).eq('student', student).eq('state', 'completed').order('created_at', {ascending: false}).limit(50));
+          if (staleDay()) return;
+          if (!error && Array.isArray(data)) {
+            cloudRows = data;
+            sessionCloudCache.set(suppCacheKey, {rows: data, at: Date.now()});
+            const cloudMatch = data.find(r => (r.phase || r.payload?.phase) === phase && !r.payload?.re_quiz) || null;
+            if (cloudMatch && (!finished || sessionTime(cloudMatch) > sessionTime(finished))) finished = cloudMatch;
+            cloudSuppRows = data.filter(r => (r.phase || r.payload?.phase) === '补充' && !r.payload?.re_quiz);
+            suppCloudCache.set(suppCacheKey, cloudSuppRows);
+          }
+        } catch {}
         if (staleDay()) return;
-        if (!error && Array.isArray(data)) {
-          cloudRows = data;
-          const cloudMatch = data.find(r => (r.phase || r.payload?.phase) === phase && !r.payload?.re_quiz) || null;
-          if (cloudMatch && (!finished || sessionTime(cloudMatch) > sessionTime(finished))) finished = cloudMatch;
-          cloudSuppRows = data.filter(r => (r.phase || r.payload?.phase) === '补充' && !r.payload?.re_quiz);
-          suppCloudCache.set(suppCacheKey, cloudSuppRows);
-        }
-      } catch {}
-      if (staleDay()) return;
+      }
     }
     const suppCompleted = mergeCompletedSessions(localSuppHistory?.value, phase === '补充' ? previousResult?.value : null, cloudSuppRows, day);
     const legacyDoneSupp = !!(suppCompleted.length && lists['补充'].length && !freshSuppLists.has(suppCacheKey)
@@ -3298,7 +3314,13 @@
         const pendingCnt = legacyDoneSupp ? 0 : lists[p].length;
         label = pendingCnt ? '补充 ' + pendingCnt + ' · 已抽' + suppCompleted.length : '补充 已抽' + suppCompleted.length;
       }
-      tabs.append(btn(p === phase ? 'on' : '', label, () => { vqTab.set(student, p); fillLists(vq, student, listsLoadFailed ? null : lists); }));
+      const tabBtn = btn(p === phase ? 'on' : '', label, () => {
+        if (p === phase) return;
+        for (const sib of tabs.children || []) sib.classList?.toggle('on', sib === tabBtn);
+        vqTab.set(student, p);
+        fillLists(vq, student, listsLoadFailed ? null : lists);
+      });
+      tabs.append(tabBtn);
     });
     if (doneNow && !draft && phase !== '补充') {
       globalThis._wayonSuppressRender = true;
@@ -4112,7 +4134,7 @@
         if (nextMode !== 'cloud' && nextMode !== 'preview') activeOwner = null;
         if (prevOwner && activeOwner !== prevOwner) {
           index = null; bodies.clear(); customWords.clear(); vocabCache.clear(); listCache.clear();
-          ignored = null; kinds = null; kindNames.clear(); dayActiveQuiz.clear(); suppCloudCache.clear(); freshSuppLists.clear();
+          ignored = null; kinds = null; kindNames.clear(); dayActiveQuiz.clear(); suppCloudCache.clear(); sessionCloudCache.clear(); freshSuppLists.clear();
         }
         dayActiveLoaded.clear();
         void updateBadge();

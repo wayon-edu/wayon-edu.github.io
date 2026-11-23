@@ -1735,15 +1735,33 @@
         min-height:calc(100dvh + 160px)!important;
         padding-bottom:172px!important;
       }
-      body.wayon-workbench .main-content:has(>#list.ux-focus-layout){
+      body.wayon-workbench .main-content:has(>#list.ux-focus-layout),
+      body.wayon-workbench .main-content:has(>#list .ux-all-done){
         display:flex!important;
         flex-direction:column!important;
         flex-wrap:nowrap!important;
         align-items:stretch!important;
       }
-      body.wayon-workbench .main-content:has(>#list.ux-focus-layout)>#list.ux-focus-layout{
+      body.wayon-workbench .main-content:has(>#list.ux-focus-layout)>#list.ux-focus-layout,
+      body.wayon-workbench .main-content:has(>#list .ux-all-done)>#list{
         flex:1 1 auto!important;
         min-height:calc(100dvh - 172px)!important;
+      }
+      body.wayon-workbench[data-mode=quiz] #list:has(.ux-all-done)>.quiz{
+        flex:1 1 auto!important;
+        min-height:calc(100dvh - 172px)!important;
+        align-items:stretch!important;
+      }
+      body.wayon-workbench[data-mode=notice] #list:has(>.ux-all-done){
+        align-items:stretch!important;
+      }
+      body.wayon-workbench[data-mode=notice] #list:has(>.ux-all-done)>.ux-folded-rail{
+        align-self:start!important;
+      }
+      body.wayon-workbench #list>.ux-all-done,
+      body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-all-done{
+        min-height:calc(100dvh - 172px)!important;
+        align-self:stretch!important;
       }
     }
     body.wayon-workbench #subtabs{
@@ -3182,6 +3200,8 @@
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){
       container-type:inline-size;
+      content-visibility:auto;
+      contain-intrinsic-size:auto 340px auto 220px;
       display:flex!important;
       flex-direction:column!important;
       gap:12px!important;
@@ -3189,6 +3209,9 @@
       margin:0!important;
       border-radius:22px!important;
       min-width:0!important;
+    }
+    @supports not (content-visibility:auto){
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){contain:layout style paint}
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed)>.qhead{
       display:flex!important;
