@@ -6,6 +6,7 @@
   const IFRAME_SRC = './mock-exams.html?embed=1&v=' + STAMP;
   const MIN_FRAME_HEIGHT = 360;
   const MAX_FRAME_HEIGHT = 50000;
+  const OPEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
   const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="mocks-check-path" d="M5 13l4 4L19 7"/></svg>';
   const NAV_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10L12 5 2 10l10 5 10-5z M6 12v5c0 1.6 2.7 3 6 3s6-1.4 6-3v-5 M22 10v5"/></svg>';
@@ -41,25 +42,27 @@
     body[data-mocks-open] .main-content{padding-bottom:24px}
     #mocks-panel{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0}
     #mocks-panel[hidden]{display:none!important}
-    .mocks-bar{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;min-width:0;padding:10px 14px;border-radius:18px;background:var(--wayon-panel-bg,var(--mocks-panel));border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));box-shadow:var(--wayon-panel-shadow,var(--mocks-panel-shadow))}
+    .mocks-bar{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;min-width:0;padding:8px 8px 8px 16px;border-radius:var(--wayon-r-bar,26px);background:var(--wayon-panel-bg,var(--mocks-panel));border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));box-shadow:var(--wayon-panel-shadow,var(--mocks-panel-shadow))}
     .mocks-bar-head{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}
     .mocks-bar-title{font:650 14px/1.2 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);color:var(--fg,#18181b);letter-spacing:-.01em;white-space:nowrap}
     .mocks-bar-sub{font:450 12.5px/1.2 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);color:var(--muted,#6e6e73);white-space:nowrap}
     .mocks-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-left:auto;min-width:0}
-    .mocks-link{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-block-size:34px;padding:0 13px;border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));border-radius:999px;background:var(--wayon-btn-surface,var(--mocks-pill-bg));color:var(--fg,#18181b);font:500 13px/1 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color .18s cubic-bezier(.28,.11,.32,1),border-color .18s cubic-bezier(.28,.11,.32,1),color .18s cubic-bezier(.28,.11,.32,1)}
-    .mocks-link-arrow{display:inline-block;font-size:12.5px;line-height:1;opacity:.75}
+    .mocks-link{display:inline-flex;align-items:center;justify-content:center;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));border-radius:999px;background:var(--wayon-btn-surface,var(--mocks-pill-bg));color:var(--fg,#18181b);text-decoration:none;cursor:pointer;flex:none;transition:background-color .18s cubic-bezier(.28,.11,.32,1),border-color .18s cubic-bezier(.28,.11,.32,1),color .18s cubic-bezier(.28,.11,.32,1)}
+    .mocks-link-ico{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;pointer-events:none}
+    .mocks-link-ico svg{width:16px;height:16px;display:block;pointer-events:none}
     .mocks-copy-wrap{position:relative;display:inline-flex;align-items:center;gap:8px}
-    .mocks-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-inline-size:34px;min-block-size:34px;padding:0 15px;border-radius:999px;border:0;background:var(--wayon-brand-cta,var(--mocks-accent));color:var(--wayon-brand-cta-fg,var(--mocks-accent-fg));font:550 13px/1 var(--sans,-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif);letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;box-shadow:none;transition:background-color .2s cubic-bezier(.28,.11,.32,1),color .2s cubic-bezier(.28,.11,.32,1),box-shadow .2s cubic-bezier(.28,.11,.32,1)}
+    .mocks-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border-radius:999px;border:0;background:var(--wayon-brand-cta,var(--mocks-accent));color:var(--wayon-brand-cta-fg,var(--mocks-accent-fg));text-decoration:none;cursor:pointer;flex:none;box-shadow:none;transition:background-color .2s cubic-bezier(.28,.11,.32,1),color .2s cubic-bezier(.28,.11,.32,1),box-shadow .2s cubic-bezier(.28,.11,.32,1)}
     .mocks-btn-copy[data-copied]{background:var(--mocks-ok-bg);color:var(--mocks-ok-fg);box-shadow:none}
     .mocks-btn-copy[data-failed]{background:var(--mocks-bad-bg);color:var(--mocks-bad-fg);box-shadow:none}
-    .mocks-btn-ico{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;flex:none;pointer-events:none}
-    .mocks-btn-ico svg{width:14px;height:14px;pointer-events:none}
+    .mocks-btn-ico{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;pointer-events:none}
+    .mocks-btn-ico svg{width:16px;height:16px;display:block;pointer-events:none}
+    .mocks-btn-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
     .mocks-check-path{stroke-dasharray:26;stroke-dashoffset:0}
     .mocks-btn:focus-visible,.mocks-link:focus-visible{outline:2px solid var(--wayon-brand,var(--mocks-accent));outline-offset:2px}
     @media(prefers-reduced-motion:no-preference){
       .mocks-btn{transition:background-color .2s cubic-bezier(.28,.11,.32,1),color .2s cubic-bezier(.28,.11,.32,1),box-shadow .2s cubic-bezier(.28,.11,.32,1),transform .16s cubic-bezier(.28,.11,.32,1)}
-      .mocks-btn:active,.mocks-link:active{transform:scale(.97)}
-      .mocks-link-arrow{transition:transform .2s cubic-bezier(.28,.11,.32,1)}
+      .mocks-btn:active,.mocks-link:active{transform:scale(.95)}
+      .mocks-link-ico svg{transition:transform .2s cubic-bezier(.28,.11,.32,1)}
       @keyframes mocks-check-draw{from{stroke-dashoffset:26}to{stroke-dashoffset:0}}
       .mocks-btn-copy[data-copied] .mocks-check-path{animation:mocks-check-draw .34s cubic-bezier(.22,1,.36,1) forwards}
     }
@@ -67,24 +70,23 @@
       .mocks-btn-copy:hover{background:var(--wayon-brand-cta-hover,var(--mocks-accent-hover))}
       .mocks-btn-copy[data-copied]:hover{background:var(--mocks-ok-bg);color:var(--mocks-ok-fg)}
       .mocks-link:hover{background:var(--wayon-btn-hover,var(--mocks-pill-hover));border-color:var(--wayon-brand-ring,var(--mocks-ring));color:var(--fg,#18181b);text-decoration:none}
-      @media(prefers-reduced-motion:no-preference){.mocks-link:hover .mocks-link-arrow{transform:translate(1.5px,-1px)}}
+      @media(prefers-reduced-motion:no-preference){.mocks-link:hover .mocks-link-ico svg{transform:translate(1px,-1px)}}
     }
     .mocks-copy-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-    .mocks-fallback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));border-radius:16px;background:var(--mocks-sheet);box-shadow:var(--mocks-panel-shadow);font-size:12.5px;color:var(--muted,#6e6e73)}
+    .mocks-fallback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--wayon-panel-border,var(--mocks-panel-border));border-radius:var(--wayon-r-panel,24px);background:var(--mocks-sheet);box-shadow:var(--mocks-panel-shadow);font-size:12.5px;color:var(--muted,#6e6e73)}
     .mocks-fallback[hidden]{display:none!important}
-    .mocks-fallback input{flex:1 1 220px;min-width:0;min-block-size:36px;padding:6px 12px;border:0;border-radius:10px;background:var(--mocks-input);color:var(--fg,#1d1d1f);font:inherit;font-size:13.5px}
+    .mocks-fallback input{flex:1 1 220px;min-width:0;min-block-size:36px;padding:6px 12px;border:0;border-radius:var(--wayon-r-inner,14px);background:var(--mocks-input);color:var(--fg,#1d1d1f);font:inherit;font-size:13.5px}
     .mocks-frame{display:block;width:calc(100% + 12px);margin-inline:-6px;height:600px;min-height:360px;border:0;border-radius:0;background:transparent;overflow:hidden;overflow:clip}
     @media(pointer:coarse),(max-width:599px){
-      .mocks-bar{padding:10px 12px;border-radius:16px}
+      .mocks-bar{padding:8px 8px 8px 14px;border-radius:var(--wayon-r-bar,20px)}
       .mocks-bar-sub{display:none}
       .mocks-actions{gap:8px}
-      .mocks-link{min-block-size:40px;padding:0 12px}
-      .mocks-btn{min-inline-size:40px;min-block-size:40px;padding:0 15px;font-size:13px}
+      .mocks-link,.mocks-btn{width:36px;min-width:36px;height:36px;min-height:36px;padding:0}
       .mocks-fallback input{min-block-size:44px;font-size:16px}
       .mocks-frame{min-height:360px;border-radius:0}
     }
     @media(prefers-reduced-motion:reduce){
-      .mocks-btn,.mocks-link,.mocks-link-arrow{transition:none}
+      .mocks-btn,.mocks-link,.mocks-link-ico svg{transition:none}
     }
   `;
   document.head.append(style);
@@ -119,11 +121,13 @@
       button.setAttribute('data-copied', '');
       iconEl.innerHTML = CHECK_ICON;
       labelEl.textContent = '已复制';
+      button.title = '已复制同事链接';
       if (fallbackBox) fallbackBox.hidden = true;
     } else {
       button.setAttribute('data-failed', '');
       iconEl.innerHTML = COPY_ICON;
       labelEl.textContent = '复制失败';
+      button.title = '复制失败，请手动复制下方链接';
       if (fallbackBox && fallbackInput) {
         fallbackInput.value = url;
         fallbackBox.hidden = false;
@@ -139,6 +143,7 @@
       button.removeAttribute('data-failed');
       iconEl.innerHTML = COPY_ICON;
       labelEl.textContent = '复制同事链接';
+      button.title = '复制同事链接';
       liveEl.textContent = '';
     }, 2200);
   }
@@ -274,15 +279,19 @@
     openLink.href = './mock-exams.html';
     openLink.target = '_blank';
     openLink.rel = 'noopener noreferrer';
-    openLink.append(make('span', '', '新窗口打开'));
-    const arrowEl = make('span', 'mocks-link-arrow', '↗');
-    arrowEl.setAttribute('aria-hidden', 'true');
-    openLink.append(arrowEl);
+    openLink.title = '新窗口打开';
+    openLink.setAttribute('aria-label', '新窗口打开');
+    const openIco = make('span', 'mocks-link-ico');
+    openIco.setAttribute('aria-hidden', 'true');
+    openIco.innerHTML = OPEN_ICON;
+    openLink.append(openIco, make('span', 'mocks-btn-txt', '新窗口打开'));
 
     const copyWrap = make('span', 'mocks-copy-wrap');
     const copyBtn = make('button', 'mocks-btn mocks-btn-copy');
     copyBtn.id = 'mocks-copy-link';
     copyBtn.type = 'button';
+    copyBtn.title = '复制同事链接';
+    copyBtn.setAttribute('aria-label', '复制同事链接');
     const iconEl = make('span', 'mocks-btn-ico');
     iconEl.setAttribute('aria-hidden', 'true');
     iconEl.innerHTML = COPY_ICON;

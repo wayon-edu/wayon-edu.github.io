@@ -1554,6 +1554,16 @@
     .fb-collect-body{padding:0 16px 12px 84px}.fb-collect-body:empty{display:none}.fb-collect-body>.fb-lesson{margin-top:4px}.fb-collect-body>.fb-btn{margin-top:8px}
     .fb-paste .fb-entry-body{padding:0}.fb-paste .fb-edit-bar{padding:10px 0 0}.fb-grow{flex:1}
     .fb-collect.manual .fb-time b{font-size:20px;color:var(--muted)}
+    .fb-today-bar{padding:8px!important;border-radius:var(--wayon-r-bar,26px)!important;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px}
+    .fb-today-bar .fb-manual-add{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:0;border-radius:999px;background:var(--apple-surface,var(--card));color:var(--fg);box-shadow:inset 0 1px 0 var(--apple-card-rim,rgba(255,255,255,.96)),0 1px 3px var(--apple-glass-shadow-tight,rgba(0,0,0,.04)),0 0 0 .5px var(--apple-input-ring,rgba(0,0,0,.085));display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;transition:background-color .16s ease,color .16s ease,box-shadow .16s ease}
+    .fb-today-bar .fb-manual-add svg{width:17px;height:17px;display:block;flex:none;pointer-events:none}
+    .fb-today-bar .fb-manual-add:hover,.fb-today-bar .fb-manual-add[aria-expanded="true"]{background:var(--wayon-btn-hover,var(--code-bg));color:var(--fg);box-shadow:inset 0 0 0 1px var(--wayon-brand-ring,rgba(24,24,27,.16))}
+    .fb-today-bar .fb-date-pill{height:36px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:var(--apple-surface,var(--card));color:var(--fg);box-shadow:inset 0 1px 0 var(--apple-card-rim,rgba(255,255,255,.96)),0 1px 3px var(--apple-glass-shadow-tight,rgba(0,0,0,.04)),0 0 0 .5px var(--apple-input-ring,rgba(0,0,0,.085));font:500 13.5px/1 inherit;cursor:pointer;flex:0 1 auto;min-width:0;max-width:100%}
+    .fb-today-bar .fb-date-pill:focus{outline:none;box-shadow:0 0 0 2.5px var(--wayon-brand-soft,rgba(24,24,27,.1)),0 0 0 1px var(--wayon-brand-ring,rgba(24,24,27,.22))}
+    .fb-manual-slot[hidden]{display:none!important}
+    .fb-manual-panel{padding:16px 18px!important;margin-bottom:12px}
+    .fb-manual-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .fb-manual-head b{font-size:15px;font-weight:650;color:var(--fg)}
     @media (max-width:640px){.fb-collect-body{padding-left:16px}.fb-time{width:56px}.fb-collect-head{gap:8px;padding:10px 12px}.fb-collect-head .fb-teacher,.fb-collect.editing .fb-wait:empty,.fb-wait{display:none}.fb-collect-head .fb-btn{margin-left:auto}.fb-collect.editing .fb-wait{display:inline;margin-left:auto}}
     .fb-chip{font-size:12px;font-weight:550;padding:3px 8px;border-radius:6px;line-height:1.3}
     .tone-blue{background:#e6f1fb;color:#0c447c}.tone-green{background:#eaf3de;color:#27500a}.tone-amber{background:#faeeda;color:#633806}.tone-purple{background:#eeedfe;color:#3c3489}
@@ -1989,20 +1999,42 @@
   }
   function renderToday() {
     collectDay = collectDay || today();
-    const bar = make('div', 'fb-card'), row = make('div', 'fb-row');
-    const day = make('input'); day.type = 'date'; day.value = collectDay; day.className = 'fb-search'; day.onchange = () => { collectDay = day.value || today(); renderPanel(); };
-    row.append(make('span', 'fb-title', '收集日期'), day, make('span', 'fb-meta', '按当天课表逐节粘贴老师在群里发的反馈；保存后自动挑出生词放进这个学生的单词库。'));
-    bar.append(row); root.append(bar);
+    const bar = make('div', 'fb-card fb-today-bar');
+    const manualSlot = make('div', 'fb-manual-slot');
+    manualSlot.hidden = true;
+    const addBtn = make('button', 'fb-manual-add');
+    addBtn.type = 'button';
+    addBtn.title = '手动添加一节课的反馈';
+    addBtn.setAttribute('aria-label', '手动添加一节课的反馈');
+    addBtn.setAttribute('aria-expanded', 'false');
+    addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>';
+    const closeManual = () => {
+      manualSlot.hidden = true;
+      manualSlot.textContent = '';
+      addBtn.setAttribute('aria-expanded', 'false');
+    };
+    addBtn.onclick = () => {
+      if (!manualSlot.hidden) { closeManual(); return; }
+      const panel = make('div', 'fb-card fb-manual-panel');
+      const head = make('div', 'fb-manual-head');
+      head.append(make('b', '', '手动添加一节课的反馈'));
+      panel.append(head, pasteForm({learner: '', subject: '', course: '', manual: true}, () => {}, closeManual));
+      manualSlot.replaceChildren(panel);
+      manualSlot.hidden = false;
+      addBtn.setAttribute('aria-expanded', 'true');
+    };
+    const day = make('input'); day.type = 'date'; day.value = collectDay; day.className = 'fb-search fb-date-pill'; day.setAttribute('aria-label', '收集日期'); day.title = '收集日期'; day.onchange = () => { collectDay = day.value || today(); renderPanel(); };
+    bar.append(addBtn, day);
+    root.append(bar, manualSlot);
     const sess = sessionsFor(collectDay), learners = allLearners();
     const got = index.filter(l => l.lesson_date === collectDay);
     let missing = 0;
-    if (!sess.length) root.append(make('div', 'fb-card fb-meta', '这天的课表没有记录（只能收集已发布课表里的课）。下面仍可手动添加。'));
+    if (!sess.length) root.append(make('div', 'fb-card fb-meta', '这天的课表没有记录（只能收集已发布课表里的课）。可点右上角 ＋ 手动添加。'));
     sess.forEach(s => {
       const {learner, subject, done} = collected(s, got, learners, sess);
       if (!done.length) missing++;
       root.append(collectCard({learner, subject, time: s.time, course: s.course, teacher: s.teacher, done}));
     });
-    root.append(manualCard());
     if (sess.length) { const head = root.querySelector('.fb-head'); head.insertBefore(make('span', 'fb-pill ' + (missing ? 'todo' : 'ok'), missing ? '还差 ' + missing + ' 节没收集' : '今天的反馈都收齐了'), head.querySelector('.fb-note')); }
   }
   // Subject colour chips (same hue per subject everywhere on the feedback pages).
@@ -2814,7 +2846,7 @@
   function attachFoldAndLists(g, head, student, note, meta, readFoldsFn, onRemove) {
     const day = curDay();
     const foldKey = day + '|' + student, folded = readFoldsFn();
-    const fold = make('button', 'vq-fold'); fold.type = 'button'; fold.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    const fold = make('button', 'vq-fold'); fold.type = 'button'; fold.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
     const setFold = on => { g.classList.toggle('vq-collapsed', on); fold.setAttribute('aria-expanded', String(!on)); fold.title = on ? '展开' : '收起'; fold.setAttribute('aria-label', (on ? '展开 ' : '收起 ') + student); };
     fold.onclick = e => { e.stopPropagation(); const on = !g.classList.contains('vq-collapsed'); setFold(on); const f = readFoldsFn(); if (on) f[foldKey] = 1; else delete f[foldKey]; try { localStorage.setItem('wayon-vq-folds', JSON.stringify(f)); } catch {} };
     head.append(note, meta, fold); setFold(!!folded[foldKey]);
@@ -3523,21 +3555,25 @@
         if (ok) {
           flash('已复制 ' + sourceItems.length + ' 项');
           copyLabel.textContent = '✓ 已复制';
+          copyBtn.dataset.copied = '1';
           clearTimeout(copyResetTimer);
-          copyResetTimer = setTimeout(() => { if (copyLabel.isConnected) copyLabel.textContent = '复制词单'; }, 1200);
+          copyResetTimer = setTimeout(() => { if (copyLabel.isConnected) copyLabel.textContent = '复制词单'; delete copyBtn.dataset.copied; }, 1200);
           return;
         }
         const pop = overlay('复制词单 · ' + displayStudent(student));
         pop.body.append(make('pre', 'fb-body', text));
         pop.foot.append(btn('fb-btn', '关闭', pop.close));
       };
+      const startLabel = draft ? '继续抽背' : '开始抽背';
+      const startBtn = btn('fb-btn pri vq-start', draft ? '▶ 继续抽背' : '▶ 开始抽背', () => startQuiz(student, phase, items, redraw), startLabel);
+      startBtn.title = startLabel;
       ready.append(
         btn('vq-clear', '清空', async () => {
           const msg = draft ? '清空这个清单并放弃暂存进度？（单词库里的词不受影响）' : '清空这个清单？（单词库里的词不受影响）';
           if (confirm(msg)) { await retireDraft(localKey); freshSuppLists.delete(suppCacheKey); if (items.length) { items.splice(0); await keep(); } else redraw(); }
         }),
         copyBtn,
-        btn('fb-btn pri vq-start', draft ? '▶ 继续抽背' : '▶ 开始抽背', () => startQuiz(student, phase, items, redraw)));
+        startBtn);
       vq.append(ready);
       if (draft) {
         const pendingKey = 'snapshot:' + activeOwner + ':' + draft.id, backup = await localRecord(pendingKey);

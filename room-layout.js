@@ -7,7 +7,7 @@
   /* Parent workbench integration: full-width flush classroom frame, no sidebar height override. */
   .wayon-workbench:has(#classroom-frame) #list{columns:1;max-width:none!important}
   .wayon-workbench:has(#classroom-frame) .main-content{max-width:none!important;padding-bottom:18px!important}
-  body.wayon-workbench .app-layout #classroom-frame{display:block;width:100%!important;max-width:none!important;height:var(--room-frame-height,calc(100dvh - 116px))!important;min-height:0!important;border:0!important;border-radius:22px!important;background:transparent!important;box-shadow:none!important}
+  body.wayon-workbench .app-layout #classroom-frame{display:block;width:100%!important;max-width:none!important;height:var(--room-frame-height,calc(100dvh - 116px))!important;min-height:0!important;border:0!important;border-radius:var(--wayon-r-panel,24px)!important;background:transparent!important;box-shadow:none!important}
   @media(max-width:1023px){.wayon-workbench:has(#classroom-frame) #list>div:has(>a[target="_blank"]){min-height:44px!important}.wayon-workbench .sidebar #workflow-tools{position:absolute;left:14px;top:calc(100% + 8px);flex-direction:row!important;gap:4px!important;margin:0!important;z-index:4}}
 
   /* Apple Cupertino · Liquid Glass tokens scoped strictly to the rooms page (never pollutes parent :root). */
@@ -267,19 +267,27 @@
   .wayon-room .top .days:not(.is-thumb-ready) button.on{background:var(--rm-surface)!important;box-shadow:0 1px 4px var(--rm-thumb-shadow)!important}
   .wayon-room .top .days button:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
 
+  /* Compact segmented view toggle ([ ☰ Agenda | ▦ Grid ]) matching .days Cupertino pill */
+  .wayon-room .top .tl-view-toggle{order:4;display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--rm-seg-track);box-shadow:inset 0 .5px 1.5px var(--rm-seg-inset),inset 0 -.5px 0 var(--rm-seg-lip);flex:none;user-select:none}
+  .wayon-room .top .tl-view-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:28px;min-height:28px;padding:0;border:0;border-radius:999px;background:transparent;color:var(--rm-fg2);cursor:pointer;transition:color .18s ease,background-color .18s ease,box-shadow .18s ease}
+  .wayon-room .top .tl-view-btn svg{width:15px;height:15px;display:block;pointer-events:none}
+  .wayon-room .top .tl-view-btn:hover{color:var(--rm-fg)}
+  .wayon-room .top .tl-view-btn.on{background:linear-gradient(180deg,var(--rm-thumb-top) 0%,var(--rm-thumb-bot) 100%);color:var(--rm-fg);box-shadow:inset 0 1px .5px var(--rm-thumb-rim),0 2px 6px -1px var(--rm-thumb-shadow),0 .5px 1.5px var(--rm-shadow2)}
+  .wayon-room .top .tl-view-btn:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
+
   /* Compact Liquid Glass info disclosure button */
   .wayon-room .top .room-info{position:relative;order:5;margin-left:0;flex:none;font-size:12px}
   .wayon-room .top .room-info>summary{display:grid;place-items:center;list-style:none;width:32px;height:32px;border:0;border-radius:999px;background:var(--rm-seg-track);color:var(--rm-fg2);cursor:pointer;font-size:14px;transition:background-color .18s ease,color .18s ease}
   .wayon-room .top .room-info>summary::-webkit-details-marker{display:none}
   .wayon-room .top .room-info>summary:hover,.wayon-room .top .room-info[open]>summary{color:var(--rm-accent);background:var(--rm-accent-sub)}
   .wayon-room .top .room-info>summary:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
-  .room-info-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(340px,calc(100vw - 32px));padding:14px 16px;border:0;border-radius:16px;background:linear-gradient(168deg,var(--rm-glass-top) 0%,var(--rm-glass-bot) 100%);backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);box-shadow:inset 0 1px .5px var(--rm-card-rim),0 18px 42px -12px var(--rm-shadow-hover),0 0 0 .5px var(--rm-hairline);font-size:12px;line-height:1.68;color:var(--rm-fg2);overflow-wrap:anywhere}
+  .room-info-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(340px,calc(100vw - 32px));padding:14px 16px;border:0;border-radius:20px;background:linear-gradient(168deg,var(--rm-glass-top) 0%,var(--rm-glass-bot) 100%);backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);box-shadow:inset 0 1px .5px var(--rm-card-rim),0 18px 42px -12px var(--rm-shadow-hover),0 0 0 .5px var(--rm-hairline);font-size:12px;line-height:1.68;color:var(--rm-fg2);overflow-wrap:anywhere}
   .room-info[open]>.room-info-panel,.room-info:hover>.room-info-panel,.room-info:focus-within>.room-info-panel{display:block}
   .room-info-panel p{margin:0 0 8px}.room-info-panel [role=status]{padding:8px 0 0!important;background:transparent!important;border:0!important;border-top:.5px solid var(--rm-hairline)!important;color:var(--rm-fg2)!important;font-size:11px!important}
   .room-info-panel #sync{white-space:normal;display:block;margin-top:6px;color:var(--rm-fg3)}
 
   /* Apple Calendar rounded elevated board */
-  .wayon-room .room-scroll{flex:1;min-height:0;min-width:0;width:100%;overflow:auto;overscroll-behavior:contain;border-radius:20px!important;background:var(--rm-surface);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 6px 28px -6px var(--rm-shadow1),0 1px 2px var(--rm-shadow2),0 0 0 .5px var(--rm-ring);scrollbar-width:thin;scrollbar-color:var(--rm-sb-thumb) transparent}
+  .wayon-room .room-scroll{flex:1;min-height:0;min-width:0;width:100%;overflow:auto;overscroll-behavior:contain;border-radius:24px!important;background:var(--rm-surface);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 6px 28px -6px var(--rm-shadow1),0 1px 2px var(--rm-shadow2),0 0 0 .5px var(--rm-ring);scrollbar-width:thin;scrollbar-color:var(--rm-sb-thumb) transparent}
   @supports not (scrollbar-color: auto){
     .wayon-room .room-scroll{scrollbar-width:auto}
     .wayon-room .room-scroll::-webkit-scrollbar{width:8px;height:8px}
@@ -350,7 +358,7 @@
   }
 
   /* Liquid Glass floating edit sheets (#tlsh, #tlhall, #sh) */
-  .wayon-room .sheet{inset:auto 16px 16px 16px;margin:0 auto;max-width:680px;border:0;border-radius:22px;padding:18px 20px max(18px,env(safe-area-inset-bottom));background:linear-gradient(168deg,var(--rm-glass-top) 0%,var(--rm-glass-bot) 100%);backdrop-filter:blur(32px) saturate(200%);-webkit-backdrop-filter:blur(32px) saturate(200%);color:var(--rm-fg);box-shadow:inset 0 1px .5px var(--rm-card-rim),0 24px 60px -12px rgba(0,0,0,.32),0 0 0 .5px var(--rm-hairline);z-index:25}
+  .wayon-room .sheet{inset:auto 16px 16px 16px;margin:0 auto;max-width:680px;border:0;border-radius:24px;padding:18px 20px max(18px,env(safe-area-inset-bottom));background:linear-gradient(168deg,var(--rm-glass-top) 0%,var(--rm-glass-bot) 100%);backdrop-filter:blur(32px) saturate(200%);-webkit-backdrop-filter:blur(32px) saturate(200%);color:var(--rm-fg);box-shadow:inset 0 1px .5px var(--rm-card-rim),0 24px 60px -12px rgba(0,0,0,.32),0 0 0 .5px var(--rm-hairline);z-index:25}
   .wayon-room .sheet .t{font-size:16px;font-weight:650;letter-spacing:-.02em;color:var(--rm-fg)}
   .wayon-room .sheet .hint{font-size:12px;color:var(--rm-fg2);line-height:1.5}
   .wayon-room .sheet .row{gap:8px;margin-top:4px}
@@ -369,11 +377,74 @@
   .wayon-room #tlhall .tl-err,.wayon-room #tlsh .tl-err{color:var(--rm-danger-fg);font-size:12.5px;font-weight:500;min-height:1em}
   .wayon-room #tlsh .tl-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 
+  /* Mobile/Agenda Card View (.tl-agenda): Apple Cupertino concentric cards, zero horizontal overflow */
+  .wayon-room .tl-agenda{display:none;flex:1;min-height:0;min-width:0;width:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex-direction:column;gap:10px;padding:2px 1px 16px;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:var(--rm-sb-thumb) transparent}
+  body.wayon-room[data-room-view="agenda"] .tl-agenda{display:flex!important}
+  body.wayon-room[data-room-view="agenda"] .room-scroll,
+  body.wayon-room[data-room-view="agenda"] .room-scroll-hint{display:none!important}
+  .wayon-room .tl-ag-card{position:relative;display:flex;flex-direction:column;gap:0;padding:14px 15px 13px 19px;border-radius:20px;background:var(--rm-surface);border:1px solid var(--rm-hairline-soft);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 2px 10px -4px var(--rm-shadow1),0 1px 2px var(--rm-shadow2);cursor:pointer;text-align:left;min-width:0;box-sizing:border-box;transition:background-color .16s ease,border-color .16s ease,box-shadow .18s ease}
+  .wayon-room .tl-ag-card::before{content:"";position:absolute;left:6px;top:14px;bottom:14px;width:3.5px;border-radius:99px;background:var(--ev-bar,var(--rm-accent))}
+  .wayon-room .tl-ag-card:hover{border-color:var(--rm-hairline);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 8px 22px -10px var(--rm-shadow-hover),0 1px 2px var(--rm-shadow2)}
+  .wayon-room .tl-ag-card:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
+  .wayon-room .tl-ag-card.man{border-color:color-mix(in oklab,var(--rm-edit) 42%,var(--rm-hairline-soft))}
+  .wayon-room .tl-ag-card.bad{border-color:var(--rm-now);box-shadow:0 0 0 2px var(--rm-danger-bg)}
+  .wayon-room .tl-ag-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  .wayon-room .tl-ag-sub{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 5px;min-width:0;font-size:14px;line-height:1.35;color:var(--rm-fg);overflow-wrap:anywhere}
+  .wayon-room .tl-ag-subj{font-weight:650;letter-spacing:-.015em;color:var(--rm-fg)}
+  .wayon-room .tl-ag-teacher{font-size:13px;font-weight:500;color:var(--rm-fg2)}
+  .wayon-room .tl-ag-room{flex:none;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:var(--ev-bg,var(--rm-seg-track));color:var(--ev-fg,var(--rm-fg2));font-size:11.5px;font-weight:600;line-height:1.25;letter-spacing:-.01em;white-space:nowrap}
+  .wayon-room .tl-ag-card.bad .tl-ag-room{background:var(--rm-danger-bg);color:var(--rm-danger-fg)}
+  .wayon-room .tl-ag-time-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin:7px 0 10px}
+  .wayon-room .tl-ag-time{font-size:23px;font-weight:700;line-height:1.12;letter-spacing:-.03em;color:var(--rm-fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .wayon-room .tl-ag-live{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:var(--rm-danger-bg);color:var(--rm-danger-fg);font-size:11px;font-weight:650;line-height:1.2;white-space:nowrap}
+  .wayon-room .tl-ag-live::before{content:"";width:6px;height:6px;border-radius:999px;background:var(--rm-now);flex:none}
+  .wayon-room .tl-ag-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:9px;border-top:.5px solid var(--rm-hairline-soft);min-width:0}
+  .wayon-room .tl-ag-who{display:flex;align-items:center;gap:6px;min-width:0;font-size:13.5px;font-weight:500;line-height:1.38;color:var(--rm-fg2);white-space:normal;overflow-wrap:anywhere}
+  .wayon-room .tl-ag-who>span[aria-hidden]{display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .wayon-room .tl-ag-who svg{width:14px;height:14px;flex:none;display:block;color:var(--ev-bar,var(--rm-accent));opacity:.9}
+  .wayon-room .tl-ag-right{display:inline-flex;align-items:center;gap:5px;flex:none;color:var(--rm-fg3)}
+  .wayon-room .tl-ag-man{font-size:11.5px;color:var(--rm-edit);font-weight:600}
+  .wayon-room .tl-ag-chev{font-size:16px;line-height:1;opacity:.65}
+  .wayon-room .tl-ag-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px 20px;border-radius:20px;background:var(--rm-surface);border:1px solid var(--rm-hairline-soft);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 2px 10px -4px var(--rm-shadow1);color:var(--rm-fg2);font-size:14px;text-align:center}
+  .wayon-room .tl-ag-add-row{display:flex;justify-content:center;padding:2px 0}
+  .wayon-room .tl-ag-add-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:34px;padding:0 14px;border:1px solid var(--rm-hairline);border-radius:999px;background:var(--rm-surface);color:var(--rm-fg2);font-size:12.5px;font-weight:550;cursor:pointer;transition:background-color .16s ease,color .16s ease,border-color .16s ease}
+  .wayon-room .tl-ag-add-btn:hover{background:var(--rm-accent-sub);border-color:var(--rm-accent);color:var(--rm-accent)}
+  .wayon-room .tl-ag-hall{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:20px;background:var(--rm-surface);border:1px solid var(--rm-hairline-soft);box-shadow:inset 0 1px 0 var(--rm-card-rim),0 2px 10px -4px var(--rm-shadow1),0 1px 2px var(--rm-shadow2);min-width:0;box-sizing:border-box}
+  .wayon-room .tl-ag-hall-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  .wayon-room .tl-ag-hall-title{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;letter-spacing:-.015em;color:var(--rm-fg)}
+  .wayon-room .tl-ag-hall-meta{font-size:12px;font-weight:500;color:var(--rm-fg2);font-variant-numeric:tabular-nums}
+  .wayon-room .tl-ag-hall-meta.over{color:var(--rm-danger-fg);font-weight:700}
+  .wayon-room .tl-ag-hall-plus{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;border:0;border-radius:999px;background:var(--rm-seg-track);color:var(--rm-fg2);cursor:pointer;flex:none;transition:background-color .16s ease,color .16s ease}
+  .wayon-room .tl-ag-hall-plus svg{width:14px;height:14px;display:block;pointer-events:none}
+  .wayon-room .tl-ag-hall-plus:hover{background:var(--rm-accent-sub);color:var(--rm-accent)}
+  .wayon-room .tl-ag-hall-empty{font-size:12.5px;color:var(--rm-fg3);padding:2px 0}
+  .wayon-room .tl-ag-hall-period{display:flex;flex-direction:column;gap:6px;padding-top:9px;border-top:.5px solid var(--rm-hairline-soft)}
+  .wayon-room .tl-ag-hall-period:first-of-type{padding-top:2px;border-top:0}
+  .wayon-room .tl-ag-hall-phead{display:flex;align-items:center;justify-content:space-between;gap:8px;background:transparent;border:0;padding:0;text-align:left;cursor:pointer;color:var(--rm-fg2);font-size:12px;font-weight:550;font-variant-numeric:tabular-nums}
+  .wayon-room .tl-ag-hall-phead:hover{color:var(--rm-accent)}
+  .wayon-room .tl-ag-hall-pcount{padding:1px 7px;border-radius:999px;background:var(--rm-seg-track);color:var(--rm-fg2);font-size:11px;font-weight:600}
+  .wayon-room .tl-ag-hall-pcount.over{background:var(--rm-danger-bg);color:var(--rm-danger-fg)}
+  .wayon-room .tl-ag-hall-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .wayon-room .tl-ag-chip{display:inline-flex;align-items:center;gap:4px;min-height:30px;padding:4px 10px;border-radius:999px;background:var(--rm-ok-bg);border:1px solid var(--rm-ok-border);color:var(--rm-ok-fg);font-size:12.5px;font-weight:600;line-height:1.2;cursor:pointer;transition:filter .16s ease,background-color .16s ease}
+  .wayon-room .tl-ag-chip:hover{filter:brightness(.96)}
+  .wayon-room .tl-ag-chip.pre{background:var(--rm-pre-bg);border:1.5px dashed var(--rm-pre-border);color:var(--rm-accent)}
+  .wayon-room .tl-ag-chip-tag{font-size:10.5px;font-weight:500;opacity:.82}
+  .wayon-room .tl-ag-chip:focus-visible,.wayon-room .tl-ag-hall-plus:focus-visible,.wayon-room .tl-ag-add-btn:focus-visible{outline:2px solid var(--rm-accent);outline-offset:2px}
+  @media (prefers-reduced-motion: no-preference){
+    @keyframes tl-ag-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    .wayon-room .tl-ag-card:active,.wayon-room .tl-ag-chip:active{transform:scale(.985)}
+    .wayon-room .tl-agenda.is-entering .tl-ag-card,
+    .wayon-room .tl-agenda.is-entering .tl-ag-hall{animation:tl-ag-fade .22s cubic-bezier(.22,1,.36,1) both}
+  }
+  @media (prefers-reduced-motion: reduce){
+    ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+  }
+
   /* Forced Colors Mode accessibility fallbacks */
   @media (forced-colors: active){
-    .wayon-room .room-scroll,.wayon-room .k.tl-lesson,.wayon-room .tl-hallbar,.wayon-room .sheet{border:1px solid CanvasText!important;box-shadow:none!important}
-    .wayon-room .top .days button.on{outline:2px solid Highlight!important}
-    .wayon-room .k.tl-lesson.bad{outline:2px solid LinkText!important}
+    .wayon-room .room-scroll,.wayon-room .k.tl-lesson,.wayon-room .tl-hallbar,.wayon-room .sheet,.wayon-room .tl-ag-card,.wayon-room .tl-ag-hall,.wayon-room .tl-view-toggle{border:1px solid CanvasText!important;box-shadow:none!important}
+    .wayon-room .top .days button.on,.wayon-room .top .tl-view-btn.on{outline:2px solid Highlight!important}
+    .wayon-room .k.tl-lesson.bad,.wayon-room .tl-ag-card.bad{outline:2px solid LinkText!important}
     .wayon-room .tl-now{background:Highlight!important}
   }
 
@@ -381,12 +452,15 @@
   @media(max-width:1120px){.wayon-room .top .tl-summary{display:none}}
   @media(max-width:700px){
     body.wayon-room{padding:8px 10px 10px!important}
-    .wayon-room .top{gap:6px 8px}
-    .wayon-room .top .days{order:4;flex-basis:100%;margin-left:0!important}
-    .wayon-room .top .days button{flex:1;height:36px!important;min-height:36px!important}
-    .wayon-room .top .room-info{margin-left:auto}
-    .wayon-room .top .room-info>summary{width:38px;height:38px}
-    .wayon-room .room-scroll{border-radius:16px!important}
+    body.wayon-room.is-embedded{padding:2px 2px 6px!important}
+    .wayon-room .top{gap:6px 6px}
+    .wayon-room .top .days{order:4;flex:1 1 auto;min-width:0;margin-left:0!important}
+    .wayon-room .top .days button{flex:1;height:36px!important;min-height:36px!important;padding:0 10px!important}
+    .wayon-room .top .tl-view-toggle{order:4;flex:none;padding:3px}
+    .wayon-room .top .tl-view-btn{width:32px;height:36px;min-height:36px}
+    .wayon-room .top .room-info{order:5;flex:none;margin-left:0}
+    .wayon-room .top .room-info>summary{width:36px;height:36px}
+    .wayon-room .room-scroll{border-radius:20px!important}
     .wayon-room .tl-time{font-size:10px;padding-right:6px}
     .wayon-room .k.tl-lesson{padding:5px 7px 5px 11px;margin:1px 3px}
     .wayon-room .k.tl-lesson .w{font-size:12.5px}
@@ -457,6 +531,101 @@
     }
     let view = null, tdrag = null, pendingRender = false, renderedDay = null, sheetLesson = null;
     const scroller = grid.closest('.room-scroll');
+    const agendaEl = el('div', 'tl-agenda');
+    agendaEl.setAttribute('aria-label', '当日课程列表');
+    agendaEl.tabIndex = -1;
+    if (scroller && typeof scroller.after === 'function') scroller.after(agendaEl);
+    else document.body.append(agendaEl);
+
+    // Smooth auto-switch (<700px Agenda Cards, >=700px Timeline Grid) + session-only manual override
+    const AGENDA_BREAKPOINT = 700;
+    const AGENDA_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6.5" rx="2"/><rect x="3" y="13.5" width="18" height="6.5" rx="2"/></svg>';
+    const GRID_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18M9 3v18M15 9v12"/></svg>';
+    const USER_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    const PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    let manualViewMode = null;
+    const isMobileViewport = () => typeof window !== 'undefined' && typeof window.innerWidth === 'number' && window.innerWidth < AGENDA_BREAKPOINT;
+    const activeViewMode = () => manualViewMode || (isMobileViewport() ? 'agenda' : 'grid');
+    const prefersReducedMotion = () => {
+      try { return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+      catch { return false; }
+    };
+    const runViewTransition = (update, focusTarget) => {
+      const stageBefore = activeViewMode() === 'agenda' ? agendaEl : scroller;
+      if (prefersReducedMotion() || typeof document.startViewTransition !== 'function') {
+        update();
+        if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus({preventScroll: true});
+        return;
+      }
+      if (stageBefore) stageBefore.style.viewTransitionName = 'rm-stage';
+      let stageAfter = null;
+      const vt = document.startViewTransition(() => {
+        if (stageBefore) stageBefore.style.viewTransitionName = '';
+        update();
+        stageAfter = activeViewMode() === 'agenda' ? agendaEl : scroller;
+        if (stageAfter) stageAfter.style.viewTransitionName = 'rm-stage';
+      });
+      vt?.finished?.finally?.(() => {
+        if (stageBefore) stageBefore.style.viewTransitionName = '';
+        if (stageAfter) stageAfter.style.viewTransitionName = '';
+        const dl = $('days');
+        if (dl) syncDaysThumb(dl, false);
+        if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus({preventScroll: true});
+      });
+    };
+
+    const viewToggle = el('div', 'tl-view-toggle');
+    viewToggle.setAttribute('role', 'group');
+    viewToggle.setAttribute('aria-label', '切换列表/课表视图');
+    const btnAgenda = el('button', 'tl-view-btn');
+    btnAgenda.type = 'button'; btnAgenda.dataset.view = 'agenda';
+    btnAgenda.title = '列表视图'; btnAgenda.setAttribute('aria-label', '列表视图');
+    btnAgenda.innerHTML = AGENDA_ICON;
+    const btnGrid = el('button', 'tl-view-btn');
+    btnGrid.type = 'button'; btnGrid.dataset.view = 'grid';
+    btnGrid.title = '课表网格视图'; btnGrid.setAttribute('aria-label', '课表网格视图');
+    btnGrid.innerHTML = GRID_ICON;
+    viewToggle.append(btnAgenda, btnGrid);
+    let enterTimer = 0;
+    function syncViewMode(animateAgenda) {
+      const mode = activeViewMode();
+      if (document.body.dataset) document.body.dataset.roomView = mode;
+      btnAgenda.classList.toggle('on', mode === 'agenda');
+      btnAgenda.setAttribute('aria-pressed', String(mode === 'agenda'));
+      btnGrid.classList.toggle('on', mode === 'grid');
+      btnGrid.setAttribute('aria-pressed', String(mode === 'grid'));
+      if (animateAgenda && mode === 'agenda' && !prefersReducedMotion()) {
+        agendaEl.classList.remove('is-entering');
+        agendaEl.classList.add('is-entering');
+        clearTimeout(enterTimer);
+        enterTimer = setTimeout(() => agendaEl.classList.remove('is-entering'), 260);
+      }
+      return mode;
+    }
+    const setViewMode = next => {
+      if (next !== 'agenda' && next !== 'grid') return;
+      const prev = activeViewMode();
+      manualViewMode = next;
+      if (prev === next) { syncViewMode(false); return; }
+      runViewTransition(() => {
+        syncViewMode(next === 'agenda');
+        if (next === 'grid') timelineRender();
+      }, next === 'agenda' ? agendaEl : null);
+    };
+    btnAgenda.onclick = () => setViewMode('agenda');
+    btnGrid.onclick = () => setViewMode('grid');
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      let lastAuto = activeViewMode();
+      window.addEventListener('resize', () => {
+        if (manualViewMode !== null) return;
+        const next = activeViewMode();
+        if (next !== lastAuto) {
+          lastAuto = next;
+          syncViewMode(next === 'agenda');
+          if (next === 'grid') timelineRender();
+        }
+      });
+    }
     function rowHeight(rows) {
       const head = 38, room = scroller ? scroller.clientHeight - head - 8 : 0;
       return Math.max(MIN_ROW, Math.min(MAX_ROW, Math.floor(room / rows) || MIN_ROW));
@@ -477,7 +646,12 @@
       top.append(full);
     }
     const summaryEl = el('span', 'tl-summary', '');
-    if (top) top.append(summaryEl);
+    if (top) {
+      top.append(summaryEl);
+      const infoEl = top.querySelector('.room-info');
+      if (infoEl && typeof infoEl.before === 'function') infoEl.before(viewToggle);
+      else top.append(viewToggle);
+    }
 
     // Persistent Apple spring segmented date control state
     let lastDayKeys = '', daysThumb = null, daysButtons = [], daysBound = false;
@@ -592,10 +766,8 @@
       });
       return maxHall;
     }
-    function lessonNode(lesson, col, lane, lanes, man, bad) {
-      const x = lesson.x, minutes = toM(lesson.b) - toM(lesson.a);
-      // Borrowed rooms ("（课表外）") read like lessons — student, then subject·teacher — and are always grey.
-      // A booking label "易赛 老师👉学生" splits into teacher and student; the stored entry is unchanged.
+    function parseLessonMeta(lesson) {
+      const x = lesson.x;
       const borrowed = /（课表外）$/.test(String(x[1] || ''));
       let who = plain(x[0]), subject = x[1] || '', teacher = x[2] || '';
       if (borrowed) {
@@ -604,6 +776,127 @@
         if (arrow >= 0) { teacher = who.slice(0, arrow).trim() || teacher; who = who.slice(arrow + 2).trim() || who; }
       }
       const tone = borrowed ? '5' : tcol[x[2]] || '5';
+      return {borrowed, who, subject, teacher, tone};
+    }
+    function renderAgenda(allLessons, maxHall, nowMin) {
+      agendaEl.textContent = '';
+      const sorted = allLessons.slice().sort((p, q) => toM(p.lesson.a) - toM(q.lesson.a) || toM(p.lesson.b) - toM(q.lesson.b) || p.lesson.ri - q.lesson.ri);
+      if (!sorted.length) {
+        const empty = el('div', 'tl-ag-empty');
+        empty.append(el('div', '', DATA.missing && !DATA.booking_preview ? '这天课表尚未生成' : '今日暂无排课'));
+        const addBtn = el('button', 'tl-ag-add-btn', '＋ 添加排课');
+        addBtn.type = 'button';
+        addBtn.onclick = () => openLesson(null, rooms[0] ?? 0, S[0]?.[1] || '09:00');
+        empty.append(addBtn);
+        agendaEl.append(empty);
+      } else {
+        sorted.forEach(({lesson, man, bad}) => {
+          const {borrowed, who, subject, teacher, tone} = parseLessonMeta(lesson);
+          const card = el('div', 'tl-ag-card' + (borrowed ? ' borrowed' : '') + (man ? ' man' : '') + (bad ? ' bad' : ''));
+          card.style.setProperty('--ev-bar', 'var(--t' + tone + 'b)');
+          card.style.setProperty('--ev-bg', 'var(--t' + tone + ')');
+          card.style.setProperty('--ev-fg', 'var(--t' + tone + 'fg)');
+          card.tabIndex = 0; card.setAttribute('role', 'button');
+          const roomLabel = R[lesson.ri] || '';
+          const subText = [subject, teacher].filter(Boolean).join(' · ');
+          card.setAttribute('aria-label', roomLabel + ' ' + lesson.a + '到' + lesson.b + ' ' + who + (subText ? ' ' + subText : '') + (borrowed ? '，借用教室' : '') + (bad ? '，时间冲突' : ''));
+          const topRow = el('div', 'tl-ag-top');
+          const subEl = el('div', 'tl-ag-sub');
+          if (subject) subEl.append(el('span', 'tl-ag-subj', subject));
+          if (teacher) subEl.append(el('span', 'tl-ag-teacher', (subject ? '· ' : '') + teacher));
+          if (!subject && !teacher) subEl.append(el('span', 'tl-ag-subj', borrowed ? '借用教室' : '课程'));
+          const roomPill = el('span', 'tl-ag-room', (bad ? '⚠️ 冲突 · ' : '') + roomLabel + (borrowed ? ' · 借用' : ''));
+          topRow.append(subEl, roomPill);
+
+          const timeRow = el('div', 'tl-ag-time-row');
+          timeRow.append(el('div', 'tl-ag-time', lesson.a + ' – ' + lesson.b));
+          const isLive = curD === today && Number.isFinite(nowMin) && nowMin >= toM(lesson.a) && nowMin < toM(lesson.b);
+          if (isLive) timeRow.append(el('span', 'tl-ag-live', '进行中'));
+
+          const footRow = el('div', 'tl-ag-foot');
+          const whoEl = el('div', 'tl-ag-who');
+          const ico = el('span', ''); ico.setAttribute('aria-hidden', 'true'); ico.innerHTML = USER_ICON;
+          whoEl.append(ico, document.createTextNode(who || '未命名学生'));
+          const rightEl = el('div', 'tl-ag-right');
+          if (man) rightEl.append(el('span', 'tl-ag-man', '✎'));
+          const chev = el('span', 'tl-ag-chev', '›'); chev.setAttribute('aria-hidden', 'true');
+          rightEl.append(chev);
+          footRow.append(whoEl, rightEl);
+
+          card.append(topRow, timeRow, footRow);
+          card.onclick = () => openLesson(lesson);
+          card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLesson(lesson); } };
+          agendaEl.append(card);
+        });
+        const addRow = el('div', 'tl-ag-add-row');
+        const addBtn = el('button', 'tl-ag-add-btn', '＋ 添加排课');
+        addBtn.type = 'button';
+        addBtn.onclick = () => openLesson(null, rooms[0] ?? 0, S[0]?.[1] || '09:00');
+        addRow.append(addBtn);
+        agendaEl.append(addRow);
+      }
+
+      // Compact Hall Self-Study section (grouped by A–D period with exact same confirm / edit handlers)
+      const people = hallPeople();
+      const hallCard = el('section', 'tl-ag-hall');
+      hallCard.setAttribute('aria-label', '大厅自习');
+      const hHead = el('div', 'tl-ag-hall-head');
+      const hTitle = el('div', 'tl-ag-hall-title');
+      hTitle.append(document.createTextNode('大厅自习'));
+      const hMeta = el('span', 'tl-ag-hall-meta' + (maxHall > SEATS ? ' over' : ''), people.length ? (people.length + ' 人 · 峰值 ' + maxHall + '/' + SEATS + ' 座') : ('0/' + SEATS + ' 座'));
+      hTitle.append(hMeta);
+      const hPlus = el('button', 'tl-ag-hall-plus');
+      hPlus.type = 'button'; hPlus.title = '添加到大厅'; hPlus.setAttribute('aria-label', '添加到大厅');
+      hPlus.innerHTML = PLUS_ICON;
+      hPlus.onclick = () => openHall(null, 0);
+      hHead.append(hTitle, hPlus);
+      hallCard.append(hHead);
+
+      if (!people.length) {
+        hallCard.append(el('div', 'tl-ag-hall-empty', '暂无大厅自习安排，点右上角 ＋ 可添加'));
+      } else {
+        S.forEach((s, si) => {
+          const inSeg = people.filter(p => p.segs.has(si));
+          const n = seated(items(HALL, si));
+          if (!inSeg.length && n === 0) return;
+          const pBox = el('div', 'tl-ag-hall-period');
+          const pHead = el('button', 'tl-ag-hall-phead');
+          pHead.type = 'button';
+          pHead.title = '大厅 ' + s[0] + ' 段 ' + s[1] + '–' + s[2] + '：点此添加自习';
+          pHead.append(el('span', '', s[0] + ' 段  ' + s[1] + '–' + s[2]), el('span', 'tl-ag-hall-pcount' + (n > SEATS ? ' over' : ''), n + '/' + SEATS + ' 座'));
+          pHead.onclick = () => openHall(null, si);
+          const chips = el('div', 'tl-ag-hall-chips');
+          inSeg.forEach(person => {
+            const isPre = person.segs.get(si)?.[1] === '课后';
+            const chip = el('button', 'tl-ag-chip' + (isPre ? ' pre' : ''));
+            chip.type = 'button';
+            chip.append(document.createTextNode(person.name));
+            if (isPre) chip.append(el('span', 'tl-ag-chip-tag', '待确认'));
+            chip.title = person.name + ' 大厅 ' + s[0] + ' 段' + (isPre ? '（预占，点一下确认）' : '（点此修改）');
+            chip.setAttribute('aria-label', chip.title);
+            chip.onclick = e => {
+              e.stopPropagation();
+              if (isPre) {
+                const before = JSON.stringify(ed);
+                setHallPerson(person, person.name, new Set(person.segs.keys()), new Set([si]));
+                commit(before);
+              } else {
+                openHall(person);
+              }
+            };
+            chips.append(chip);
+          });
+          pBox.append(pHead, chips);
+          hallCard.append(pBox);
+        });
+      }
+      agendaEl.append(hallCard);
+    }
+    function lessonNode(lesson, col, lane, lanes, man, bad) {
+      const minutes = toM(lesson.b) - toM(lesson.a);
+      // Borrowed rooms ("（课表外）") read like lessons — student, then subject·teacher — and are always grey.
+      // A booking label "易赛 老师👉学生" splits into teacher and student; the stored entry is unchanged.
+      const {borrowed, who, subject, teacher, tone} = parseLessonMeta(lesson);
       const node = el('div', 'k tl-lesson' + (borrowed ? ' borrowed' : '') + (minutes < 45 ? ' short' : '') + (man ? ' man' : '') + (bad ? ' bad' : ''));
       node.style.background = 'var(--t' + tone + ')';
       node.style.color = 'var(--t' + tone + 'fg)';
@@ -662,7 +955,8 @@
           }
         });
       }
-      let bad = 0, maxHall = 0;
+      let bad = 0, maxHall = 0, nowMin = NaN;
+      const allLessons = [];
       rooms.forEach((ri, i) => {
         const list = current[i], originals = new Set(lessonsOf(ri, orig).map(l => l.id));
         // Overlapping lessons in one room sit side by side and are flagged as a conflict.
@@ -675,22 +969,35 @@
           c.ends[j] = l.b; lane.push([c, j]);
         });
         list.forEach((l, k) => {
-          const [c, j] = lane[k], conflict = c.ends.length > 1;
+          const [c, j] = lane[k], conflict = c.ends.length > 1, isMan = !originals.has(l.id);
           if (conflict) bad++;
-          grid.append(lessonNode(l, ri + 2, j, c.ends.length, !originals.has(l.id), conflict));
+          allLessons.push({lesson: l, man: isMan, bad: conflict});
+          grid.append(lessonNode(l, ri + 2, j, c.ends.length, isMan, conflict));
         });
       });
       maxHall = hallBoard(hallCol);
       if (curD === today) {
         const now = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Shanghai'})), m = now.getHours() * 60 + now.getMinutes();
+        nowMin = m;
         if (m >= lo && m < hi) {
           const line = el('div', 'tl-now'); line.style.marginTop = ((m - lo) % STEP) / STEP * rowH + 'px';
           line.append(el('span', 'tl-now-badge', toT(m)));
           line.setAttribute('aria-hidden', 'true'); place(line, lineOf(m - (m - lo) % STEP), lineOf(m - (m - lo) % STEP) + 1, '2 / ' + (hallCol + 1)); grid.append(line);
         }
       }
+      renderAgenda(allLessons, maxHall, nowMin);
+      syncViewMode(false);
       const legend = $('lg'), anyBorrowed = !!grid.querySelector('.tl-lesson.borrowed');
       if (legend) {
+        if (legend.querySelector?.('.lg-pre,.lg-ok')) {
+          const notes = [...(legend.children || [])].filter(span => span.querySelector?.('.lg-pre,.lg-ok'));
+          const note = el('span', 'lg-hall-note');
+          const swatch = el('i', 'lg-hall-swatch'); swatch.setAttribute('aria-hidden', 'true');
+          note.append(swatch, document.createTextNode('大厅预占（点选确认）'));
+          note.title = notes.map(span => span.textContent).join('；');
+          notes.forEach(span => span.remove());
+          legend.append(note);
+        }
         if (anyBorrowed && !legend.querySelector('.lg-borrowed')) {
           const item = el('span', 'lg-borrowed'), dot = el('i'); dot.style.background = 'var(--t5b)';
           item.append(dot, document.createTextNode('借用教室')); legend.prepend(item);
@@ -738,7 +1045,7 @@
             b.type = 'button';
             b.dataset.day = d;
             b.setAttribute('aria-pressed', String(on));
-            b.onclick = () => { if (d !== curD) useDay(d); };
+            b.onclick = () => { if (d !== curD) runViewTransition(() => { useDay(d); syncViewMode(activeViewMode() === 'agenda'); }); };
             dl.append(b);
             return b;
           });
@@ -756,7 +1063,7 @@
                 e.preventDefault();
                 daysButtons[next].focus();
                 const targetDay = daysButtons[next].dataset.day;
-                if (targetDay && targetDay !== curD) useDay(targetDay);
+                if (targetDay && targetDay !== curD) runViewTransition(() => { useDay(targetDay); syncViewMode(activeViewMode() === 'agenda'); });
               }
             });
             if (typeof ResizeObserver === 'function') new ResizeObserver(() => syncDaysThumb(dl, false)).observe(dl);
@@ -771,6 +1078,7 @@
             b.textContent = relD(d) + mdD(d);
           });
           syncDaysThumb(dl, true);
+          if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => syncDaysThumb(dl, true));
         }
       }
     }

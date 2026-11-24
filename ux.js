@@ -425,19 +425,19 @@
     @media(min-width:1024px){
       body.wayon-workbench .app-layout{
         display:block!important;
-        padding-inline-start:98px!important;
+        padding-inline-start:100px!important;
         min-height:100dvh;
       }
       body.wayon-workbench .sidebar{
         position:fixed!important;
         inset-block:12px!important;
         inset-inline-start:12px!important;
-        width:74px!important;
-        min-width:74px!important;
+        width:76px!important;
+        min-width:76px!important;
         height:calc(100dvh - 24px)!important;
-        padding:10px 7px 12px!important;
+        padding:8px!important;
         border:0!important;
-        border-radius:24px!important;
+        border-radius:var(--wayon-r-panel,24px)!important;
         background:transparent!important;
         box-shadow:none!important;
         overflow:visible!important;
@@ -452,7 +452,7 @@
         content:'';
         position:absolute;
         inset:0;
-        border-radius:24px;
+        border-radius:var(--wayon-r-panel,24px);
         z-index:-1;
         pointer-events:none;
         background:linear-gradient(168deg,var(--apple-glass-rail-top) 0%,var(--apple-glass-rail-bot) 100%);
@@ -636,24 +636,24 @@
       body.wayon-workbench .sidebar #account-settings{width:60px!important;min-width:60px!important;padding:0!important;margin:0!important}
       body.wayon-workbench .sidebar #account-settings[open]{
         position:fixed!important;
-        left:96px!important;
+        left:98px!important;
         bottom:16px!important;
-        width:min(400px,calc(100vw - 116px))!important;
+        width:min(400px,calc(100vw - 118px))!important;
         padding:18px!important;
         z-index:100!important;
         border:0!important;
-        border-radius:24px!important;
+        border-radius:var(--wayon-r-panel,24px)!important;
         background:var(--apple-surface)!important;
         box-shadow:0 24px 64px -12px rgba(0,0,0,.28),0 0 0 .5px var(--apple-glass-hairline)!important;
       }
       body.wayon-workbench .sidebar #workflow-tools{flex-direction:column!important;align-items:center!important;gap:6px!important;margin:4px 0 0!important}
-      body.wayon-workbench .sidebar #workflow-checks-panel{position:fixed!important;left:96px!important;bottom:80px!important;right:auto!important;top:auto!important;z-index:60!important}
+      body.wayon-workbench .sidebar #workflow-checks-panel{position:fixed!important;left:98px!important;bottom:80px!important;right:auto!important;top:auto!important;z-index:60!important}
 
       /* ---- Floating Liquid Glass Topbar & 60fps GPU-Shrinking Wayon Wordmark ---- */
       body.wayon-workbench .app-brand{
         position:fixed!important;
         top:10px!important;
-        left:98px!important;
+        left:100px!important;
         right:0!important;
         height:54px!important;
         padding:0 clamp(20px,3vw,40px)!important;
@@ -673,7 +673,7 @@
         content:'';
         position:fixed;
         top:0;
-        left:98px;
+        left:100px;
         right:0;
         height:22px;
         background:linear-gradient(180deg,var(--apple-canvas) 0%,var(--apple-canvas) 50%,transparent 100%);
@@ -689,7 +689,7 @@
         bottom:0;
         left:clamp(8px,1.8vw,24px);
         right:clamp(8px,1.8vw,24px);
-        border-radius:27px;
+        border-radius:var(--wayon-r-bar,26px);
         background:linear-gradient(180deg,var(--apple-glass-bar-top) 0%,var(--apple-glass-bar-bot) 100%);
         backdrop-filter:blur(28px) saturate(210%);
         -webkit-backdrop-filter:blur(28px) saturate(210%);
@@ -868,7 +868,7 @@
       body.wayon-workbench[data-aircon-open] #tabs #nav-notice{
         background:var(--wayon-brand-soft)!important;
         color:var(--wayon-brand)!important;
-        border-radius:12px!important;
+        border-radius:var(--wayon-r-nav)!important;
       }
       body.wayon-workbench[data-feedback-open] #tabs button:not(#nav-feedback),
       body.wayon-workbench[data-memo-open] #tabs button:not(#nav-memo),
@@ -884,12 +884,12 @@
         border:0!important;
         background:transparent!important;
         color:var(--muted)!important;
-        border-radius:12px!important;
+        border-radius:var(--wayon-r-nav)!important;
       }
       body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger{
         background:var(--accent-subtle)!important;
         color:var(--accent)!important;
-        border-radius:12px!important;
+        border-radius:var(--wayon-r-nav)!important;
       }
       body.wayon-workbench .sidebar #nav-ledger svg{width:18px!important;height:18px!important;flex:none}
       body.wayon-workbench .sidebar #account-settings>summary .ux-label{display:block;font-size:10px;margin-top:2px;opacity:.85}
@@ -901,18 +901,21 @@
     body.wayon-workbench #subtabs.view-switch{
       display:inline-flex!important;
       align-items:center!important;
+      height:36px!important;
+      min-height:36px!important;
       gap:2px!important;
       padding:3px!important;
       border-radius:999px!important;
       background:var(--apple-seg-track)!important;
       box-shadow:inset 0 .5px 1.5px var(--apple-seg-track-inset),inset 0 -.5px 0 var(--apple-seg-track-lip)!important;
       border:0!important;
+      box-sizing:border-box!important;
     }
     body.wayon-workbench #subtabs button,
     body.wayon-workbench #subtabs button.ux-labelled{
-      height:32px!important;
-      min-height:32px!important;
-      padding:0 15px!important;
+      height:30px!important;
+      min-height:30px!important;
+      padding:0 14px!important;
       border:0!important;
       border-radius:999px!important;
       background:transparent!important;
@@ -940,9 +943,9 @@
       font-size:10.5px!important;
       margin-left:2px!important;
     }
-    @media(max-width:599px){
-      body.wayon-workbench #subtabs.view-switch{display:flex!important;width:100%!important}
-      body.wayon-workbench #subtabs button.ux-labelled{padding:0 6px!important;height:36px!important;min-height:36px!important}
+    @media(max-width:739px){
+      body.wayon-workbench #subtabs.view-switch{display:flex!important;width:100%!important;height:38px!important;min-height:38px!important}
+      body.wayon-workbench #subtabs button.ux-labelled{flex:1 1 0!important;justify-content:center!important;padding:0 4px!important;height:32px!important;min-height:32px!important}
     }
 
     /* ---- Apple Cupertino Controls & Borderless Soft-Shadow Cards Across All Views ---- */
@@ -960,6 +963,14 @@
     body.wayon-workbench #aircon-day-picker{
       display:inline-flex!important;
       align-items:center!important;
+      field-sizing:content!important;
+      width:auto!important;
+      min-width:0!important;
+      max-inline-size:220px!important;
+      align-self:center!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
       height:36px!important;
       min-height:36px!important;
       line-height:36px!important;
@@ -971,11 +982,11 @@
       -moz-appearance:none!important;
       background-color:var(--apple-surface)!important;
       background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%222%22%20x2%3D%2216%22%20y2%3D%226%22%2F%3E%3Cline%20x1%3D%228%22%20y1%3D%222%22%20x2%3D%228%22%20y2%3D%226%22%2F%3E%3Cline%20x1%3D%223%22%20y1%3D%2210%22%20x2%3D%2221%22%20y2%3D%2210%22%2F%3E%3C%2Fsvg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E")!important;
-      background-position:left 11px center,right 11px center!important;
+      background-position:left 10px center,right 10px center!important;
       background-repeat:no-repeat!important;
       background-size:15px 15px,11px 11px!important;
       box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
-      padding:0 32px 0 36px!important;
+      padding:0 28px 0 34px!important;
       font-size:13.5px!important;
       font-weight:500!important;
       color:var(--fg)!important;
@@ -984,9 +995,9 @@
     body.wayon-workbench #aircon-day-picker option{line-height:1.4}
     body.wayon-workbench #days:has(>.home-btn:not([hidden])) #day-picker{
       background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E")!important;
-      background-position:right 11px center!important;
+      background-position:right 10px center!important;
       background-size:11px 11px!important;
-      padding-left:38px!important;
+      padding-left:36px!important;
     }
     body.wayon-workbench #day-picker::picker-icon,
     body.wayon-workbench #aircon-day-picker::picker-icon{display:none!important;content:none!important}
@@ -1046,17 +1057,27 @@
       color:var(--fg)!important;
       box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
     }
-    body.wayon-workbench #study-add{
+    body.wayon-workbench #study-add,
+    body.wayon-workbench #study-add.wayon-icon-control{
+      width:36px!important;
+      min-width:36px!important;
       height:36px!important;
       min-height:36px!important;
-      padding:0 15px!important;
+      padding:0!important;
       border:0!important;
       border-radius:999px!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
       font-weight:500!important;
       background:var(--apple-surface)!important;
       color:var(--fg)!important;
       box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+      transition:color .16s var(--apple-ease),background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease)!important;
     }
+    body.wayon-workbench #study-add>span[aria-hidden]{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:17px!important;height:17px!important;line-height:0!important;flex:none!important}
+    body.wayon-workbench #study-add svg{display:block!important;width:17px!important;height:17px!important;stroke-width:1.9!important;flex:none!important;pointer-events:none!important}
+    body.wayon-workbench #study-add svg path{stroke-width:1.9!important}
     body.wayon-workbench #study-add:hover{background:var(--wayon-btn-hover)!important;color:var(--fg)!important}
     body.wayon-workbench .workflow-icon{
       width:36px!important;
@@ -1076,7 +1097,7 @@
     }
     body.wayon-workbench #workflow-checks-panel{
       border:0!important;
-      border-radius:18px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       background:linear-gradient(168deg,var(--apple-glass-bar-top) 0%,var(--apple-glass-bar-bot) 100%)!important;
       backdrop-filter:blur(28px) saturate(200%)!important;
       -webkit-backdrop-filter:blur(28px) saturate(200%)!important;
@@ -1095,9 +1116,10 @@
     body.wayon-workbench #aircon-panel .aircon-card:not(.folded),
     body.wayon-workbench #aircon-panel .aircon-empty,
     body.wayon-workbench #memo-panel .memo-add,
-    body.wayon-workbench #memo-panel .memo-list{
+    body.wayon-workbench #memo-panel .memo-list,
+    body.wayon-workbench #memo-panel .memo-empty{
       border:0!important;
-      border-radius:20px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       background:var(--apple-surface)!important;
       box-shadow:var(--shadow-card)!important;
       transition:transform .28s var(--apple-ease-out),box-shadow .28s var(--apple-ease-out);
@@ -1113,7 +1135,7 @@
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup.vq-collapsed,
     body.wayon-workbench #aircon-panel .aircon-card.folded{
       border:0!important;
-      border-radius:16px!important;
+      border-radius:var(--wayon-r-inner,14px)!important;
       background:var(--apple-folded-bg)!important;
       box-shadow:0 0 0 .5px var(--apple-card-ring)!important;
     }
@@ -1151,7 +1173,7 @@
     }
     body.wayon-workbench pre{
       border:0!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner,14px)!important;
       background:var(--code-bg)!important;
       color:var(--fg)!important;
     }
@@ -1191,14 +1213,14 @@
     body.wayon-workbench #aircon-panel .aircon-empty{
       background:var(--wayon-panel-bg)!important;
       border:1px solid var(--wayon-panel-border)!important;
-      border-radius:18px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       box-shadow:var(--wayon-panel-shadow)!important;
     }
     body.wayon-workbench #aircon-panel .aircon-card:not(.folded){padding:22px 24px!important}
     body.wayon-workbench #aircon-panel .aircon-editor{
       background:var(--wayon-pre-bg)!important;
       border:1px solid var(--wayon-panel-border)!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner,14px)!important;
       color:var(--fg)!important;
       field-sizing:content!important;
       width:100%!important;
@@ -1245,12 +1267,12 @@
       padding:22px 26px!important;
       background:var(--wayon-panel-bg)!important;
       border:1px solid var(--wayon-panel-border)!important;
-      border-radius:18px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       box-shadow:var(--wayon-panel-shadow)!important;
     }
     body.wayon-workbench #study-form input,
     body.wayon-workbench #study-form textarea{
-      border-radius:11px!important;
+      border-radius:var(--wayon-r-inner,14px)!important;
       border:1px solid var(--wayon-panel-border)!important;
       background:var(--wayon-pre-bg)!important;
       color:var(--fg)!important;
@@ -1278,7 +1300,7 @@
     body.wayon-workbench #list .item .task-editor{
       margin:0!important;
       padding:14px 16px 12px!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner,14px)!important;
       background:var(--wayon-pre-bg)!important;
       border:1px solid var(--wayon-brand-ring)!important;
       box-shadow:0 0 0 2.5px var(--wayon-brand-soft)!important;
@@ -1361,7 +1383,7 @@
     }
     body.wayon-workbench .ux-past{
       border:0!important;
-      border-radius:18px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       background:var(--apple-folded-bg)!important;
       box-shadow:0 0 0 .5px var(--apple-card-ring)!important;
       padding:6px 14px!important;
@@ -1385,17 +1407,31 @@
     body.wayon-workbench #feedback-panel .fb-card,
     body.wayon-workbench #feedback-panel .fb-collect,
     body.wayon-workbench #feedback-panel .fb-learner,
-    body.wayon-workbench #feedback-panel .fb-lesson{
+    body.wayon-workbench #feedback-panel .fb-lesson,
+    body.wayon-workbench #ledger-panel .ldg-card,
+    body.wayon-workbench #ledger-panel .ldg-lock{
       border:0!important;
-      border-radius:18px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       background:var(--apple-surface)!important;
       box-shadow:var(--shadow-card)!important;
     }
+    body.wayon-workbench #feedback-panel .fb-card.fb-today-bar{
+      border-radius:var(--wayon-r-bar,26px)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      background:var(--wayon-panel-bg)!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+    }
+    body.wayon-workbench #ledger-panel .ldg-stat,
+    body.wayon-workbench #ledger-panel .ldg-table-wrap,
+    body.wayon-workbench .ux-assign-detail{
+      border-radius:var(--wayon-r-inner,14px)!important;
+    }
     body.wayon-workbench #feedback-panel .fb-btn{border-radius:999px!important}
     body.wayon-workbench #ux-student,
-    body.wayon-workbench #workflow-guide{
+    body.wayon-workbench #workflow-guide,
+    body.wayon-workbench .vx-box{
       border:0!important;
-      border-radius:26px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       background:var(--apple-surface)!important;
       box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 32px 72px -16px rgba(0,0,0,.32),0 0 0 .5px var(--apple-glass-hairline)!important;
     }
@@ -1407,7 +1443,7 @@
     }
     body.wayon-workbench #wayon-rules-dialog[open]{
       border:0!important;
-      border-radius:26px!important;
+      border-radius:var(--wayon-r-panel,24px)!important;
       background:var(--apple-canvas)!important;
       box-shadow:inset 0 1px .5px var(--apple-glass-rim-top),0 32px 84px -16px rgba(0,0,0,.36),0 0 0 .5px var(--apple-glass-hairline)!important;
     }
@@ -1417,7 +1453,12 @@
     /* ---- 2026-11-22 Architectural White Panels, Unified Monochrome Ink Palette & Focus Workbench ---- */
     :root{
       --wayon-name-font:ui-serif,"New York","Songti SC","STSong","Noto Serif SC","Source Han Serif SC",Georgia,serif;
+      --wayon-r-panel:24px;
+      --wayon-r-bar:26px;
+      --wayon-r-nav:16px;
+      --wayon-r-inner:14px;
       --wayon-icon-check:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.6%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2012.5l4.5%204.5L19%207.5%22%2F%3E%3C%2Fsvg%3E");
+      --wayon-icon-play:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22black%22%3E%3Cpath%20d%3D%22M7.5%205.25a1.25%201.25%200%200%201%201.9-1.06l10.25%206.75a1.25%201.25%200%200%201%200%202.12L9.4%2019.81a1.25%201.25%200%200%201-1.9-1.06V5.25z%22%2F%3E%3C%2Fsvg%3E");
       --wayon-icon-x:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%207l10%2010M17%207L7%2017%22%2F%3E%3C%2Fsvg%3E");
       --wayon-icon-check-all:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M18%206L7%2017l-5-5%22%2F%3E%3Cpath%20d%3D%22M22%2010l-7.5%207.5L13%2016%22%2F%3E%3C%2Fsvg%3E");
       --wayon-icon-x-all:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.85%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M15%209l-6%206M9%209l6%206%22%2F%3E%3C%2Fsvg%3E");
@@ -1446,6 +1487,7 @@
       --wayon-card-head-line:#ECEEF2;
       --wayon-pre-bg:#F8F9FB;
       --wayon-sage:#15803D;
+      --wayon-sage-hover-fg:#FFFFFF;
       --wayon-sage-bg:#F8F9FB;
       --wayon-sage-pill:#F0FDF4;
       --wayon-sage-ring:rgba(15,23,42,.09);
@@ -1455,6 +1497,14 @@
       --wayon-urgent-soft:#FEF2F2;
       --wayon-card-head-urgent:transparent;
       --wayon-card-head-urgent-line:#ECEEF2;
+    }
+    @media(max-width:599px){
+      :root{
+        --wayon-r-panel:20px;
+        --wayon-r-bar:20px;
+        --wayon-r-nav:14px;
+        --wayon-r-inner:12px;
+      }
     }
     @media(prefers-color-scheme:dark){
       :root:not([data-theme="light"]){
@@ -1480,6 +1530,7 @@
         --wayon-card-head-line:rgba(255,255,255,.08);
         --wayon-pre-bg:rgba(255,255,255,.035);
         --wayon-sage:#4ADE80;
+        --wayon-sage-hover-fg:#0B0C0E;
         --wayon-sage-bg:rgba(255,255,255,.04);
         --wayon-sage-pill:rgba(74,222,128,.12);
         --wayon-sage-ring:rgba(255,255,255,.1);
@@ -1514,6 +1565,7 @@
       --wayon-card-head-line:rgba(255,255,255,.08);
       --wayon-pre-bg:rgba(255,255,255,.035);
       --wayon-sage:#4ADE80;
+      --wayon-sage-hover-fg:#0B0C0E;
       --wayon-sage-bg:rgba(255,255,255,.04);
       --wayon-sage-pill:rgba(74,222,128,.12);
       --wayon-sage-ring:rgba(255,255,255,.1);
@@ -1538,6 +1590,326 @@
       border:1px solid var(--wayon-panel-border)!important;
       box-shadow:var(--wayon-panel-shadow)!important;
     }
+    /* Prevent closed #account-settings children (DETAILS.cloud-panel) from protruding past the right viewport edge */
+    body.wayon-workbench #account-settings:not([open])>:not(summary){display:none!important}
+    /* Unified 9-button navigation geometry across desktop sidebar AND mobile/tablet top bar (0px vertical drift) */
+    body.wayon-workbench .sidebar #tabs button,
+    body.wayon-workbench .sidebar #tabs button.ux-labelled,
+    body.wayon-workbench .sidebar #nav-ledger,
+    body.wayon-workbench .sidebar #nav-ledger.ux-labelled,
+    body.wayon-workbench .sidebar #wayon-rules-btn,
+    body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled,
+    body.wayon-workbench .sidebar #account-settings>summary,
+    body.wayon-workbench .sidebar #account-settings>summary.wayon-icon-control{
+      display:flex!important;
+      flex-direction:column!important;
+      align-items:center!important;
+      justify-content:center!important;
+      gap:3px!important;
+      padding:4px 2px!important;
+      margin:0!important;
+      border:0!important;
+      border-radius:var(--wayon-r-nav)!important;
+      box-sizing:border-box!important;
+      line-height:1!important;
+      height:48px!important;
+      min-height:48px!important;
+      background:transparent!important;
+      color:var(--muted)!important;
+      box-shadow:none!important;
+      cursor:pointer!important;
+      text-decoration:none!important;
+      transition:background-color .16s var(--apple-ease),color .16s var(--apple-ease),transform .14s var(--apple-ease)!important;
+    }
+    body.wayon-workbench .sidebar #tabs button:has(svg)::before{display:none!important}
+    body.wayon-workbench .sidebar #tabs button>span[aria-hidden]:not(.ux-badge),
+    body.wayon-workbench .sidebar #nav-ledger>span[aria-hidden]:not(.ux-badge),
+    body.wayon-workbench .sidebar #wayon-rules-btn>span[aria-hidden]:not(.ux-badge),
+    body.wayon-workbench .sidebar #account-settings>summary>span[aria-hidden]:not(.ux-badge){
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      width:20px!important;
+      height:20px!important;
+      flex:none!important;
+      line-height:0!important;
+      margin:0!important;
+      padding:0!important;
+    }
+    body.wayon-workbench .sidebar #tabs button svg,
+    body.wayon-workbench .sidebar #nav-ledger svg,
+    body.wayon-workbench .sidebar #wayon-rules-btn svg,
+    body.wayon-workbench .sidebar #account-settings>summary svg{
+      display:block!important;
+      width:20px!important;
+      height:20px!important;
+      flex:none!important;
+      stroke-width:1.78!important;
+      margin:0!important;
+    }
+    body.wayon-workbench .sidebar #tabs button .ux-label,
+    body.wayon-workbench .sidebar #nav-ledger .ux-label,
+    body.wayon-workbench .sidebar #wayon-rules-btn .ux-label,
+    body.wayon-workbench .sidebar #account-settings>summary .ux-label{
+      display:block!important;
+      font-size:10.5px!important;
+      line-height:12px!important;
+      height:12px!important;
+      margin:0!important;
+      padding:0!important;
+      opacity:1!important;
+      font-weight:500!important;
+      letter-spacing:0!important;
+      white-space:nowrap!important;
+    }
+    @media(hover:hover){
+      body.wayon-workbench .sidebar #tabs button:hover,
+      body.wayon-workbench .sidebar #nav-ledger:hover,
+      body.wayon-workbench .sidebar #wayon-rules-btn:hover,
+      body.wayon-workbench .sidebar #account-settings>summary:hover{
+        background:var(--apple-rail-hover)!important;
+        color:var(--fg)!important;
+      }
+    }
+    @media(min-width:1024px){
+      body.wayon-workbench .sidebar #tabs button,
+      body.wayon-workbench .sidebar #tabs button.ux-labelled,
+      body.wayon-workbench .sidebar #nav-ledger,
+      body.wayon-workbench .sidebar #nav-ledger.ux-labelled,
+      body.wayon-workbench .sidebar #wayon-rules-btn,
+      body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled,
+      body.wayon-workbench .sidebar #account-settings>summary,
+      body.wayon-workbench .sidebar #account-settings>summary.wayon-icon-control{
+        width:60px!important;
+        min-width:60px!important;
+        height:48px!important;
+        min-height:48px!important;
+      }
+      body.wayon-workbench .sidebar #account-settings:not([open]){
+        width:60px!important;
+        min-width:60px!important;
+        height:48px!important;
+      }
+      body.wayon-workbench .sidebar-footer{
+        padding:8px 0 0!important;
+        gap:4px!important;
+      }
+    }
+    @media(max-width:1023px){
+      body.wayon-workbench .sidebar{
+        display:flex!important;
+        flex-direction:row!important;
+        align-items:center!important;
+        justify-content:space-between!important;
+        padding:6px 10px!important;
+        gap:6px!important;
+        border:0!important;
+        border-bottom:.5px solid var(--apple-hairline)!important;
+        border-radius:0!important;
+      }
+      body.wayon-workbench .sidebar .nav-section{
+        flex:1 1 auto!important;
+        min-width:0!important;
+        display:flex!important;
+        align-items:center!important;
+      }
+      body.wayon-workbench .sidebar #tabs{
+        display:flex!important;
+        flex-direction:row!important;
+        align-items:center!important;
+        gap:4px!important;
+        padding:0!important;
+        margin:0!important;
+        width:100%!important;
+        max-width:100%!important;
+        overflow-x:auto!important;
+        scrollbar-width:none;
+        -webkit-overflow-scrolling:touch;
+      }
+      body.wayon-workbench .sidebar-footer{
+        position:static!important;
+        flex:0 0 auto!important;
+        display:flex!important;
+        flex-direction:row!important;
+        align-items:center!important;
+        gap:4px!important;
+        padding:0!important;
+        margin:0!important;
+        border:0!important;
+      }
+      body.wayon-workbench .sidebar #tabs button,
+      body.wayon-workbench .sidebar #tabs button.ux-labelled,
+      body.wayon-workbench .sidebar #nav-ledger,
+      body.wayon-workbench .sidebar #nav-ledger.ux-labelled,
+      body.wayon-workbench .sidebar #wayon-rules-btn,
+      body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled,
+      body.wayon-workbench .sidebar #account-settings>summary,
+      body.wayon-workbench .sidebar #account-settings>summary.wayon-icon-control{
+        flex:0 0 auto!important;
+        width:48px!important;
+        min-width:48px!important;
+        height:48px!important;
+        min-height:48px!important;
+      }
+      body.wayon-workbench .sidebar #account-settings:not([open]){
+        width:48px!important;
+        min-width:48px!important;
+        height:48px!important;
+        padding:0!important;
+        margin:0!important;
+        flex:none!important;
+      }
+      body.wayon-workbench .sidebar #account-settings[open]{
+        position:fixed!important;
+        right:12px!important;
+        top:66px!important;
+        width:min(360px,calc(100vw - 24px))!important;
+        padding:16px!important;
+        border:1px solid var(--wayon-panel-border)!important;
+        border-radius:var(--wayon-r-panel)!important;
+        background:var(--wayon-panel-bg)!important;
+        box-shadow:0 20px 56px -12px rgba(0,0,0,.28)!important;
+        z-index:100!important;
+      }
+      body.wayon-workbench .sidebar #sync{
+        width:18px!important;
+        min-width:18px!important;
+        height:48px!important;
+        min-height:48px!important;
+        display:inline-flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        flex:none!important;
+        padding:0!important;
+      }
+      body.wayon-workbench .sidebar #tabs button .ux-badge,
+      body.wayon-workbench .sidebar #tabs #nav-feedback[data-todo]:after{
+        top:2px!important;
+        right:2px!important;
+        box-shadow:0 0 0 1.5px var(--wayon-panel-bg);
+      }
+      /* Classroom on mobile/tablet: park #workflow-tools neatly beside the top-left Wayon wordmark so the 9-tab nav bar never doubles height or clips */
+      body.wayon-workbench[data-mode="classroom"] .sidebar-footer>#workflow-tools{
+        position:absolute!important;
+        top:-45px!important;
+        right:12px!important;
+        left:auto!important;
+        bottom:auto!important;
+        margin:0!important;
+        display:inline-flex!important;
+        flex-direction:row!important;
+        align-items:center!important;
+        gap:6px!important;
+        z-index:46!important;
+      }
+      body.wayon-workbench[data-mode="classroom"] .sidebar-footer>#workflow-tools .workflow-icon{
+        width:34px!important;
+        min-width:34px!important;
+        height:34px!important;
+        min-height:34px!important;
+      }
+      body.wayon-workbench[data-mode="classroom"] .sidebar-footer>#workflow-tools #workflow-checks-panel{
+        right:0!important;
+        left:auto!important;
+        top:calc(100% + 8px)!important;
+        bottom:auto!important;
+      }
+    }
+    @media(max-width:599px){
+      body.wayon-workbench .sidebar{
+        padding:5px 6px!important;
+        gap:3px!important;
+      }
+      body.wayon-workbench .sidebar #tabs{
+        gap:1px!important;
+      }
+      body.wayon-workbench .sidebar-footer{
+        gap:1px!important;
+      }
+      body.wayon-workbench .sidebar #tabs button,
+      body.wayon-workbench .sidebar #tabs button.ux-labelled,
+      body.wayon-workbench .sidebar #nav-ledger,
+      body.wayon-workbench .sidebar #nav-ledger.ux-labelled,
+      body.wayon-workbench .sidebar #wayon-rules-btn,
+      body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled,
+      body.wayon-workbench .sidebar #account-settings>summary,
+      body.wayon-workbench .sidebar #account-settings>summary.wayon-icon-control{
+        width:44px!important;
+        min-width:42px!important;
+        height:48px!important;
+        min-height:48px!important;
+      }
+      body.wayon-workbench .sidebar #account-settings:not([open]){
+        width:44px!important;
+        min-width:42px!important;
+        height:48px!important;
+      }
+      body.wayon-workbench .sidebar #sync{
+        width:12px!important;
+        min-width:12px!important;
+      }
+      body.wayon-workbench .sidebar #tabs button .ux-badge,
+      body.wayon-workbench .sidebar #tabs #nav-feedback[data-todo]:after{
+        top:2px!important;
+        right:1px!important;
+        min-width:15px!important;
+        height:15px!important;
+        line-height:15px!important;
+        font-size:9.5px!important;
+        padding:0 3px!important;
+      }
+      body.wayon-workbench .main-content{padding:12px 12px 40px!important}
+    }
+    /* Narrow phones (<=479px, down to 340px): distribute all 9 nav items equally (6 in #tabs + 3 in .sidebar-footer + 10px #sync) so 模考 never clips */
+    @media(max-width:479px){
+      body.wayon-workbench .sidebar{
+        padding:5px 4px!important;
+        gap:0!important;
+      }
+      body.wayon-workbench .sidebar .nav-section{
+        flex:6 1 0!important;
+        min-width:0!important;
+      }
+      body.wayon-workbench .sidebar #tabs{
+        gap:0!important;
+        width:100%!important;
+        max-width:100%!important;
+      }
+      body.wayon-workbench .sidebar-footer{
+        flex:3 1 10px!important;
+        min-width:0!important;
+        gap:0!important;
+      }
+      body.wayon-workbench .sidebar #tabs button,
+      body.wayon-workbench .sidebar #tabs button.ux-labelled,
+      body.wayon-workbench .sidebar #nav-ledger,
+      body.wayon-workbench .sidebar #nav-ledger.ux-labelled,
+      body.wayon-workbench .sidebar #wayon-rules-btn,
+      body.wayon-workbench .sidebar #wayon-rules-btn.ux-labelled{
+        flex:1 1 0!important;
+        width:auto!important;
+        min-width:0!important;
+        padding:0!important;
+      }
+      body.wayon-workbench .sidebar #account-settings:not([open]){
+        flex:1 1 0!important;
+        width:auto!important;
+        min-width:0!important;
+        height:48px!important;
+      }
+      body.wayon-workbench .sidebar #account-settings:not([open])>summary,
+      body.wayon-workbench .sidebar #account-settings:not([open])>summary.wayon-icon-control{
+        width:100%!important;
+        min-width:0!important;
+        padding:0!important;
+      }
+      body.wayon-workbench .sidebar #sync{
+        flex:0 0 10px!important;
+        width:10px!important;
+        min-width:10px!important;
+        padding:0!important;
+      }
+    }
     body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button.on,
     body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button[aria-current="page"],
     body.wayon-workbench[data-feedback-open] .sidebar #tabs #nav-feedback,
@@ -1548,6 +1920,7 @@
     body.wayon-workbench[data-ledger-open]:not([data-ledger-space="private"]) .sidebar #nav-ledger.ux-labelled{
       background:var(--wayon-brand-soft)!important;
       color:var(--wayon-brand)!important;
+      border-radius:var(--wayon-r-nav)!important;
       box-shadow:none!important;
     }
     body.wayon-workbench:not([data-feedback-open]):not([data-memo-open]):not([data-mocks-open]):not([data-ledger-open]):not([data-aircon-open]) .sidebar #tabs button.on svg,
@@ -1605,132 +1978,247 @@
       color:var(--fg)!important;
       box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
     }
-    body.wayon-workbench .ux-topbar-panel{
-      display:contents;
+    /* Unified Apple Floating Topbar Panel across ALL viewport widths (390px–1440px):
+       >= 740px: crisp single row with exact concentric outer radius (18+8=26px);
+       <= 739px: structured 2-row panel (Row 1 full-width #subtabs, Row 2 date + '+' + tools) */
+    body.wayon-workbench .main-content>.ux-topbar-panel{
+      display:flex!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      gap:8px!important;
+      flex-wrap:nowrap!important;
+      flex:0 0 auto!important;
+      width:100%!important;
+      background:var(--wayon-panel-bg)!important;
+      border:1px solid var(--wayon-panel-border)!important;
+      border-radius:var(--wayon-r-bar)!important;
+      box-shadow:var(--wayon-panel-shadow)!important;
+      padding:8px!important;
+      margin:0 0 14px!important;
+      order:-6!important;
+      box-sizing:border-box!important;
     }
-    @media(min-width:900px){
+    body.wayon-workbench[data-mode="classroom"] .ux-topbar-panel,
+    body.wayon-workbench[data-feedback-open] .ux-topbar-panel,
+    body.wayon-workbench[data-memo-open] .ux-topbar-panel,
+    body.wayon-workbench[data-mocks-open] .ux-topbar-panel,
+    body.wayon-workbench[data-ledger-open] .ux-topbar-panel,
+    body.wayon-workbench[data-aircon-open] .ux-topbar-panel{
+      display:none!important;
+    }
+    body.wayon-workbench .main-content>.ux-topbar-panel>.workspace-top-bar,
+    body.wayon-workbench .main-content>.ux-topbar-panel>.workspace-sub-bar{
+      display:contents!important;
+    }
+    body.wayon-workbench .main-content>.ux-topbar-panel #subtabs{
+      order:-6!important;
+      flex:0 0 auto!important;
+      margin:0!important;
+    }
+    body.wayon-workbench .main-content>.ux-topbar-panel #subtabs:empty,
+    body.wayon-workbench .main-content>.ux-topbar-panel #study-slot:empty,
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #subtabs,
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #study-slot{
+      display:none!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon{
+      order:-6!important;
+      flex:0 1 auto!important;
+      min-width:0!important;
+      margin:0!important;
+      padding:0 4px 0 8px!important;
+      background:transparent!important;
+      border:0!important;
+      box-shadow:none!important;
+      border-radius:0!important;
+      display:flex!important;
+      align-items:center!important;
+      flex-wrap:nowrap!important;
+      gap:10px!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon b{
+      font-size:13.5px!important;
+      font-weight:650!important;
+      color:var(--fg)!important;
+      white-space:nowrap!important;
+      flex:none!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon span{
+      font-size:13px!important;
+      color:var(--muted)!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      min-width:0!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button{
+      margin-left:2px!important;
+      width:34px!important;
+      min-width:34px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0!important;
+      border-radius:999px!important;
+      border:0!important;
+      background:var(--wayon-brand-cta)!important;
+      color:var(--wayon-brand-cta-fg)!important;
+      box-shadow:none!important;
+      flex:none!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button:hover{
+      background:var(--wayon-brand-cta-hover)!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button:hover{
+      background:var(--wayon-btn-hover)!important;
+    }
+    body.wayon-workbench .main-content>.ux-topbar-panel #study-slot{
+      order:-5!important;
+      flex:0 0 auto!important;
+      margin:0!important;
+    }
+    body.wayon-workbench .main-content>.ux-topbar-panel #study-slot .meta{display:none!important}
+    body.wayon-workbench .main-content>.ux-topbar-panel #workflow-tools{
+      order:-4!important;
+      flex:0 0 auto!important;
+      margin:0 0 0 auto!important;
+      gap:6px!important;
+    }
+    body.wayon-workbench .main-content>.ux-topbar-panel .date-section{
+      order:-3!important;
+      flex:0 0 auto!important;
+      width:auto!important;
+      margin:0!important;
+    }
+    body.wayon-workbench .schedule-refresh-btn{
+      width:36px!important;
+      min-width:36px!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0!important;
+      gap:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--apple-surface)!important;
+      color:var(--muted)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+    }
+    body.wayon-workbench .schedule-refresh-btn:hover:not(:disabled){
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+    @media(min-width:740px) and (max-width:899px){
       body.wayon-workbench .main-content>.ux-topbar-panel{
-        display:flex!important;
-        align-items:center!important;
-        justify-content:flex-start!important;
-        gap:10px!important;
-        flex-wrap:nowrap!important;
-        flex:0 0 auto!important;
-        width:100%!important;
-        background:var(--wayon-panel-bg)!important;
-        border:1px solid var(--wayon-panel-border)!important;
-        border-radius:18px!important;
-        box-shadow:var(--wayon-panel-shadow)!important;
-        padding:8px 12px!important;
-        margin:0 0 14px!important;
-        order:-6!important;
+        gap:6px!important;
+        padding:8px!important;
       }
-      body.wayon-workbench[data-mode="classroom"] .ux-topbar-panel,
-      body.wayon-workbench[data-feedback-open] .ux-topbar-panel,
-      body.wayon-workbench[data-memo-open] .ux-topbar-panel,
-      body.wayon-workbench[data-mocks-open] .ux-topbar-panel,
-      body.wayon-workbench[data-ledger-open] .ux-topbar-panel,
-      body.wayon-workbench[data-aircon-open] .ux-topbar-panel{
-        display:none!important;
+      body.wayon-workbench .main-content>.ux-topbar-panel #subtabs button,
+      body.wayon-workbench .main-content>.ux-topbar-panel #subtabs button.ux-labelled{
+        padding:0 10px!important;
+        font-size:12.5px!important;
       }
-      body.wayon-workbench .main-content>.ux-topbar-panel>.workspace-top-bar,
-      body.wayon-workbench .main-content>.ux-topbar-panel>.workspace-sub-bar{
-        display:contents!important;
+      body.wayon-workbench .main-content>.ux-topbar-panel #subtabs .ux-badge{
+        min-width:16px!important;
+        height:16px!important;
+        line-height:16px!important;
+        padding:0 4px!important;
+        font-size:10px!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #workflow-tools{
+        gap:5px!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #day-picker{
+        padding:0 26px 0 32px!important;
+        font-size:13px!important;
+        background-position:left 9px center,right 9px center!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #days:has(>.home-btn:not([hidden])) #day-picker{
+        padding-left:36px!important;
+        background-position:right 9px center!important;
+      }
+    }
+    @media(max-width:739px){
+      body.wayon-workbench .main-content>.ux-topbar-panel{
+        flex-wrap:wrap!important;
+        gap:8px!important;
+        padding:8px!important;
+        border-radius:var(--wayon-r-panel)!important;
       }
       body.wayon-workbench .main-content>.ux-topbar-panel #subtabs{
         order:-6!important;
-        flex:0 0 auto!important;
-        margin:0!important;
-      }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #subtabs,
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #study-slot{
-        display:none!important;
+        flex:1 0 100%!important;
+        width:100%!important;
       }
       body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon{
         order:-6!important;
-        flex:0 1 auto!important;
-        min-width:0!important;
-        margin:0!important;
-        padding:0 4px!important;
-        background:transparent!important;
-        border:0!important;
-        box-shadow:none!important;
-        border-radius:0!important;
-        display:flex!important;
-        align-items:center!important;
-        gap:10px!important;
-      }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon b{
-        font-size:13.5px!important;
-        font-weight:650!important;
-        color:var(--fg)!important;
-        white-space:nowrap!important;
-      }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon span{
-        font-size:13px!important;
-        color:var(--muted)!important;
-        white-space:nowrap!important;
-        overflow:hidden!important;
-        text-overflow:ellipsis!important;
+        flex:1 0 100%!important;
+        width:100%!important;
+        padding:2px 2px 2px 6px!important;
       }
       body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button{
-        margin-left:2px!important;
-        width:34px!important;
-        min-width:34px!important;
-        height:34px!important;
-        min-height:34px!important;
-        padding:0!important;
-        border-radius:999px!important;
-        border:0!important;
-        background:var(--wayon-brand-cta)!important;
-        color:var(--wayon-brand-cta-fg)!important;
-        box-shadow:none!important;
+        margin-left:auto!important;
       }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button:hover{
-        background:var(--wayon-brand-cta-hover)!important;
-      }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button{
-        background:var(--wayon-btn-surface)!important;
-        color:var(--fg)!important;
-      }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button:hover{
-        background:var(--wayon-btn-hover)!important;
-      }
-      body.wayon-workbench .main-content>.ux-topbar-panel #study-slot{
+      body.wayon-workbench .main-content>.ux-topbar-panel .date-section,
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel .date-section{
         order:-5!important;
-        flex:0 0 auto!important;
-        margin:0!important;
-      }
-      body.wayon-workbench .main-content>.ux-topbar-panel #study-slot .meta{display:none!important}
-      body.wayon-workbench .main-content>.ux-topbar-panel #workflow-tools{
-        order:-4!important;
-        flex:0 0 auto!important;
-        margin:0 0 0 auto!important;
-      }
-      body.wayon-workbench .main-content>.ux-topbar-panel .date-section{
-        order:-3!important;
-        flex:0 0 auto!important;
+        flex:0 1 auto!important;
+        min-width:0!important;
+        max-width:100%!important;
         width:auto!important;
         margin:0!important;
       }
-      body.wayon-workbench .schedule-refresh-btn{
+      body.wayon-workbench .main-content>.ux-topbar-panel #days{
+        width:auto!important;
+        max-width:100%!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #day-picker{
+        width:auto!important;
+        min-width:0!important;
+        max-inline-size:min(220px,100%)!important;
+        white-space:nowrap!important;
+        padding:0 26px 0 32px!important;
+        font-size:13px!important;
+        background-position:left 9px center,right 9px center!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #days:has(>.home-btn:not([hidden])) #day-picker{
+        padding-left:36px!important;
+        background-position:right 9px center!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #study-slot,
+      body.wayon-workbench .main-content>.ux-topbar-panel .ux-quiz-add{
+        order:-4!important;
+        flex:0 0 auto!important;
+        margin:0!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel #workflow-tools,
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #workflow-tools{
+        order:-3!important;
+        flex:0 0 auto!important;
+        margin:0 0 0 auto!important;
+        gap:6px!important;
+      }
+      body.wayon-workbench .main-content>.ux-topbar-panel .workflow-icon,
+      body.wayon-workbench .main-content>.ux-topbar-panel .schedule-refresh-btn{
         width:36px!important;
         min-width:36px!important;
         height:36px!important;
         min-height:36px!important;
-        padding:0!important;
-        gap:0!important;
-        border:0!important;
-        border-radius:999px!important;
-        background:var(--apple-surface)!important;
-        color:var(--muted)!important;
-        box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
       }
-      body.wayon-workbench .schedule-refresh-btn:hover:not(:disabled){
-        background:var(--wayon-btn-hover)!important;
-        color:var(--fg)!important;
-        box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+    @media(max-width:479px){
+      body.wayon-workbench .main-content>.ux-topbar-panel{
+        gap:6px!important;
       }
+      body.wayon-workbench .main-content>.ux-topbar-panel #workflow-tools,
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel #workflow-tools{
+        gap:5px!important;
+      }
+    }
+    @media(min-width:1024px){
       body.wayon-workbench:not([data-mode="classroom"]):not([data-mocks-open]):not([data-feedback-open]):not([data-memo-open]):not([data-ledger-open]):not([data-aircon-open]) .main-content{
         min-height:calc(100dvh + 160px)!important;
         padding-bottom:172px!important;
@@ -1824,7 +2312,7 @@
       margin:0!important;
       padding:20px 22px 18px!important;
       border:1px solid var(--wayon-panel-border)!important;
-      border-radius:20px!important;
+      border-radius:var(--wayon-r-panel)!important;
       background:var(--wayon-panel-bg)!important;
       color:var(--fg)!important;
       box-shadow:0 24px 64px -16px rgba(15,23,42,.28),0 4px 16px -4px rgba(15,23,42,.08)!important;
@@ -1962,8 +2450,8 @@
       min-width:0;
     }
 
-    /* Three-Column Architectural Pure-White Panels (desktop >= 900px): Left Panel | Center Main Panel | Right Panel */
-    @media(min-width:900px){
+    /* Three-Column Architectural Pure-White Panels (desktop >= 1024px): Left Panel | Center Main Panel | Right Panel */
+    @media(min-width:1024px){
       body.wayon-workbench[data-mode=plan] #list.ux-focus-layout,
       body.wayon-workbench[data-mode=done] #list.ux-focus-layout,
       body.wayon-workbench[data-mode=chasing] #list.ux-focus-layout{
@@ -1982,13 +2470,13 @@
         background:var(--wayon-panel-bg)!important;
         border:1px solid var(--wayon-panel-border)!important;
         box-shadow:var(--wayon-panel-shadow)!important;
-        border-radius:16px!important;
+        border-radius:var(--wayon-r-panel)!important;
       }
       body.wayon-workbench #list.ux-focus-layout>.ux-pending-rail{
         grid-column:1;
         background:var(--wayon-panel-bg);
         border:1px solid var(--wayon-panel-border);
-        border-radius:18px;
+        border-radius:var(--wayon-r-panel);
         box-shadow:var(--wayon-panel-shadow);
         min-height:0;
         max-height:none;
@@ -2004,7 +2492,7 @@
         grid-column:2;
         background:var(--wayon-panel-bg);
         border:1px solid var(--wayon-panel-border);
-        border-radius:18px;
+        border-radius:var(--wayon-r-panel);
         box-shadow:var(--wayon-panel-shadow);
         min-height:0;
         align-self:stretch;
@@ -2040,7 +2528,7 @@
         grid-column:3!important;
         background:var(--wayon-panel-bg);
         border:1px solid var(--wayon-panel-border);
-        border-radius:18px;
+        border-radius:var(--wayon-r-panel);
         box-shadow:var(--wayon-panel-shadow);
         min-height:0;
         max-height:none;
@@ -2059,12 +2547,15 @@
         font-size:22px!important;
       }
     }
-    @media(min-width:900px) and (max-width:1160px){
+    @media(min-width:1024px) and (max-width:1199px){
       body.wayon-workbench[data-mode=plan] #list.ux-focus-layout,
       body.wayon-workbench[data-mode=done] #list.ux-focus-layout,
       body.wayon-workbench[data-mode=chasing] #list.ux-focus-layout{
-        grid-template-columns:192px minmax(0,1fr) 156px!important;
+        grid-template-columns:196px minmax(0,1fr) 168px!important;
         gap:12px!important;
+      }
+      body.wayon-workbench #list.ux-focus-layout>.ux-focus-stage>.item:not(.folded){
+        padding:22px 24px 18px!important;
       }
     }
 
@@ -2171,7 +2662,7 @@
       margin:0;
       padding:9px 10px 9px 13px;
       border:0;
-      border-radius:11px;
+      border-radius:var(--wayon-r-inner);
       background:transparent;
       color:var(--fg);
       display:flex;
@@ -2325,7 +2816,7 @@
       min-height:min(420px,calc(100dvh - 220px));
       background:var(--wayon-panel-bg);
       border:1px solid var(--wayon-panel-border);
-      border-radius:18px;
+      border-radius:var(--wayon-r-panel);
       box-shadow:var(--wayon-panel-shadow);
       display:flex;
       align-items:center;
@@ -2341,7 +2832,7 @@
       margin:0;
       padding:9px 12px;
       border:0;
-      border-radius:11px;
+      border-radius:var(--wayon-r-inner);
       display:flex;
       align-items:center;
       justify-content:center;
@@ -2427,7 +2918,7 @@
       flex-direction:column!important;
       gap:12px!important;
       padding:20px 20px 16px!important;
-      border-radius:22px!important;
+      border-radius:var(--wayon-r-panel)!important;
       min-width:0!important;
     }
 
@@ -2443,7 +2934,7 @@
       gap:5px 8px!important;
       margin:-20px -20px 0!important;
       padding:16px 20px 13px!important;
-      border-radius:22px 22px 0 0!important;
+      border-radius:var(--wayon-r-panel) var(--wayon-r-panel) 0 0!important;
       background:var(--wayon-card-head-bg)!important;
       border-bottom:1px solid var(--wayon-card-head-line)!important;
     }
@@ -2524,7 +3015,7 @@
       padding:14px 15px!important;
       font-size:13.5px!important;
       line-height:1.72!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner)!important;
       background:var(--wayon-pre-bg)!important;
       box-shadow:inset 0 0 0 .5px var(--wayon-card-head-line)!important;
     }
@@ -2954,7 +3445,7 @@
     body.wayon-workbench[data-mode=chasing] #list .ux-past,
     body.wayon-workbench[data-mode=chasing] #list .chasing-stopped{
       border:1px solid var(--wayon-panel-border)!important;
-      border-radius:18px!important;
+      border-radius:var(--wayon-r-panel)!important;
       background:var(--wayon-panel-bg)!important;
       box-shadow:var(--wayon-panel-shadow)!important;
       padding:4px 16px!important;
@@ -3009,7 +3500,7 @@
       justify-content:flex-start!important;
       gap:10px!important;
       padding:16px 18px 14px!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner)!important;
       background:var(--wayon-canvas)!important;
       border:1px solid var(--wayon-panel-border)!important;
       box-shadow:none!important;
@@ -3122,12 +3613,12 @@
     /* Quiz (单词抽背): portrait multi-column card grid + editorial serif names + right vertical folded rail (mobile top strip) */
     body.wayon-workbench[data-mode=quiz] #list .quiz{
       display:grid!important;
-      grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))!important;
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr))!important;
       gap:18px!important;
       align-items:stretch!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz:has(>.ux-quiz-rail){
-      grid-template-columns:minmax(0,1fr) 136px!important;
+      grid-template-columns:minmax(0,1fr) 148px!important;
       align-items:start!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz>.head{
@@ -3162,38 +3653,39 @@
       color:var(--fg)!important;
     }
     body.wayon-workbench .ux-topbar-panel .ux-quiz-add{display:none!important}
-    @media(min-width:900px){
-      body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]){
-        order:-5!important;
-        flex:0 0 auto!important;
-        display:inline-flex!important;
-        align-items:center!important;
-        justify-content:center!important;
-        width:36px!important;
-        min-width:36px!important;
-        height:36px!important;
-        min-height:36px!important;
-        padding:0!important;
-        margin:0!important;
-        border:0!important;
-        border-radius:999px!important;
-        background:var(--apple-surface)!important;
-        color:var(--fg)!important;
-        box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
-        cursor:pointer!important;
-        transition:color .16s var(--apple-ease),background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease)!important;
-      }
-      body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]) svg{width:16px!important;height:16px!important;pointer-events:none}
-      body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]):hover{
-        background:var(--wayon-btn-hover)!important;
-        box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
-      }
-      body.wayon-workbench[data-mode=quiz] #list .quiz>.head{display:none!important}
+    /* Unified '+' icon button across ALL widths in 抽背 — 100% pixel-identical to #study-add in 安排 & 完成 */
+    body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]){
+      order:-5!important;
+      flex:0 0 auto!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      width:36px!important;
+      min-width:36px!important;
+      height:36px!important;
+      min-height:36px!important;
+      padding:0!important;
+      margin:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--apple-surface)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+      cursor:pointer!important;
+      transition:color .16s var(--apple-ease),background-color .16s var(--apple-ease),box-shadow .16s var(--apple-ease)!important;
     }
+    body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]) svg{display:block!important;width:17px!important;height:17px!important;stroke-width:1.9!important;flex:none!important;pointer-events:none!important}
+    body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]) svg path{stroke-width:1.9!important}
+    body.wayon-workbench[data-mode=quiz] .ux-topbar-panel .ux-quiz-add:not([hidden]):hover{
+      background:var(--wayon-btn-hover)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz>.head{display:none!important}
     body.wayon-workbench[data-mode=quiz] #list .quiz>.ux-quiz-grid{
       grid-column:1;
       display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));
+      grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));
       gap:18px;
       align-items:stretch;
       min-width:0;
@@ -3207,7 +3699,7 @@
       gap:12px!important;
       padding:20px 20px 16px!important;
       margin:0!important;
-      border-radius:22px!important;
+      border-radius:var(--wayon-r-panel)!important;
       min-width:0!important;
     }
     @supports not (content-visibility:auto){
@@ -3219,8 +3711,8 @@
       align-items:stretch!important;
       gap:8px!important;
       margin:-20px -20px 0!important;
-      padding:16px 48px 13px 20px!important;
-      border-radius:22px 22px 0 0!important;
+      padding:16px 20px 13px 20px!important;
+      border-radius:var(--wayon-r-panel) var(--wayon-r-panel) 0 0!important;
       background:var(--wayon-card-head-bg)!important;
       border-bottom:1px solid var(--wayon-card-head-line)!important;
     }
@@ -3233,17 +3725,42 @@
       line-height:1.28!important;
       color:var(--fg)!important;
     }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-student-name{
+      display:block!important;
+      padding-right:42px!important;
+      min-width:0!important;
+    }
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-meta{
       font-family:var(--apple-sans)!important;
       font-size:12px!important;
       font-weight:500!important;
-      justify-content:flex-start!important;
+      display:flex!important;
+      flex-direction:column!important;
+      align-items:stretch!important;
+      justify-content:flex-end!important;
       width:100%!important;
+      margin:0!important;
+      padding:0!important;
       gap:6px!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-session{
+      display:flex!important;
+      align-items:center!important;
+      justify-content:flex-end!important;
+      flex-wrap:wrap!important;
       width:100%!important;
       gap:6px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-session>span:first-child{
+      flex:1 1 auto!important;
+      min-width:0!important;
+      margin-right:auto!important;
+      color:var(--muted)!important;
+      overflow-wrap:anywhere!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-session>.vq-check,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-session>.vq-remove-extra{
+      flex:0 0 auto!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-check{
       height:26px!important;
@@ -3260,18 +3777,42 @@
       color:var(--done)!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold{
-      top:16px!important;
-      right:14px!important;
-      width:30px!important;
-      height:30px!important;
-      border-radius:10px!important;
-      background:var(--wayon-btn-surface)!important;
-      color:var(--muted)!important;
+      top:14px!important;
+      right:20px!important;
+      width:32px!important;
+      min-width:32px!important;
+      height:32px!important;
+      min-height:32px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--wayon-sage-bg)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-sage-ring)!important;
+      color:var(--wayon-sage)!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      transition:background-color .16s var(--apple-ease),color .16s ease,box-shadow .16s var(--apple-ease),transform .12s var(--apple-ease)!important;
     }
-    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold:hover{
-      background:var(--wayon-btn-hover)!important;
-      color:var(--fg)!important;
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold svg{display:none!important}
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold::before{
+      content:'';
+      width:15px;
+      height:15px;
+      display:block;
+      background:currentColor;
+      mask:var(--wayon-icon-check) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-check) center/contain no-repeat;
+      forced-color-adjust:none;
     }
+    @media(hover:hover){
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold:hover{
+        background:var(--wayon-sage)!important;
+        color:var(--wayon-sage-hover-fg)!important;
+        box-shadow:0 2px 8px -1px rgba(21,128,61,.34)!important;
+      }
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold:active{transform:scale(.92)!important}
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq{
       flex:1 1 auto!important;
       display:flex!important;
@@ -3280,9 +3821,19 @@
       font-family:var(--apple-sans)!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar{
-      gap:8px!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:space-between!important;
+      flex-wrap:nowrap!important;
+      gap:6px!important;
+      min-width:0!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-tabs{
+      flex:0 0 auto!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      flex-wrap:nowrap!important;
+      gap:2px!important;
       border:0!important;
       border-radius:999px!important;
       padding:2.5px!important;
@@ -3292,21 +3843,198 @@
       border-radius:999px!important;
       min-height:28px!important;
       height:28px!important;
-      padding:0 11px!important;
-      font-size:12.5px!important;
+      padding:0 10px!important;
+      font-size:12px!important;
+      white-space:nowrap!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-actions{
+      flex:0 0 auto!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      flex-wrap:nowrap!important;
+      gap:5px!important;
+      margin-left:auto!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-actions button,
     body.wayon-workbench[data-mode=quiz] #list .quiz .vq-result-actions .fb-btn{
-      height:30px!important;
-      min-height:30px!important;
+      height:28px!important;
+      min-height:28px!important;
       border-radius:999px!important;
-      padding:0 12px!important;
+      padding:0 10px!important;
+      font-size:12px!important;
+      white-space:nowrap!important;
+    }
+    @container (inline-size < 395px){
+      body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar{
+        flex-wrap:wrap!important;
+        gap:8px!important;
+      }
+      body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar .vq-actions{
+        margin-left:auto!important;
+      }
+    }
+    @supports not (container-type:inline-size){
+      @media(max-width:440px){
+        body.wayon-workbench[data-mode=quiz] #list .quiz .vq-bar{flex-wrap:wrap!important;gap:8px!important}
+      }
+    }
+    /* Quiz ready row: list title + count + clear + two crisp 34x34px icon-only circle actions (copy & play) on ONE single row */
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done){
+      display:flex!important;
+      align-items:center!important;
+      flex-wrap:nowrap!important;
+      gap:8px!important;
+      margin-top:2px!important;
+      padding:9px 10px 9px 14px!important;
+      border-radius:var(--wayon-r-inner)!important;
+      background:var(--wayon-pre-bg)!important;
+      box-shadow:inset 0 0 0 .5px var(--wayon-panel-border)!important;
+      min-width:0!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done):has(.fb-meta){
+      flex-wrap:wrap!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done)>.fb-meta{
+      flex:1 0 100%!important;
+      font-size:11.5px!important;
+      margin-top:-2px!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done)>.vq-label{
+      flex:0 1 auto!important;
+      min-width:0!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      white-space:nowrap!important;
+      font-weight:600!important;
+      font-size:13.5px!important;
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done)>.vq-n{
+      flex:0 0 auto!important;
+      white-space:nowrap!important;
       font-size:12.5px!important;
+      color:var(--muted)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done)>.vq-clear{
+      flex:0 0 auto!important;
+      white-space:nowrap!important;
+      padding:0 4px!important;
+      font-size:12px!important;
+      min-height:28px!important;
+      color:var(--muted)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done)>.vq-clear:hover{
+      color:var(--fg)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy{
+      position:relative!important;
+      margin-left:auto!important;
+      flex:0 0 auto!important;
+      width:34px!important;
+      min-width:34px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0!important;
+      gap:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--wayon-panel-bg)!important;
+      color:var(--fg-secondary)!important;
+      box-shadow:inset 0 0 0 1px var(--wayon-panel-border)!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      transition:background-color .16s var(--apple-ease),color .16s ease,box-shadow .16s ease,transform .12s var(--apple-ease)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy svg{
+      width:15px!important;
+      height:15px!important;
+      stroke-width:1.9!important;
+      display:block!important;
+      flex:none!important;
+      pointer-events:none!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy .vq-copy-label{
+      position:absolute!important;
+      width:1px!important;
+      height:1px!important;
+      padding:0!important;
+      margin:-1px!important;
+      overflow:hidden!important;
+      clip-path:inset(50%)!important;
+      white-space:nowrap!important;
+      border:0!important;
+    }
+    @media(hover:hover){
+      body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy:hover{
+        background:var(--wayon-btn-hover)!important;
+        color:var(--fg)!important;
+      }
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy[data-copied="1"]{
+      background:var(--wayon-sage-pill)!important;
+      color:var(--wayon-sage)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy[data-copied="1"] svg{display:none!important}
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy[data-copied="1"]::before{
+      content:'';
+      width:15px;
+      height:15px;
+      display:block;
+      background:currentColor;
+      mask:var(--wayon-icon-check) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-check) center/contain no-repeat;
+      forced-color-adjust:none;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-start{
+      position:relative!important;
+      margin-left:auto!important;
+      flex:0 0 auto!important;
+      width:34px!important;
+      min-width:34px!important;
+      height:34px!important;
+      min-height:34px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:999px!important;
+      background:var(--wayon-brand-cta)!important;
+      color:transparent!important;
+      font-size:0!important;
+      line-height:0!important;
+      box-shadow:0 2px 8px -2px rgba(15,23,42,.24)!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      transition:background-color .16s var(--apple-ease),box-shadow .16s ease,transform .12s var(--apple-ease)!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy+.vq-start{
+      margin-left:0!important;
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-start::before{
+      content:'';
+      width:13px;
+      height:13px;
+      margin-left:1.5px;
+      display:block;
+      background:var(--wayon-brand-cta-fg);
+      mask:var(--wayon-icon-play) center/contain no-repeat;
+      -webkit-mask:var(--wayon-icon-play) center/contain no-repeat;
+      forced-color-adjust:none;
+    }
+    @media(hover:hover){
+      body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-start:hover{
+        background:var(--wayon-brand-cta-hover)!important;
+        box-shadow:0 4px 12px -2px rgba(15,23,42,.32)!important;
+      }
+    }
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-copy:active,
+    body.wayon-workbench[data-mode=quiz] #list .quiz .vq-ready:not(.vq-done) .vq-start:active{
+      transform:scale(.93)!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .vq-done{
       grid-template-columns:minmax(0,1fr)!important;
       gap:10px!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner)!important;
       padding:12px 14px!important;
     }
     body.wayon-workbench[data-mode=quiz] #list .quiz .vq-result-actions{
@@ -3330,7 +4058,7 @@
       margin:0!important;
       padding:10px 14px!important;
       border:0!important;
-      border-radius:14px!important;
+      border-radius:var(--wayon-r-inner)!important;
       display:flex!important;
       align-items:center!important;
       justify-content:center!important;
@@ -3428,7 +4156,7 @@
       margin:0!important;
       padding:9px 12px!important;
       border:0!important;
-      border-radius:11px!important;
+      border-radius:var(--wayon-r-inner)!important;
       display:flex!important;
       flex-direction:row!important;
       align-items:center!important;
@@ -3475,11 +4203,7 @@
     body.wayon-workbench #list .ux-past>.item,
     body.wayon-workbench #list .chasing-stopped>.item{margin-top:12px}
 
-    @media(max-width:899px){
-      body.wayon-workbench .workspace-top-bar{
-        padding:8px 10px!important;
-        border-radius:16px!important;
-      }
+    @media(max-width:1023px){
       body.wayon-workbench[data-mode=plan] #list:has(>.ux-folded-rail),
       body.wayon-workbench[data-mode=done] #list:has(>.ux-folded-rail),
       body.wayon-workbench[data-mode=notice] #list:has(>.ux-folded-rail),
@@ -3581,7 +4305,7 @@
       body.wayon-workbench[data-mode=notice] #list .item:not(.folded),
       body.wayon-workbench[data-mode=chasing] #list .item:not(.folded){
         padding:16px 16px 14px!important;
-        border-radius:18px!important;
+        border-radius:var(--wayon-r-panel)!important;
       }
       body.wayon-workbench[data-mode=plan] #list .item:not(.folded) .head,
       body.wayon-workbench[data-mode=done] #list .item:not(.folded) .head,
@@ -3589,16 +4313,20 @@
       body.wayon-workbench[data-mode=chasing] #list .item:not(.folded) .head{
         margin:-16px -16px 0!important;
         padding:14px 16px 11px!important;
-        border-radius:18px 18px 0 0!important;
+        border-radius:var(--wayon-r-panel) var(--wayon-r-panel) 0 0!important;
       }
       body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){
         padding:16px 16px 14px!important;
-        border-radius:18px!important;
+        border-radius:var(--wayon-r-panel)!important;
       }
       body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed)>.qhead{
         margin:-16px -16px 0!important;
-        padding:14px 44px 11px 16px!important;
-        border-radius:18px 18px 0 0!important;
+        padding:14px 16px 11px 16px!important;
+        border-radius:var(--wayon-r-panel) var(--wayon-r-panel) 0 0!important;
+      }
+      body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed) .vq-fold{
+        top:12px!important;
+        right:16px!important;
       }
       body.wayon-workbench #list .ux-card-foot button.small.wayon-icon-control,
       body.wayon-workbench #list .ux-card-foot button.small{
@@ -4021,7 +4749,7 @@
     catch { return false; }
   };
   const isDesktopFocus = () => {
-    try { return typeof window === 'undefined' || typeof window.innerWidth !== 'number' || window.innerWidth >= 900; }
+    try { return typeof window === 'undefined' || typeof window.innerWidth !== 'number' || window.innerWidth >= 1024; }
     catch { return true; }
   };
   function withViewTransition(prevCard, nextCard, fn) {
@@ -5093,6 +5821,11 @@
       if (subBar) wrap.append(subBar);
     }
     if (!wrap) return;
+    // Align #study-add's SVG stroke-width attribute with .ux-quiz-add & .fb-manual-add (1.9)
+    const studySvg = $('#study-add svg', wrap);
+    if (studySvg && studySvg.getAttribute('stroke-width') !== '1.9') {
+      studySvg.setAttribute('stroke-width', '1.9');
+    }
     // Quiz view: mirror "+ 添加学生" right into the top white toolbar next to #subtabs (same slot as "+")
     const srcQuizAdd = page.mode === 'quiz' ? $('#list #vq-add-student') : null;
     let proxy = $('.ux-quiz-add', wrap);
@@ -5102,7 +5835,7 @@
         proxy.type = 'button';
         proxy.title = '添加抽背学生';
         proxy.setAttribute('aria-label', '添加抽背学生');
-        proxy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
+        proxy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>';
         proxy.onclick = () => { $('#list #vq-add-student')?.click(); };
         wrap.append(proxy);
       }
