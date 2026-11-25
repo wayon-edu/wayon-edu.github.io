@@ -59,7 +59,7 @@
     #list .item .head .name{cursor:pointer}@media(hover:hover){#list .item .head .name:hover{text-decoration:underline;text-underline-offset:3px}}
     .ux-aircon{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;margin:0 0 12px;border:1px solid var(--line,#d2d2d7);border-radius:14px;background:var(--card,#fff);font-size:13.5px}
     .ux-aircon b{font-weight:600}.ux-aircon span{color:var(--muted,#888)}.ux-aircon button{margin-left:auto;min-height:36px;padding:6px 14px;border-radius:10px;border:1px solid var(--line,#d2d2d7);background:transparent;font:inherit;cursor:pointer;color:inherit}
-    .ux-aircon[data-copied] b:after{content:' · 已复制';color:#1a7f37;font-weight:500}
+    .ux-aircon[data-copied]:not([data-multi]) b:after,.ux-aircon-item[data-copied] span:after{content:' · 已复制';color:#1a7f37;font-weight:500}
     .ux-past{margin:8px 0 0;border:1px dashed var(--line,#d2d2d7);border-radius:14px;padding:4px 12px}
     .ux-past>summary{cursor:pointer;padding:10px 4px;font-size:13.5px;color:var(--muted,#888);list-style-position:inside}
     .ux-past[open]>summary{margin-bottom:8px}
@@ -171,8 +171,8 @@
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup:not(.vq-collapsed){background:var(--card,#fff);border:1px solid var(--line,#e5e5ea)!important;border-radius:16px!important;padding:16px 20px!important;margin:0 0 12px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)}
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup.vq-collapsed{padding:9px 14px!important;margin:0 0 10px!important}
     body.wayon-workbench[data-mode=quiz] #list .quiz .qgroup .qhead{font-size:18px;font-weight:600;letter-spacing:-.01em}
-    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .ux-chip[data-kind=ok],:root:not([data-theme="light"]) .ux-aircon[data-copied] b:after,:root:not([data-theme="light"]) .ux-st-row em[data-kind=ok]{color:#4ac26b}:root:not([data-theme="light"]) .ux-chip[data-kind=todo],:root:not([data-theme="light"]) .ux-st-row em[data-kind=todo]{color:#f0883e}:root:not([data-theme="light"]) .ux-chip[data-kind=wait],:root:not([data-theme="light"]) .ux-st-row em[data-kind=wait]{color:#d4a72c}}
-    :root[data-theme="dark"] .ux-chip[data-kind=ok],:root[data-theme="dark"] .ux-aircon[data-copied] b:after,:root[data-theme="dark"] .ux-st-row em[data-kind=ok]{color:#4ac26b}
+    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .ux-chip[data-kind=ok],:root:not([data-theme="light"]) .ux-aircon[data-copied]:not([data-multi]) b:after,:root:not([data-theme="light"]) .ux-aircon-item[data-copied] span:after,:root:not([data-theme="light"]) .ux-st-row em[data-kind=ok]{color:#4ac26b}:root:not([data-theme="light"]) .ux-chip[data-kind=todo],:root:not([data-theme="light"]) .ux-st-row em[data-kind=todo]{color:#f0883e}:root:not([data-theme="light"]) .ux-chip[data-kind=wait],:root:not([data-theme="light"]) .ux-st-row em[data-kind=wait]{color:#d4a72c}}
+    :root[data-theme="dark"] .ux-chip[data-kind=ok],:root[data-theme="dark"] .ux-aircon[data-copied]:not([data-multi]) b:after,:root[data-theme="dark"] .ux-aircon-item[data-copied] span:after,:root[data-theme="dark"] .ux-st-row em[data-kind=ok]{color:#4ac26b}
     :root[data-theme="dark"] .ux-chip[data-kind=todo],:root[data-theme="dark"] .ux-st-row em[data-kind=todo]{color:#f0883e}
     :root[data-theme="dark"] .ux-chip[data-kind=wait],:root[data-theme="dark"] .ux-st-row em[data-kind=wait]{color:#d4a72c}
   `;
@@ -1183,16 +1183,18 @@
       padding:3px 11px!important;
     }
     body.wayon-workbench .ux-aircon b,
-    body.wayon-workbench .ux-aircon span{cursor:pointer;transition:color .16s ease,opacity .16s ease}
-    body.wayon-workbench .ux-aircon b:hover,
-    body.wayon-workbench .ux-aircon span:hover{opacity:.72;text-decoration:underline;text-underline-offset:3px}
+    body.wayon-workbench .ux-aircon span:not(.ux-aircon-sep){cursor:pointer;transition:color .16s ease,opacity .16s ease}
+    @media(hover:hover){
+      body.wayon-workbench .ux-aircon b:hover,
+      body.wayon-workbench .ux-aircon span:not(.ux-aircon-sep):hover{opacity:.72;text-decoration:underline;text-underline-offset:3px}
+    }
     body.wayon-workbench .ux-aircon button{
       border:0!important;
       border-radius:999px!important;
+      min-inline-size:34px!important;
+      min-block-size:34px!important;
       width:34px!important;
-      min-width:34px!important;
       height:34px!important;
-      min-height:34px!important;
       padding:0!important;
       display:inline-flex!important;
       align-items:center!important;
@@ -1202,12 +1204,31 @@
       box-shadow:none!important;
     }
     body.wayon-workbench .ux-aircon button svg{width:15px!important;height:15px!important;pointer-events:none}
-    body.wayon-workbench .ux-aircon button:hover{background:var(--wayon-brand-cta-hover)!important}
-    body.wayon-workbench .ux-aircon[data-copied] button{
-      background:var(--wayon-btn-surface)!important;
-      color:var(--fg)!important;
+    body.wayon-workbench .ux-aircon button:focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px!important}
+    @media(hover:hover){
+      body.wayon-workbench .ux-aircon button:hover{background:var(--wayon-brand-cta-hover)!important}
     }
-    body.wayon-workbench .ux-aircon[data-copied] button:hover{background:var(--wayon-btn-hover)!important}
+    body.wayon-workbench .ux-aircon[data-copied]:not([data-multi]) button,
+    body.wayon-workbench .ux-aircon-item[data-copied] button{
+      background:var(--wayon-btn-surface)!important;
+      color:var(--done,#248a3d)!important;
+    }
+    @media(hover:hover){
+      body.wayon-workbench .ux-aircon[data-copied]:not([data-multi]) button:hover,
+      body.wayon-workbench .ux-aircon-item[data-copied] button:hover{background:var(--wayon-btn-hover)!important}
+    }
+    body.wayon-workbench #aircon-panel #aircon-back{
+      border:0!important;
+      background:var(--apple-surface)!important;
+      color:var(--fg)!important;
+      box-shadow:inset 0 1px 0 var(--apple-card-rim),0 1px 3px var(--apple-glass-shadow-tight),0 0 0 .5px var(--apple-input-ring)!important;
+    }
+    @media(hover:hover){
+      body.wayon-workbench #aircon-panel #aircon-back:hover{
+        background:var(--wayon-btn-hover)!important;
+        box-shadow:inset 0 0 0 1px var(--wayon-brand-ring)!important;
+      }
+    }
     /* Aircon full panel, study form, note icons, cloud login dialog & rules login CTA -> unified monochrome ink */
     body.wayon-workbench #aircon-panel .aircon-card:not(.folded),
     body.wayon-workbench #aircon-panel .aircon-empty{
@@ -2043,20 +2064,45 @@
       white-space:nowrap!important;
       flex:none!important;
     }
-    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon span{
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon span:not(.ux-aircon-sep){
       font-size:13px!important;
       color:var(--muted)!important;
       white-space:nowrap!important;
       overflow:hidden!important;
       text-overflow:ellipsis!important;
       min-width:0!important;
+      font-variant-numeric:tabular-nums!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon .ux-aircon-items{
+      display:flex!important;
+      align-items:center!important;
+      gap:10px!important;
+      min-width:0!important;
+      flex:0 1 auto!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon .ux-aircon-item{
+      display:inline-flex!important;
+      align-items:center!important;
+      gap:8px!important;
+      min-width:0!important;
+      flex:0 1 auto!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon .ux-aircon-item:not([data-copied]) span{
+      color:var(--fg-secondary,var(--muted))!important;
+    }
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon .ux-aircon-sep{
+      width:0!important;
+      height:16px!important;
+      border-left:1px solid var(--line-strong,rgba(0,0,0,.14))!important;
+      flex:none!important;
+      pointer-events:none!important;
     }
     body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button{
       margin-left:2px!important;
+      min-inline-size:34px!important;
+      min-block-size:34px!important;
       width:34px!important;
-      min-width:34px!important;
       height:34px!important;
-      min-height:34px!important;
       padding:0!important;
       border-radius:999px!important;
       border:0!important;
@@ -2065,15 +2111,21 @@
       box-shadow:none!important;
       flex:none!important;
     }
-    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button:hover{
-      background:var(--wayon-brand-cta-hover)!important;
+    @media(hover:hover){
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button:hover{
+        background:var(--wayon-brand-cta-hover)!important;
+      }
     }
-    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button{
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied]:not([data-multi]) button,
+    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon .ux-aircon-item[data-copied] button{
       background:var(--wayon-btn-surface)!important;
-      color:var(--fg)!important;
+      color:var(--done,#248a3d)!important;
     }
-    body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied] button:hover{
-      background:var(--wayon-btn-hover)!important;
+    @media(hover:hover){
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-copied]:not([data-multi]) button:hover,
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon .ux-aircon-item[data-copied] button:hover{
+        background:var(--wayon-btn-hover)!important;
+      }
     }
     body.wayon-workbench .main-content>.ux-topbar-panel #study-slot{
       order:-5!important;
@@ -2141,6 +2193,28 @@
         background-position:right 9px center!important;
       }
     }
+    @media(max-width:1023px){
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel:has(>.ux-aircon[data-multi]){
+        flex-wrap:wrap!important;
+        gap:8px!important;
+        padding:8px!important;
+        border-radius:var(--wayon-r-panel)!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi]{
+        order:-6!important;
+        flex:1 0 100%!important;
+        width:100%!important;
+        padding:2px 4px 8px 8px!important;
+        border-bottom:1px solid var(--line)!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel:has(>.ux-aircon[data-multi]) .date-section{
+        order:-5!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel:has(>.ux-aircon[data-multi]) #workflow-tools{
+        order:-4!important;
+        margin:0 0 0 auto!important;
+      }
+    }
     @media(max-width:739px){
       body.wayon-workbench .main-content>.ux-topbar-panel{
         flex-wrap:wrap!important;
@@ -2159,7 +2233,10 @@
         width:100%!important;
         padding:2px 2px 2px 6px!important;
       }
-      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon button{
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi]{
+        padding:2px 4px 8px 6px!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon:not([data-multi]) button{
         margin-left:auto!important;
       }
       body.wayon-workbench .main-content>.ux-topbar-panel .date-section,
@@ -2207,6 +2284,35 @@
         min-width:36px!important;
         height:36px!important;
         min-height:36px!important;
+      }
+    }
+    @media(max-width:679px){
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi]{
+        flex-direction:column!important;
+        align-items:stretch!important;
+        gap:6px!important;
+        padding:4px 4px 8px 6px!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi] .ux-aircon-items{
+        flex-direction:column!important;
+        align-items:stretch!important;
+        gap:6px!important;
+        width:100%!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi] .ux-aircon-item{
+        display:flex!important;
+        width:100%!important;
+        justify-content:space-between!important;
+        gap:8px!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi] .ux-aircon-sep{
+        width:100%!important;
+        height:0!important;
+        border-left:0!important;
+        border-top:1px solid var(--line)!important;
+      }
+      body.wayon-workbench[data-mode="notice"] .main-content>.ux-topbar-panel>.ux-aircon[data-multi] button{
+        margin-left:auto!important;
       }
     }
     @media(max-width:479px){
@@ -4529,14 +4635,19 @@
     const saved = request.status === 'ready' ? airconSaved(day) : {};
     return {day, request, copied: request.status === 'ready' && saved[request.id]?.signature === request.text};
   };
-  const airconNoticeEntry = () => {
+  const airconNoticeEntries = () => {
     const target = noticeDay() || page.tomorrow || page.today;
-    const curAir = airconFor(target);
-    if (target === page.tomorrow && (!curAir || curAir.request.status === 'none')) {
-      const todayAir = airconFor(page.today);
-      if (todayAir && todayAir.request.status === 'ready') return todayAir;
+    const tAir = airconFor(page.today), mAir = airconFor(page.tomorrow);
+    const tReady = tAir?.request.status === 'ready';
+    const mReady = !tAir?.request.days?.includes(page.tomorrow) && mAir?.request.status === 'ready';
+    if (!target || target === page.today || target === page.tomorrow) {
+      const readyList = [];
+      if (tReady) readyList.push(tAir);
+      if (mReady) readyList.push(mAir);
+      if (readyList.length) return readyList;
     }
-    return curAir || (target ? {day: target, request: {status: 'unknown', days: [target], text: ''}, copied: false} : null);
+    const curAir = airconFor(target);
+    return curAir ? [curAir] : (target ? [{day: target, request: {status: 'unknown', days: [target], text: ''}, copied: false}] : []);
   };
   const airconDue = () => {
     const tAir = airconFor(page.today), mAir = airconFor(page.tomorrow);
@@ -5266,58 +5377,96 @@
     const old = (topPanel && [...(topPanel.children || [])].find(c => c.classList?.contains('ux-aircon'))) || $('#list > .ux-aircon');
     if (page.mode !== 'notice') { old?.remove(); return; }
     const list = $('#list'); if (!list) return;
-    const air = airconNoticeEntry();
-    if (!air) { old?.remove(); return; }
-    const status = air.request.status;
-    const sig = [air.day, status, air.request.text || '', air.copied].join('|');
+    const entries = airconNoticeEntries();
+    if (!entries.length) { old?.remove(); return; }
+    const sig = entries.map(a => [a.day, a.request.status, a.request.text || '', a.copied].join('|')).join('||');
     if (old?.dataset.sig === sig && (!topPanel || old.parentElement === topPanel)) return;
     old?.remove();
+    const multi = entries.length > 1;
     const row = make('div', 'ux-aircon'); row.dataset.sig = sig;
-    if (status === 'ready' && air.copied) row.dataset.copied = '';
-    const when = status === 'ready' ? ((air.request.text.match(/开启时间：(.+)/) || [])[1] || '') : '';
-    const summary = status === 'ready'
-      ? air.request.days.map(md).join('/') + (when ? ' · ' + when : '')
-      : status === 'none'
-      ? md(air.day) + ' 无需加时 · 可选其他日期'
-      : md(air.day) + ' 课表待核实 · 可选其他日期';
-    const openAircon = () => {
-      if (typeof globalThis.wayonAircon?.open === 'function') globalThis.wayonAircon.open(air.day);
+    if (multi) row.dataset.multi = '';
+    if (entries.every(a => a.request.status === 'ready' && a.copied)) row.dataset.copied = '';
+    const openAircon = day => {
+      if (typeof globalThis.wayonAircon?.open === 'function') globalThis.wayonAircon.open(day);
       else document.getElementById('nav-aircon')?.click();
     };
-    const onOpenKey = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAircon(); } };
+    const bindKey = fn => e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } };
+    const dayLabel = air => {
+      const days = air.request.days?.length ? air.request.days : [air.day];
+      if (days.length > 1) return days.map(md).join('/');
+      const d = days[0];
+      return (d === page.today ? '今天 ' : d === page.tomorrow ? '明天 ' : '') + md(d);
+    };
+    const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
+    const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>';
+    const CHEVRON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+    const primaryAir = entries.find(a => a.request.status === 'ready' && !a.copied) || entries[0];
+    const openPrimary = () => openAircon(primaryAir.day);
     const titleEl = make('b', '', '空调加时申请');
     titleEl.title = '点击查看并编辑空调加时文本';
     titleEl.setAttribute('role', 'button');
     titleEl.tabIndex = 0;
-    titleEl.onclick = openAircon;
-    titleEl.onkeydown = onOpenKey;
-    const sumEl = make('span', '', summary);
-    sumEl.title = '点击查看并编辑空调加时文本';
-    sumEl.setAttribute('role', 'button');
-    sumEl.tabIndex = 0;
-    sumEl.onclick = openAircon;
-    sumEl.onkeydown = onOpenKey;
-    row.append(titleEl, sumEl);
-    const act = make('button', 'ux-aircon-copy'); act.type = 'button';
-    const isReady = status === 'ready';
-    const label = isReady ? (air.copied ? '再次复制空调加时申请' : '一键复制空调加时申请') : '查看空调加时';
-    act.title = label;
-    act.setAttribute('aria-label', label);
-    act.innerHTML = isReady
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
-    act.onclick = () => {
-      if (isReady && typeof globalThis.wayonAircon?.copy === 'function') {
-        globalThis.wayonAircon.copy(air.day, () => {
-          showUndoToast('已复制空调加时申请');
-          delete row.dataset.sig;
-          apply();
-        }, () => openAircon());
-      } else {
-        openAircon();
-      }
+    titleEl.onclick = openPrimary;
+    titleEl.onkeydown = bindKey(openPrimary);
+    row.append(titleEl);
+    const buildEntry = air => {
+      const status = air.request.status;
+      const isReady = status === 'ready';
+      const when = isReady ? ((air.request.text.match(/开启时间：(.+)/) || [])[1] || '') : '';
+      const dLabel = dayLabel(air);
+      const summary = isReady
+        ? dLabel + (when ? ' · ' + when : '')
+        : status === 'none'
+        ? md(air.day) + ' 无需加时 · 可选其他日期'
+        : md(air.day) + ' 课表待核实 · 可选其他日期';
+      const openThis = () => openAircon(air.day);
+      const sumEl = make('span', '', summary);
+      sumEl.title = '点击查看并编辑 ' + dLabel + ' 空调加时文本';
+      sumEl.setAttribute('role', 'button');
+      sumEl.tabIndex = 0;
+      sumEl.onclick = openThis;
+      sumEl.onkeydown = bindKey(openThis);
+      const act = make('button', 'ux-aircon-copy'); act.type = 'button';
+      const label = isReady ? (air.copied ? '再次复制 ' + dLabel + ' 空调加时申请' : '一键复制 ' + dLabel + ' 空调加时申请') : '查看空调加时';
+      act.title = label;
+      act.setAttribute('aria-label', label);
+      act.innerHTML = isReady ? (air.copied ? CHECK_SVG : COPY_SVG) : CHEVRON_SVG;
+      act.onclick = () => {
+        if (isReady && typeof globalThis.wayonAircon?.copy === 'function') {
+          globalThis.wayonAircon.copy(air.day, () => {
+            showUndoToast('已复制 ' + dLabel + ' 空调加时申请');
+            delete row.dataset.sig;
+            apply();
+          }, openThis);
+        } else {
+          openThis();
+        }
+      };
+      return {sumEl, act};
     };
-    row.append(act);
+    if (!multi) {
+      const {sumEl, act} = buildEntry(entries[0]);
+      row.append(sumEl, act);
+    } else {
+      const group = make('div', 'ux-aircon-items');
+      group.setAttribute('role', 'group');
+      group.setAttribute('aria-label', '今明两日空调加时申请');
+      entries.forEach((air, idx) => {
+        if (idx > 0) {
+          const sep = make('span', 'ux-aircon-sep');
+          sep.setAttribute('role', 'separator');
+          sep.setAttribute('aria-orientation', 'vertical');
+          group.append(sep);
+        }
+        const item = make('div', 'ux-aircon-item');
+        item.dataset.day = air.day;
+        if (air.request.status === 'ready' && air.copied) item.dataset.copied = '';
+        const {sumEl, act} = buildEntry(air);
+        item.append(sumEl, act);
+        group.append(item);
+      });
+      row.append(group);
+    }
     if (topPanel) topPanel.prepend(row); else list.prepend(row);
   }
 

@@ -110,6 +110,12 @@
     body[data-aircon-open] #list,body[data-aircon-open] .workspace-top-bar,body[data-aircon-open] .workspace-sub-bar,body[data-aircon-open] #memo-panel,body[data-aircon-open] #feedback-panel,body[data-aircon-open] #mocks-panel,body[data-aircon-open] #ledger-panel,body[data-aircon-open] .sidebar-footer .bar{display:none!important}
     #aircon-panel{width:100%}#aircon-panel[hidden]{display:none!important}
     .aircon-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+    .aircon-heading-main{display:inline-flex;align-items:center;gap:12px;min-width:0}
+    .aircon-back{display:inline-flex;align-items:center;justify-content:center;min-inline-size:36px;min-block-size:36px;width:36px;height:36px;padding:0;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.04);transition:background-color .16s ease,border-color .16s ease,transform .16s ease}
+    .aircon-back svg{width:17px;height:17px;pointer-events:none}
+    @media(hover:hover){.aircon-back:hover{background:var(--code-bg);border-color:var(--line-strong)}}
+    .aircon-back:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    @media(prefers-reduced-motion:reduce){.aircon-back{transition:none}}
     .aircon-heading h2{font-size:24px;letter-spacing:-.025em;margin:0}.aircon-heading select{max-width:100%;min-height:44px;border:1px solid var(--line-strong);border-radius:10px;background:var(--card) url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236e6e73%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E") no-repeat right 12px center/11px 11px;color:var(--fg);padding:8px 34px 8px 12px;font:inherit;appearance:none;-webkit-appearance:none}
     .aircon-hint{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 16px}.aircon-empty{padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--muted)}
     #aircon-panel pre,#aircon-panel .aircon-editor{box-sizing:border-box;width:100%;margin:16px 0 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--code-bg);color:var(--fg);font:15px/1.8 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;resize:vertical}
@@ -131,7 +137,15 @@
     if(!root || !isOpen)return;
     const snapshot=data();lastSnapshot=JSON.stringify([snapshot._sess,snapshot._schedule_status,snapshot._aircon_schedule]);
     root.replaceChildren();watch(selected);
-    const heading=make('div','aircon-heading');heading.append(make('h2','','空调加时'));
+    const heading=make('div','aircon-heading');
+    const headingMain=make('div','aircon-heading-main');
+    const backBtn=make('button','aircon-back');
+    backBtn.type='button';backBtn.id='aircon-back';
+    backBtn.title='返回通知';backBtn.setAttribute('aria-label','返回通知');
+    backBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+    backBtn.onclick=()=>closePanel();
+    headingMain.append(backBtn,make('h2','','空调加时'));
+    heading.append(headingMain);
     const picker=make('select');picker.id='aircon-day-picker';picker.setAttribute('aria-label','空调开启日期');
     const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'});
     const dates=[...new Set([today,shift(today,1),selected,...Object.keys(snapshot._sess||{}),...Object.keys(snapshot._aircon_schedule||{})])].filter(iso).sort();
