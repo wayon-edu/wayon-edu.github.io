@@ -39,10 +39,11 @@
     if(regular.length){
       const end=Math.max(...regular.map(s=>s[1]));
       if(weekend)windows.push([Math.min(510,...regular.map(s=>s[0])),end<=1060?1050:end]);
-      else if(end>1080)windows.push([1080,end]);
+      else if(end>1110)windows.push([1110,end]);
     }
     if(!windows.length)return {status:'none',days,text:''};
-    const start=Math.min(...windows.map(s=>s[0])),stop=Math.max(...windows.map(s=>s[1]));
+    const start=Math.min(...windows.map(s=>s[0])),rawStop=Math.max(...windows.map(s=>s[1]));
+    const stop=rawStop<=start?start+60:start+Math.ceil((rawStop-start)/60)*60;
     const text=['申请空调加时信息如下：','开启房号：C1108','开启日期：'+occupied.map(label).join('/'),'开启时间：'+clock(start)+'-'+clock(stop),'区域：全部'].join('\n');
     return {status:'ready',days,id:days.join('/'),text};
   }
