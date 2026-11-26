@@ -85,6 +85,34 @@
     const hours = Math.round((done + upcoming) * 100) / 100;
     return {hours, done, upcoming, rawHours, classes: doneClasses + upcomingClasses, doneClasses, upcomingClasses};
   };
+  const parseGroupClassStatus = raw => {
+    const text = String(raw || '').trim();
+    if (!text) return null;
+    const cnDigit = {'零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10};
+    const toNum = s => (Object.prototype.hasOwnProperty.call(cnDigit, s) ? cnDigit[s] : Number(s));
+    const exhausted = /已消耗|已用完|已上完|已结课|无剩余/.test(text);
+    const remMatch = /剩(?:余)?\s*([0-9]+|[零一二两三四五六七八九十])\s*期/.exec(text);
+    const usedMatch = /已(?:消耗|用|上)\s*([0-9]+|[零一二两三四五六七八九十])\s*期/.exec(text);
+    const totalMatch = /^([0-9]+|[零一二两三四五六七八九十])\s*期/.exec(text);
+    if (remMatch) {
+      const rem = toNum(remMatch[1]);
+      return {raw: text, remaining: rem, label: `${rem}期`, exhausted: rem <= 0, detail: text};
+    }
+    if (exhausted && !usedMatch) {
+      return {raw: text, remaining: 0, label: '0期', exhausted: true, detail: text};
+    }
+    if (totalMatch && usedMatch) {
+      const tot = toNum(totalMatch[1]);
+      const used = toNum(usedMatch[1]);
+      const rem = Math.max(0, tot - used);
+      return {raw: text, remaining: rem, label: `${rem}期`, exhausted: rem <= 0, detail: text};
+    }
+    if (totalMatch) {
+      const tot = toNum(totalMatch[1]);
+      return {raw: text, remaining: tot, label: `${tot}期`, exhausted: tot <= 0, detail: text};
+    }
+    return {raw: text, remaining: null, label: text, exhausted: false, detail: text};
+  };
   const monthShortLabel = m => {
     const raw = String(m?.title || m?.year_month || '').trim();
     if (isForecastMonth(m)) {
@@ -390,6 +418,12 @@
     .ldg-lt-num strong.warn{color:var(--warning-fg,#805300)}
     .ldg-lt-num strong.ok{color:var(--done,#248a3d)}
     .ldg-lt-note{margin:0;font-size:12px;color:var(--muted,#6e6e73);line-height:1.45}
+    .ldg-lt-group-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:var(--code-bg,#f5f5f7);font-size:12.5px}
+    .ldg-lt-group-row small{font-size:11.5px;color:var(--muted,#6e6e73)}
+    .ldg-lt-group-val{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+    .ldg-lt-group-val strong{font-size:15px;font-weight:650}
+    .ldg-lt-group-val strong.ok{color:var(--done,#248a3d)}
+    .ldg-lt-group-val strong.muted{color:var(--muted,#6e6e73)}
     .ldg-lt-cutoff{max-width:100%;font-variant-numeric:tabular-nums}
     .ldg-lt-forecast-line{margin:0;font-size:12px;color:var(--accent,#0071e3);font-variant-numeric:tabular-nums;line-height:1.45}
     .ldg-lt-forecast-cell{color:var(--accent,#0071e3);font-weight:550;background:color-mix(in srgb,var(--accent,#0071e3) 6%,transparent)}
@@ -3492,6 +3526,19 @@
         addNum('累计消耗', `${fmtHours(used)}h`);
         addNum(cutoff.isForecast ? '预计剩余' : '当前剩余', `${fmtHours(remaining)}h`, level);
 
+        const groupInfo = parseGroupClassStatus(info.group_class);
+        let groupRow = null;
+        if (groupInfo) {
+          groupRow = make('div', 'ldg-lt-group-row');
+          groupRow.append(make('small', '', '剩余班课'));
+          const valWrap = make('span', 'ldg-lt-group-val');
+          valWrap.append(make('strong', groupInfo.exhausted ? 'muted' : 'ok', groupInfo.label));
+          if (groupInfo.detail && groupInfo.detail !== groupInfo.label) {
+            valWrap.append(make('small', '', groupInfo.detail));
+          }
+          groupRow.append(valWrap);
+        }
+
         const pct = total > 0 ? Math.min(100, Math.max(0, Math.round((used / total) * 100))) : 0;
         const prog = make('progress', 'ldg-progress ' + level);
         prog.max = total > 0 ? total : 100;
@@ -3500,7 +3547,8 @@
 
         const pctNote = make('div', 'ldg-subtotal');
         pctNote.append(make('span', '', `${cutoff.isForecast ? '预计已消耗' : '已消耗'} ${pct}%`), make('span', '', `${fmtHours(used)} / ${fmtHours(total)}h`));
-        card.append(head, nums, prog, pctNote);
+        if (groupRow) card.append(head, nums, groupRow, prog, pctNote);
+        else card.append(head, nums, prog, pctNote);
         if (forecast && fc) {
           let fcText;
           if (fc.hours > 0) {
@@ -3606,6 +3654,7 @@
       const cols = [
         {key: 'name', label: '学员', type: 'text', editable: false},
         {key: 'plan', label: '方案', type: 'text', editable: true},
+        {key: 'group_class', label: '班课', type: 'text', editable: true},
         {key: 'total', label: '总课时', type: 'number', editable: true},
         ...sortedMonths.map(ym => ({key: 'month:' + ym, ym, label: ym.slice(2), type: 'number', editable: true})),
         ...(forecast ? [{
@@ -3681,6 +3730,7 @@
         const getEntryVal = e => {
           if (sCol.key === 'name') return e.name || '';
           if (sCol.key === 'plan') return e.info.plan || '';
+          if (sCol.key === 'group_class') return e.info.group_class || '';
           if (sCol.key === 'total') return num(e.total);
           if (sCol.key === 'used') return num(e.used);
           if (sCol.key === 'remaining') return num(e.remaining);
@@ -3738,6 +3788,24 @@
         });
         tdPlan.dataset.value = info.plan || '';
 
+        const tdGroup = makeInlineEditableCell({
+          label: '班课',
+          displayText: info.group_class || '-',
+          editValue: info.group_class || '',
+          onCommit: async nextVal => {
+            const v = nextVal.slice(0, 60);
+            if (v) info.group_class = v;
+            else delete info.group_class;
+            tdGroup.dataset.value = v;
+            ltDraft.dirty = true;
+            syncLtButtons();
+            renderLtCards();
+            return {editValue: v, displayText: v || '-'};
+          },
+        });
+        tdGroup.dataset.field = 'group_class';
+        tdGroup.dataset.value = info.group_class || '';
+
         const tdTotal = makeInlineEditableCell({
           cls: 'num',
           label: '总课时',
@@ -3755,7 +3823,7 @@
         });
         tdTotal.dataset.value = String(total);
 
-        tr.append(tdPlan, tdTotal);
+        tr.append(tdPlan, tdGroup, tdTotal);
 
         sortedMonths.forEach(ym => {
           const curVal = months[ym];
@@ -6650,6 +6718,7 @@
     isForecastMonth,
     monthEndDate,
     computeLongTermForecast,
+    parseGroupClassStatus,
     computeCommissionFromRecords,
     loadAll: loadAcademic,
     loadAcademic,
