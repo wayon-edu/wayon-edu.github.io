@@ -35,6 +35,56 @@
   const SPLIT_TEACHERS = new Set(['王银屏', '徐梓淞']);
   const BASE_PAY_DAYS = {1: 22, 2: 20, 3: 22, 4: 22, 5: 21, 6: 22, 7: 23, 8: 21, 9: 23, 10: 21, 11: 21, 12: 23};
   const isForecastMonth = m => Boolean(m && m.meta && m.meta.is_forecast === true);
+  const monthEndDate = ym => {
+    const m = /^(\d{4})-(\d{2})$/.exec(String(ym || '').trim());
+    if (!m) return '';
+    const y = Number(m[1]), mo = Number(m[2]);
+    if (mo < 1 || mo > 12) return '';
+    try {
+      if (typeof globalThis.Temporal?.PlainYearMonth?.from === 'function') {
+        const pym = globalThis.Temporal.PlainYearMonth.from({year: y, month: mo, calendar: 'iso8601'});
+        return pym.toPlainDate({day: pym.daysInMonth}).toString();
+      }
+    } catch {}
+    const days = mo === 2
+      ? ((y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 29 : 28)
+      : ([4, 6, 9, 11].includes(mo) ? 30 : 31);
+    return `${m[1]}-${m[2]}-${String(days).padStart(2, '0')}`;
+  };
+  const cleanStudentToken = raw => String(raw || '').trim().replace(/^[「『【\[]+/, '').replace(/[」』】\]]+$/, '').trim();
+  const splitStudentTokens = raw => String(raw || '').replace(/＆/g, '&').split('&').map(cleanStudentToken).filter(Boolean);
+  const longTermTargetNames = (name, info) => {
+    const list = Array.isArray(info?.names) && info.names.length
+      ? info.names
+      : String(name || '').split(/[+＋&＆]/);
+    return new Set(list.map(cleanStudentToken).filter(Boolean));
+  };
+  const computeLongTermForecast = (name, info, records) => {
+    const targets = longTermTargetNames(name, info);
+    let done = 0, upcoming = 0, rawHours = 0, doneClasses = 0, upcomingClasses = 0;
+    if (!targets.size || !Array.isArray(records)) {
+      return {hours: 0, done: 0, upcoming: 0, rawHours: 0, classes: 0, doneClasses: 0, upcomingClasses: 0};
+    }
+    for (const r of records) {
+      if (!r || typeof r !== 'object') continue;
+      const tokens = splitStudentTokens(r.student);
+      if (!tokens.some(t => targets.has(t))) continue;
+      const orig = Math.max(0, Math.round(num(r.hours) * 100) / 100);
+      if (orig <= 0) continue;
+      const cnt = Math.max(1, Math.round(num(r.count || 1)));
+      const effective = (info?.group_rule === '1v2_2h_is_1.5' && cnt === 2 && orig === 2) ? 1.5 : orig;
+      rawHours = Math.round((rawHours + orig) * 100) / 100;
+      if (r.phase === 'upcoming') {
+        upcoming = Math.round((upcoming + effective) * 100) / 100;
+        upcomingClasses += 1;
+      } else {
+        done = Math.round((done + effective) * 100) / 100;
+        doneClasses += 1;
+      }
+    }
+    const hours = Math.round((done + upcoming) * 100) / 100;
+    return {hours, done, upcoming, rawHours, classes: doneClasses + upcomingClasses, doneClasses, upcomingClasses};
+  };
   const monthShortLabel = m => {
     const raw = String(m?.title || m?.year_month || '').trim();
     if (isForecastMonth(m)) {
@@ -340,6 +390,10 @@
     .ldg-lt-num strong.warn{color:var(--warning-fg,#805300)}
     .ldg-lt-num strong.ok{color:var(--done,#248a3d)}
     .ldg-lt-note{margin:0;font-size:12px;color:var(--muted,#6e6e73);line-height:1.45}
+    .ldg-lt-cutoff{max-width:100%;font-variant-numeric:tabular-nums}
+    .ldg-lt-forecast-line{margin:0;font-size:12px;color:var(--accent,#0071e3);font-variant-numeric:tabular-nums;line-height:1.45}
+    .ldg-lt-forecast-cell{color:var(--accent,#0071e3);font-weight:550;background:color-mix(in srgb,var(--accent,#0071e3) 6%,transparent)}
+    @media(max-width:520px){.ldg-lt-cutoff{white-space:normal;border-radius:12px;line-height:1.35}}
     .ldg-summary-details>summary{cursor:pointer;font-weight:620;font-size:15px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .ldg-summary-details>summary::-webkit-details-marker{display:none}
     .ldg-summary-details>summary::after{content:"展开 ▾";font-size:12px;font-weight:500;color:var(--muted,#6e6e73)}
@@ -3303,14 +3357,59 @@
       };
     }
 
+    const getActiveForecast = () => {
+      const m = (store.billing || []).find(item =>
+        isForecastMonth(item)
+        && /^\d{4}-\d{2}$/.test(String(item.year_month || ''))
+        && !ltDraft.months.includes(item.year_month)
+      );
+      if (!m) return null;
+      const ym = m.year_month;
+      return {
+        ym,
+        monthNum: Number(ym.split('-')[1]) || 0,
+        cutoffDate: monthEndDate(ym),
+        records: Array.isArray(m.meta?.records) ? m.meta.records : [],
+        syncStamp: fmtForecastTime(m.meta?.forecast_as_of || m.verified_at),
+      };
+    };
+
+    const getCutoffInfo = forecast => {
+      if (forecast) {
+        return {
+          date: forecast.cutoffDate,
+          isForecast: true,
+          ym: forecast.ym,
+          monthNum: forecast.monthNum,
+          syncStamp: forecast.syncStamp,
+        };
+      }
+      const lastYm = ltDraft.months.length ? ltDraft.months[ltDraft.months.length - 1] : '';
+      return {
+        date: monthEndDate(lastYm),
+        isForecast: false,
+        ym: lastYm,
+        monthNum: lastYm ? (Number(lastYm.split('-')[1]) || 0) : 0,
+        syncStamp: '',
+      };
+    };
+
     const attList = Array.isArray(ltDoc.attachments) ? ltDoc.attachments : [];
     const topBar = make('div', 'ldg-toolbar');
     const tipWrap = make('span', 'ldg-title-row');
     tipWrap.append(
       make('span', 'ldg-sub', `${Object.keys(ltDraft.students).length} 组长期重点学员`),
-      makeInfoTip('余额 ≤ 10h 自动标红预警；点击下方表格单元格可直接原位修改并保存到云端')
+      makeInfoTip('余额 ≤ 10h 自动标红预警；已自动将本月全部有效排课（含已上与待上）计入至月底，正式归档后以月底核对为准；点击下方表格单元格可原位编辑并保存到云端')
     );
     topBar.append(tipWrap);
+    const initForecast = getActiveForecast();
+    if (initForecast && globalThis.wayonRefreshAPI?.enabled) {
+      const syncBtn = make('button', 'ldg-btn sm', '🔄 同步课表');
+      syncBtn.id = 'ldg-lt-forecast-sync-btn';
+      syncBtn.type = 'button';
+      syncBtn.onclick = () => void triggerLiveForecastSync(syncBtn);
+      topBar.append(syncBtn);
+    }
     attList.forEach(att => {
       const sz = fmtBytes(att.size);
       const dlBtn = make('button', 'ldg-btn', `⬇️ 原版归档 ${att.name}${sz ? ` (${sz})` : ''}`);
@@ -3326,26 +3425,55 @@
     matrixSlot.id = 'ldg-lt-matrix-slot';
     wrap.append(cardsSlot, matrixSlot);
 
-    const computeEntries = () => Object.entries(ltDraft.students).map(([name, info]) => {
+    const computeEntries = (forecast = getActiveForecast()) => Object.entries(ltDraft.students).map(([name, info]) => {
       const months = info.months || {};
-      const used = Math.round(Object.values(months).reduce((s, v) => s + num(v), 0) * 100) / 100;
+      const archivedUsed = Math.round(Object.values(months).reduce((s, v) => s + num(v), 0) * 100) / 100;
+      const fc = forecast ? computeLongTermForecast(name, info, forecast.records) : null;
+      const used = Math.round((archivedUsed + (fc ? fc.hours : 0)) * 100) / 100;
       const total = Math.round(num(info.total) * 100) / 100;
       const remaining = Math.round((total - used) * 100) / 100;
-      return {name, info, months, used, total, remaining};
+      return {name, info, months, archivedUsed, forecast: fc, used, total, remaining};
     });
 
     function renderLtCards() {
       cardsSlot.textContent = '';
-      const entries = computeEntries();
+      const forecast = getActiveForecast();
+      const cutoff = getCutoffInfo(forecast);
+      const entries = computeEntries(forecast);
+      let cutoffEl = null;
+      if (cutoff.date) {
+        const badge = make('span', (cutoff.isForecast ? 'ldg-forecast-chip' : 'ldg-badge muted') + ' ldg-lt-cutoff');
+        badge.id = 'ldg-lt-cutoff';
+        const ico = make('span', '', '📅');
+        ico.setAttribute('aria-hidden', 'true');
+        const timeEl = make('time', '', cutoff.date);
+        timeEl.setAttribute('datetime', cutoff.date);
+        if (cutoff.isForecast) {
+          const syncSuffix = cutoff.syncStamp ? ` · ${cutoff.syncStamp} 同步` : '';
+          badge.append(
+            ico,
+            document.createTextNode(' 算至 '),
+            timeEl,
+            document.createTextNode(` · 含${cutoff.monthNum}月已排课（月底核对${syncSuffix}）`)
+          );
+        } else {
+          badge.append(ico, document.createTextNode(' 算至 '), timeEl, document.createTextNode('（已归档）'));
+        }
+        cutoffEl = badge;
+      }
       const sec = makeCollapsibleCard({
         key: 'lt-cards',
         title: `📌 长期学员进度（${entries.length}）`,
-        tipText: '余额 ≤ 10h 自动标红预警；可点击标题收纳或展开',
+        tipText: cutoff.isForecast
+          ? `余额 ≤ 10h 自动标红预警；已含 ${cutoff.monthNum}月全部有效排课（已上+待上）算至 ${cutoff.date}，月底再核对归档`
+          : '余额 ≤ 10h 自动标红预警；可点击标题收纳或展开',
+        rightEl: cutoffEl,
       });
       const grid = make('div', 'ldg-lt-grid');
-      entries.forEach(({name, info, used, total, remaining}) => {
+      entries.forEach(({name, info, forecast: fc, used, total, remaining}) => {
         const level = remaining <= 10 ? 'danger' : (remaining <= 20 ? 'warn' : 'ok');
         const card = make('div', 'ldg-lt-card' + (level === 'danger' ? ' danger' : ''));
+        card.dataset.student = name;
         const head = make('div', 'ldg-lt-head');
         const title = make('div', 'ldg-lt-title');
         title.append(make('span', '', name));
@@ -3362,17 +3490,27 @@
         };
         addNum('总购课时', `${fmtHours(total)}h`);
         addNum('累计消耗', `${fmtHours(used)}h`);
-        addNum('当前剩余', `${fmtHours(remaining)}h`, level);
+        addNum(cutoff.isForecast ? '预计剩余' : '当前剩余', `${fmtHours(remaining)}h`, level);
 
         const pct = total > 0 ? Math.min(100, Math.max(0, Math.round((used / total) * 100))) : 0;
         const prog = make('progress', 'ldg-progress ' + level);
         prog.max = total > 0 ? total : 100;
         prog.value = Math.min(prog.max, Math.max(0, used));
-        prog.setAttribute('aria-label', `${name} 课时消耗进度 ${pct}%，已消耗 ${fmtHours(used)} 课时，共 ${fmtHours(total)} 课时`);
+        prog.setAttribute('aria-label', `${name}${cutoff.date ? ` 截至 ${cutoff.date}` : ''} 课时消耗进度 ${pct}%，${cutoff.isForecast ? '预计' : ''}已消耗 ${fmtHours(used)} 课时，共 ${fmtHours(total)} 课时`);
 
         const pctNote = make('div', 'ldg-subtotal');
-        pctNote.append(make('span', '', `已消耗 ${pct}%`), make('span', '', `${fmtHours(used)} / ${fmtHours(total)}h`));
+        pctNote.append(make('span', '', `${cutoff.isForecast ? '预计已消耗' : '已消耗'} ${pct}%`), make('span', '', `${fmtHours(used)} / ${fmtHours(total)}h`));
         card.append(head, nums, prog, pctNote);
+        if (forecast && fc) {
+          let fcText;
+          if (fc.hours > 0) {
+            const ruleTag = fc.rawHours !== fc.hours && info.group_rule === '1v2_2h_is_1.5' ? '，1对2折算' : '';
+            fcText = `含 ${forecast.monthNum}月预计 ${fmtHours(fc.hours)}h（已上 ${fmtHours(fc.done)}h + 待上 ${fmtHours(fc.upcoming)}h${ruleTag}）`;
+          } else {
+            fcText = `含 ${forecast.monthNum}月预计 0h（本月暂未排课）`;
+          }
+          card.append(make('p', 'ldg-lt-forecast-line', fcText));
+        }
         if (info.note) card.append(make('p', 'ldg-lt-note', info.note));
         grid.append(card);
       });
@@ -3431,6 +3569,7 @@
         ltDraft.months.push(ym);
         ltDraft.months.sort();
         ltDraft.dirty = true;
+        renderLtCards();
         renderLtMatrix();
         return '';
       });
@@ -3462,12 +3601,21 @@
       const mCard = sec.card;
       const mBody = sec.body;
 
+      const forecast = getActiveForecast();
       const sortedMonths = ltDraft.months;
       const cols = [
         {key: 'name', label: '学员', type: 'text', editable: false},
         {key: 'plan', label: '方案', type: 'text', editable: true},
         {key: 'total', label: '总课时', type: 'number', editable: true},
         ...sortedMonths.map(ym => ({key: 'month:' + ym, ym, label: ym.slice(2), type: 'number', editable: true})),
+        ...(forecast ? [{
+          key: 'forecast:' + forecast.ym,
+          ym: forecast.ym,
+          label: `${forecast.ym.slice(2)} 预计`,
+          type: 'number',
+          editable: false,
+          isForecast: true,
+        }] : []),
         {key: 'used', label: '累计消耗', type: 'number', editable: false},
         {key: 'remaining', label: '剩余', type: 'number', editable: false},
         {key: 'note', label: '备注', type: 'text', editable: true},
@@ -3526,7 +3674,7 @@
       });
       thead.append(htr);
 
-      const ltEntries = computeEntries();
+      const ltEntries = computeEntries(forecast);
       if (typeof ltDraft.sortCol === 'number' && ltDraft.sortCol >= 0 && ltDraft.sortCol < cols.length && ltDraft.sortDir) {
         const sCol = cols[ltDraft.sortCol];
         const factor = ltDraft.sortDir === 'ascending' ? 1 : -1;
@@ -3537,6 +3685,7 @@
           if (sCol.key === 'used') return num(e.used);
           if (sCol.key === 'remaining') return num(e.remaining);
           if (sCol.key === 'note') return e.info.note || '';
+          if (sCol.isForecast) return num(e.forecast?.hours);
           if (sCol.ym) return num(e.months[sCol.ym]);
           return '';
         };
@@ -3545,7 +3694,7 @@
           return factor * (sCol.type === 'number' ? (num(va) - num(vb)) : SHEET_COLLATOR.compare(String(va), String(vb)));
         });
       }
-      ltEntries.forEach(({name, info, months, used, total, remaining}) => {
+      ltEntries.forEach(({name, info, months, forecast: fc, used, total, remaining}) => {
         const tr = make('tr');
         tr.dataset.student = name;
         const thName = make('th', '', name);
@@ -3561,7 +3710,9 @@
         tdRem.dataset.value = String(remaining);
 
         const refreshRowTotals = () => {
-          const nextUsed = Math.round(Object.values(info.months || {}).reduce((s, v) => s + num(v), 0) * 100) / 100;
+          const curFc = getActiveForecast();
+          const extra = curFc ? computeLongTermForecast(name, info, curFc.records).hours : 0;
+          const nextUsed = Math.round((Object.values(info.months || {}).reduce((s, v) => s + num(v), 0) + extra) * 100) / 100;
           const nextRem = Math.round((num(info.total) - nextUsed) * 100) / 100;
           tdUsed.textContent = fmtHours(nextUsed);
           tdUsed.dataset.value = String(nextUsed);
@@ -3634,6 +3785,14 @@
           tdM.dataset.value = String(curVal !== undefined ? curVal : 0);
           tr.append(tdM);
         });
+
+        if (forecast && fc) {
+          const tdF = make('td', 'num ldg-lt-forecast-cell', fmtHours(fc.hours));
+          tdF.dataset.forecastYm = forecast.ym;
+          tdF.dataset.label = `${forecast.ym.slice(2)} 预计`;
+          tdF.dataset.value = String(fc.hours);
+          tr.append(tdF);
+        }
 
         const tdNote = makeInlineEditableCell({
           label: '备注',
@@ -6489,6 +6648,8 @@
     sanitizeAcademicSummaryMd,
     extractCommissionSummaryMd,
     isForecastMonth,
+    monthEndDate,
+    computeLongTermForecast,
     computeCommissionFromRecords,
     loadAll: loadAcademic,
     loadAcademic,
