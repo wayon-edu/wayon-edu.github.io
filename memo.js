@@ -90,9 +90,8 @@
   const add = (text, due) => change(() => items.push({id: uuid(), text, due_date: due || null, done: false, done_at: null, created_at: new Date().toISOString(), dirty: true, rev: ++localRev}));
   const update = (id, patch, opts) => change(() => { const m = items.find(x => x.id === id); if (m) Object.assign(m, patch, {dirty: true, rev: ++localRev}); }, opts);
   const remove = id => change(() => {
-    const m = items.find(x => x.id === id);
     items = items.filter(x => x.id !== id);
-    if ((!m || m.updated_at || busy) && !gone.includes(id)) gone.push(id);
+    if (!gone.includes(id)) gone.push(id);
   });
 
   const style = make('style'); style.id = 'wayon-memo-style'; style.textContent = `
@@ -275,6 +274,7 @@
     addEventListener('wayon-refresh-ready', () => { bindAuth(); void sync(); });
     addEventListener('focus', () => { bindAuth(); void sync(); });
     addEventListener('online', () => { bindAuth(); void sync(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { bindAuth(); void sync(); } });
     if (bindAuth()) void sync();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, {once: true}); else start();

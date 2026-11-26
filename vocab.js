@@ -700,7 +700,7 @@
   }
   async function lessonIndex(force) {
     if (index && !force) { await loadIgnored(); await loadKinds(); return index; }
-    await loadIgnored(); await loadKinds();
+    await loadIgnored(!!force); await loadKinds(!!force);
     if (mode === 'preview') index = preview.lessons.filter(l => !l.archived_at).map(({body, ...rest}) => rest);
     else index = await pageAll(() => client().from('wayon_lessons').select('id,learner,subject,lesson_date,title,origin,created_at').is('archived_at', null).order('lesson_date', {ascending: false, nullsFirst: false}));
     return index;
@@ -945,11 +945,19 @@
   // 「不算缺课」：老师可能本来就跳过了某些课次编号；用户确认后记下，不再显示虚线缺课行。
   let ignored = null;
   const gapKey = (learner, subject, no) => learner + '|' + subject + '|' + no;
-  async function loadIgnored() {
-    if (ignored) return ignored;
-    ignored = new Set();
-    if (mode === 'preview') { try { JSON.parse(localStorage.getItem('wayon-feedback-gaps') || '[]').forEach(k => ignored.add(k)); } catch {} }
-    else { const {data, error} = await client().from('wayon_feedback_gaps').select('learner,subject,lesson_no'); if (!error) data.forEach(r => ignored.add(gapKey(r.learner, r.subject, r.lesson_no))); }
+  async function loadIgnored(force = false) {
+    if (ignored && !force) return ignored;
+    const next = new Set();
+    if (mode === 'preview') {
+      try { JSON.parse(localStorage.getItem('wayon-feedback-gaps') || '[]').forEach(k => next.add(k)); } catch {}
+      ignored = next;
+    } else if (client()) {
+      const {data, error} = await client().from('wayon_feedback_gaps').select('learner,subject,lesson_no');
+      if (!error && Array.isArray(data)) { data.forEach(r => next.add(gapKey(r.learner, r.subject, r.lesson_no))); ignored = next; }
+      else if (!ignored) ignored = next;
+    } else if (!ignored) {
+      ignored = next;
+    }
     return ignored;
   }
   async function setIgnored(learner, subject, nos, on) {
@@ -968,13 +976,22 @@
   const cleanKind = v => String(v || '').replace(/\s+/g, ' ').trim().slice(0, 40);
   const kindsOf = learner => (kinds && kinds.get(learner)) || [];
   function rebuildKindNames() { kindNames.clear(); (kinds || new Map()).forEach(list => list.forEach(n => kindNames.add(n))); }
-  async function loadKinds() {
-    if (kinds) return kinds;
+  async function loadKinds(force = false) {
+    if (kinds && !force) return kinds;
     const rows = [];
+    let ok = true;
     if (mode === 'preview') { try { rows.push(...JSON.parse(localStorage.getItem(KIND_LOCAL) || '[]')); } catch {} }
-    else if (client()) { const {data, error} = await client().from('wayon_feedback_kinds').select('learner,name').order('created_at'); if (!error && data) rows.push(...data); }
-    kinds = new Map(); rows.forEach(r => { if (!kinds.has(r.learner)) kinds.set(r.learner, []); if (!kinds.get(r.learner).includes(r.name)) kinds.get(r.learner).push(r.name); });
-    rebuildKindNames(); return kinds;
+    else if (client()) {
+      const {data, error} = await client().from('wayon_feedback_kinds').select('learner,name').order('created_at');
+      if (!error && Array.isArray(data)) rows.push(...data);
+      else ok = false;
+    }
+    if (ok || !kinds) {
+      kinds = new Map();
+      rows.forEach(r => { if (!kinds.has(r.learner)) kinds.set(r.learner, []); if (!kinds.get(r.learner).includes(r.name)) kinds.get(r.learner).push(r.name); });
+      rebuildKindNames();
+    }
+    return kinds;
   }
   function saveLocalKinds() { const out = []; kinds.forEach((list, learner) => list.forEach(name => out.push({learner, name}))); try { localStorage.setItem(KIND_LOCAL, JSON.stringify(out)); } catch {} }
   async function addKind(learner, name) {
@@ -1136,19 +1153,35 @@
     listCache.set(k, lists); return lists;
   }
   const saveTimers = new Map();
+  const pendingSaves = new Map();
+  const savingListKeys = new Set();
+  async function flushSaveKey(k) {
+    const entry = pendingSaves.get(k);
+    const t = saveTimers.get(k);
+    if (t !== undefined) { clearTimeout(t); saveTimers.delete(k); }
+    if (!entry) return;
+    pendingSaves.delete(k);
+    const {day, student, phase} = entry;
+    const cacheKey = day + '|' + student;
+    savingListKeys.add(cacheKey);
+    try {
+      const cached = listCache.get(cacheKey);
+      const items = cached?.[phase];
+      if (!Array.isArray(items)) return;
+      if (mode === 'preview') localStorage.setItem('wayon-vocab-lists-' + cacheKey, JSON.stringify(cached));
+      else if (mode === 'cloud') { const {error} = await client().from('wayon_vocab_lists').upsert({day, student, phase, items}, {onConflict: 'owner_id,day,student,phase'}); if (error) throw error; }
+      flash('已保存');
+    } catch (e) { flash('保存失败：' + (e.message || e), true); }
+    finally { savingListKeys.delete(cacheKey); }
+  }
+  function flushAllPendingSaves() {
+    for (const k of [...pendingSaves.keys()]) void flushSaveKey(k);
+  }
   function saveList(day, student, phase) {
     const k = day + '|' + student + '|' + phase;
     clearTimeout(saveTimers.get(k));
-    saveTimers.set(k, setTimeout(async () => {
-      try {
-        const cached = listCache.get(day + '|' + student);
-        const items = cached?.[phase];
-        if (!Array.isArray(items)) return;
-        if (mode === 'preview') localStorage.setItem('wayon-vocab-lists-' + day + '|' + student, JSON.stringify(cached));
-        else if (mode === 'cloud') { const {error} = await client().from('wayon_vocab_lists').upsert({day, student, phase, items}, {onConflict: 'owner_id,day,student,phase'}); if (error) throw error; }
-        flash('已保存');
-      } catch (e) { flash('保存失败：' + (e.message || e), true); }
-    }, 500));
+    pendingSaves.set(k, {day, student, phase});
+    saveTimers.set(k, setTimeout(() => void flushSaveKey(k), 500));
   }
   async function sha256(text) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -1979,7 +2012,7 @@
     const m = /[-–—~～至]\s*(\d{1,2}):(\d{2})/.exec(String(time || ''));
     return m ? m[1].padStart(2, '0') + ':' + m[2] : '';
   };
-  async function updateBadge() {
+  async function updateBadge({force = false} = {}) {
     if (badgeBusy || !document.getElementById('nav-feedback')) return;
     badgeBusy = true;
     let n = 0;
@@ -1987,7 +2020,7 @@
       await ready();
       if (mode === 'cloud' || mode === 'preview') {
         const day = today(), now = new Date().toLocaleTimeString('en-GB', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit'});
-        const got = (await lessonIndex()).filter(l => l.lesson_date === day), learners = allLearners(), sess = sessionsFor(day);
+        const got = (await lessonIndex(Boolean(force && mode === 'cloud'))).filter(l => l.lesson_date === day), learners = allLearners(), sess = sessionsFor(day);
         n = sess.filter(s => !collected(s, got, learners, sess).done.length).length;   // 用户 2026-11-21：与「今日收集」的「还差 N 节」一致，不再只算已下课的；now 保留备用
         void now;
       }
@@ -2649,7 +2682,12 @@
     try { if (day === curDay() && typeof st === 'object' && st) return st; } catch {}
     try { return JSON.parse(localStorage.getItem('wayon-done-' + day) || '{}') || {}; } catch { return {}; }
   };
+  const rememberChecks = day => {
+    try { if (typeof checkCloud !== 'undefined' && checkCloud?.remember) { checkCloud.remember(day); return; } } catch {}
+    try { globalThis.checkCloud?.remember?.(day); } catch {}
+  };
   const notifyChecks = day => {
+    try { if (typeof checkCloud !== 'undefined' && checkCloud?.observe) { checkCloud.observe(day); return; } } catch {}
     try { if (typeof push === 'function' && day === curDay()) { push(); return; } } catch {}
     try { globalThis.checkCloud?.observe?.(day); } catch {}
   };
@@ -2666,6 +2704,7 @@
   function saveQuizExtra(day, student, value) {
     const name = displayStudent(student);
     if (!name) return;
+    rememberChecks(day);
     const map = readQuizExtra(day);
     map[name] = value;
     writeQuizExtra(day, map);
@@ -2848,7 +2887,16 @@
     const foldKey = day + '|' + student, folded = readFoldsFn();
     const fold = make('button', 'vq-fold'); fold.type = 'button'; fold.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
     const setFold = on => { g.classList.toggle('vq-collapsed', on); fold.setAttribute('aria-expanded', String(!on)); fold.title = on ? '展开' : '收起'; fold.setAttribute('aria-label', (on ? '展开 ' : '收起 ') + student); };
-    fold.onclick = e => { e.stopPropagation(); const on = !g.classList.contains('vq-collapsed'); setFold(on); const f = readFoldsFn(); if (on) f[foldKey] = 1; else delete f[foldKey]; try { localStorage.setItem('wayon-vq-folds', JSON.stringify(f)); } catch {} };
+    fold.onclick = e => {
+      e.stopPropagation();
+      const on = !g.classList.contains('vq-collapsed');
+      setFold(on);
+      rememberChecks(day);
+      const f = readFoldsFn();
+      if (on) f[foldKey] = 1; else delete f[foldKey];
+      try { localStorage.setItem('wayon-vq-folds', JSON.stringify(f)); } catch {}
+      notifyChecks(day);
+    };
     head.append(note, meta, fold); setFold(!!folded[foldKey]);
     head.addEventListener('click', e => { if (g.classList.contains('vq-collapsed') && !e.target.closest('button:not(.vq-fold)')) fold.click(); });
     const vq = make('div', 'vq'); vq.dataset.student = student;
@@ -2885,7 +2933,17 @@
     return attachFoldAndLists(g, head, student, note, meta, readFolds, true);
   }
   function syncExtraQuizCards() {
-    const box = document.querySelector('#list .quiz');
+    let box = document.querySelector('#list .quiz');
+    if (!box && pageMode() === 'quiz') {
+      box = ensureQuizBox();
+      const quizHead = box?.querySelector(':scope > .head');
+      if (quizHead && !quizHead.querySelector('.vq-add-student')) {
+        const addBtn = btn('fb-btn vq-add-student', '', () => void openAddQuizStudent(), '添加抽背学生');
+        addBtn.id = 'vq-add-student';
+        addBtn.append(make('span', '', '＋ 添加学生'));
+        quizHead.append(addBtn);
+      }
+    }
     if (!box) return;
     const day = box.dataset?.day || curDay();
     const desired = extraQuizStudents(day);
@@ -3142,14 +3200,39 @@
     syncExtraQuizCards();
     void loadDayActiveQuizStudents(curDay());
   }
+  function syncQuizFolds() {
+    const box = document.querySelector('#list .quiz');
+    if (!box) return;
+    const day = box.dataset?.day || curDay();
+    const folds = readFolds();
+    box.querySelectorAll('.vq-card').forEach(g => {
+      const head = g.querySelector('.qhead');
+      const student = displayStudent(g.dataset?.extraStudent || g.querySelector(':scope > .vq')?.dataset?.student || g.querySelector('.vq-student-name')?.textContent || head?.childNodes[0]?.textContent || head?.textContent || '');
+      if (!student) return;
+      const on = Boolean(folds[day + '|' + student]);
+      if (g.classList.contains('vq-collapsed') !== on) g.classList.toggle('vq-collapsed', on);
+      const fold = g.querySelector(':scope > .qhead > .vq-fold') || g.querySelector('.vq-fold');
+      if (fold) {
+        const exp = String(!on), title = on ? '展开' : '收起', aria = (on ? '展开 ' : '收起 ') + student;
+        if (fold.getAttribute('aria-expanded') !== exp) fold.setAttribute('aria-expanded', exp);
+        if (fold.title !== title) fold.title = title;
+        if (fold.getAttribute('aria-label') !== aria) fold.setAttribute('aria-label', aria);
+      }
+    });
+  }
   globalThis.wayonVocabSync = function() {
     if (typeof quizRows !== "function" || typeof qget !== "function" || typeof qk !== "function") {
       syncExtraQuizCards();
+      syncQuizFolds();
       return;
     }
     const qr = quizRows(pageData()?.[curDay()] || []);
     const box = document.querySelector("#list .quiz");
-    if (!box) return;
+    if (!box) {
+      syncExtraQuizCards();
+      syncQuizFolds();
+      return;
+    }
     box.querySelectorAll(".vq-card:not(.vq-extra)").forEach(g => {
       const head = g.querySelector(".qhead");
       const student = displayStudent(g.querySelector(":scope > .vq")?.dataset.student || head?.childNodes[0]?.textContent || head?.textContent || "");
@@ -3193,6 +3276,7 @@
       }
     });
     syncExtraQuizCards();
+    syncQuizFolds();
     const n = qr.filter(r => qget(qk(r)).pre && qget(qk(r)).post).length;
     const countEl = document.getElementById("count");
     const nextCount = n + " / " + qr.length + " 课前课后都抽了";
@@ -4128,7 +4212,7 @@
           b = make('button', 'wayon-icon-control' + (open ? ' on' : '')); b.id = 'nav-feedback'; b.type = 'button'; b.title = '课堂反馈'; b.setAttribute('aria-label', '课堂反馈'); b.setAttribute('aria-pressed', String(open));
           if (lastBadgeTodo) b.dataset.todo = lastBadgeTodo;
           b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5 M8 8h8 M8 12h5"/></svg>';
-          b.onclick = () => { open = true; document.body.dataset.feedbackOpen = 'true'; root.hidden = false; b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); renderPanel(); };
+          b.onclick = () => { open = true; document.body.dataset.feedbackOpen = 'true'; root.hidden = false; b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); renderPanel(); if (mode === 'cloud' && index) void refreshCloudData({force: true, feedback: true}); };
           const memo = document.getElementById('nav-memo'); if (memo) memo.before(b); else tabs.append(b);
         } else {
           if (lastBadgeTodo && b.dataset.todo !== lastBadgeTodo) b.dataset.todo = lastBadgeTodo;
@@ -4158,10 +4242,16 @@
       const ds = document.body.dataset || {};
       if (open && (ds.airconOpen || ds.memoOpen || ds.mocksOpen || ds.ledgerOpen)) close();
     }).observe(document.body, {attributes: true, attributeFilter: ['data-aircon-open', 'data-memo-open', 'data-mocks-open', 'data-ledger-open']});
-    window.addEventListener('online', () => void flushVocabBackups(activeOwner));
+    window.addEventListener('online', () => { flushAllPendingSaves(); void flushVocabBackups(activeOwner); });
+    window.addEventListener('pagehide', () => { flushAllPendingSaves(); });
     let wait = 0;
     const isEditingFeedback = () => open && root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit');
-    const refreshVocabLists = () => document.querySelectorAll('.vq').forEach(v => { if (v.dataset.student && !v.contains(document.activeElement)) void fillLists(v, v.dataset.student); });
+    const refreshVocabLists = () => document.querySelectorAll('.vq').forEach(v => {
+      if (!v.dataset.student || v.contains(document.activeElement)) return;
+      const paste = v.querySelector('.vq-paste textarea');
+      if (paste && paste.value && paste.value.trim()) return;
+      void fillLists(v, v.dataset.student);
+    });
     const refreshAfterAuthOrData = () => {
       if (wait) { clearInterval(wait); wait = 0; }
       const prevOwner = activeOwner;
@@ -4181,11 +4271,28 @@
     };
     window.addEventListener('wayon-refresh-ready', refreshAfterAuthOrData);
     window.addEventListener('wayon-refresh-updated', () => {
-      void updateBadge();
-      if (open && view === 'today' && !isEditingFeedback()) renderPanel();
+      if (mode === 'cloud') {
+        void refreshCloudData({force: true, feedback: true, quiz: pageMode() === 'quiz'});
+      } else {
+        void updateBadge();
+        if (open && view === 'today' && !isEditingFeedback()) renderPanel();
+      }
     });
-    setInterval(() => { if (!document.hidden) void updateBadge(); }, 300000);   // a lesson ending turns into a reminder without a reload
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { void flushVocabBackups(activeOwner); void updateBadge(); } });
+    window.addEventListener('wayon-checks-applied', e => {
+      if (mode === 'cloud' && pageMode() === 'quiz' && (!e?.detail?.day || e.detail.day === curDay())) {
+        void refreshCloudData({quiz: true});
+      }
+    });
+    setInterval(() => { if (!document.hidden) void updateBadge({force: !isEditingFeedback()}); }, 300000);   // a lesson ending turns into a reminder without a reload
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { flushAllPendingSaves(); return; }
+      void flushVocabBackups(activeOwner);
+      if (mode === 'cloud') void refreshCloudData({feedback: true, quiz: pageMode() === 'quiz'});
+      else void updateBadge();
+    });
+    window.addEventListener('focus', () => {
+      if (!document.hidden && mode === 'cloud') void refreshCloudData({feedback: true, quiz: pageMode() === 'quiz'});
+    });
     let tries = 0;
     wait = setInterval(() => {
       if (client() || ++tries > 60) {
@@ -4197,7 +4304,49 @@
       }
     }, 1000);
   }
+  let lastFeedbackRefreshAt = 0, lastQuizRefreshAt = 0, feedbackRefreshing = false, quizRefreshing = false;
+  async function refreshCloudData({force = false, feedback = false, quiz = false} = {}) {
+    if (mode !== 'cloud') return;
+    const now = Date.now();
+    if (feedback && !feedbackRefreshing && (force || now - lastFeedbackRefreshAt >= 15000)) {
+      const editing = open && root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit');
+      if (!editing) {
+        feedbackRefreshing = true;
+        lastFeedbackRefreshAt = now;
+        try {
+          bodies.clear(); customWords.clear(); vocabCache.clear();
+          await lessonIndex(true);
+          void updateBadge();
+          if (open && !(root?.querySelector('.fb-edit, .fb-paste, .fb-word-edit, .fb-wedit'))) void renderPanel();
+        } catch {}
+        finally { feedbackRefreshing = false; }
+      }
+    }
+    if (quiz && !quizRefreshing && (force || now - lastQuizRefreshAt >= 15000)) {
+      if (!document.querySelector('.vx-overlay') && saveTimers.size === 0 && savingListKeys.size === 0) {
+        quizRefreshing = true;
+        lastQuizRefreshAt = now;
+        try {
+          const day = curDay();
+          for (const k of [...listCache.keys()]) {
+            if (!savingListKeys.has(k) && ![...pendingSaves.keys()].some(pk => pk.startsWith(k + '|'))) listCache.delete(k);
+          }
+          sessionCloudCache.clear();
+          suppCloudCache.clear();
+          dayActiveLoaded.delete(day);
+          await loadDayActiveQuizStudents(day);
+          document.querySelectorAll('.vq').forEach(v => {
+            if (!v.dataset.student || v.contains(document.activeElement)) return;
+            const paste = v.querySelector('.vq-paste textarea');
+            if (paste && paste.value && paste.value.trim()) return;
+            void fillLists(v, v.dataset.student);
+          });
+        } catch {}
+        finally { quizRefreshing = false; }
+      }
+    }
+  }
   globalThis.wayonVocab = {parseFeedback, lessonNo, subjectOf, learnersFor};
-  Object.assign(globalThis.wayonVocab, {close, captureQuizExtra, applyQuizExtra, extraQuizStudents, openAddQuizStudent, decorateQuiz, pinyinInitials, buildLearnerSearchEntry, matchStudentSearch, matchLessonQuery, matchWordQuery});
+  Object.assign(globalThis.wayonVocab, {close, captureQuizExtra, applyQuizExtra, extraQuizStudents, openAddQuizStudent, decorateQuiz, syncQuizFolds, flushPendingLists: flushAllPendingSaves, refreshCloudData, pinyinInitials, buildLearnerSearchEntry, matchStudentSearch, matchLessonQuery, matchWordQuery});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, {once: true}); else start();
 })();

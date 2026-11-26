@@ -5766,17 +5766,17 @@
           if (typeof qget === 'function' && typeof qk === 'function') {
             const rec = qget(qk(r));
             rec.pre = false; rec.post = false;
-            if (rec.vocabEvidence) delete rec.vocabEvidence;
             touched = true;
           }
         }
         if (touched && typeof qsave === 'function') qsave();
+        const wasFolded = Boolean(el.classList?.contains('vq-collapsed'));
         const foldBtn = $('.vq-fold', el);
-        if (el.classList?.contains('vq-collapsed') && foldBtn && typeof foldBtn.click === 'function') {
+        if (wasFolded && foldBtn && typeof foldBtn.click === 'function') {
           foldBtn.dataset.uxReplayClick = '1';
           foldBtn.click();
         }
-        undone = touched || el.classList?.contains('vq-collapsed');
+        undone = touched || wasFolded;
       }
     } catch (e) { console.warn('ux undo:', e); }
     if (undone) {
@@ -6106,6 +6106,12 @@
     // Local marks may have changed elsewhere (another tab, a cloud sync): recount when the page is looked at again.
     const again = () => { if (document.visibilityState === 'visible' && Date.now() - probed > 60000) { probe(); apply(); } };
     document.addEventListener('visibilitychange', again); window.addEventListener('focus', again);
+    window.addEventListener('wayon-checks-applied', () => {
+      if (probing) return;
+      if (!cloudCounted && cloudReady() && cloudComplete()) { probe(); cloudCounted = probed > 0 && Date.now() - probed < 50; }
+      else { probe(); }
+      schedule();
+    });
     let resizeRaf = 0;
     window.addEventListener('resize', () => {
       if (resizeRaf) return;

@@ -137,6 +137,7 @@
   let privateLoadPromise = null;
   let deferredRender = false;
   let loadState = 'idle'; // idle | loading | ready | signedout | error
+  let lastAcademicLoadAt = 0;
   let loadError = '';
   let actionError = '';
   let actionInfo = '';
@@ -1576,6 +1577,7 @@
           }
           if (ltDraft && !ltDraft.dirty) ltDraft = null;
           loadState = 'ready';
+          lastAcademicLoadAt = Date.now();
           loadError = '';
         }
       } catch (e) {
@@ -6269,6 +6271,7 @@
     if (loadState === 'signedout') loadState = 'idle';
     render();
     if (loadState !== 'ready') void loadAcademic();
+    else if (!sheetDraft?.dirty && !ltDraft?.dirty && !isInteractionBusy() && Date.now() - lastAcademicLoadAt > 30000) void loadAcademic({force: true});
   }
 
   function openPrivate(tabId) {
@@ -6424,7 +6427,12 @@
       if (open && nav && nav.id !== 'nav-ledger') closePanel();
     }, true);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkIdleTimeout();
+      if (document.visibilityState === 'visible') {
+        checkIdleTimeout();
+        if (open && activeSpace === 'academic' && loadState === 'ready' && !sheetDraft?.dirty && !ltDraft?.dirty && !isInteractionBusy() && Date.now() - lastAcademicLoadAt > 30000) {
+          void loadAcademic({force: true});
+        }
+      }
     });
     if (typeof MutationObserver === 'function') {
       mountObserver = new MutationObserver(records => {

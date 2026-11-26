@@ -50,12 +50,13 @@
   const read = day => {try {const v=JSON.parse(localStorage.getItem('wayon-aircon-'+day)||'{}');return v && typeof v==='object' && !Array.isArray(v)?v:{};}catch{return {};}};
   const write = (day,value) => {try{localStorage.setItem('wayon-aircon-'+day,JSON.stringify(value));}catch{}};
   const readDraft = day => {try {const v=JSON.parse(localStorage.getItem('wayon-aircon-draft-'+day)||'{}');return v && typeof v==='object' && !Array.isArray(v)?v:{};}catch{return {};}};
+  const writeDraftMap = (day,drafts) => {try{localStorage.setItem('wayon-aircon-draft-'+day,JSON.stringify(drafts));}catch{}};
   const writeDraft = (day,id,baseSig,text) => {
     try {
       const drafts=readDraft(day);
-      if(!text || text===baseSig) delete drafts[id];
+      if(!text || !text.trim() || text===baseSig) delete drafts[id];
       else drafts[id]={base:baseSig,text};
-      localStorage.setItem('wayon-aircon-draft-'+day,JSON.stringify(drafts));
+      writeDraftMap(day,drafts);
     }catch{}
   };
   const activeText = (day,req) => {
@@ -65,36 +66,66 @@
   function capture(day) {
     const fields={};
     for (const [id,value] of Object.entries(read(day))) if(value && typeof value.copied_at==='string' && typeof value.signature==='string') fields[JSON.stringify(['aircon-copy-v1',id])]=value;
+    for (const [id,value] of Object.entries(readDraft(day))) if(value && typeof value.base==='string' && typeof value.text==='string' && value.text.trim() && value.text!==value.base) fields[JSON.stringify(['aircon-draft-v1',id])]={base:value.base,text:value.text};
     return fields;
   }
+  let deferredRender=false;
   function apply(day,fields) {
-    const marks={};
-    for(const [raw,value] of Object.entries(fields)) {
+    const marks={},drafts={};
+    for(const [raw,value] of Object.entries(fields||{})) {
       let key;try{key=JSON.parse(raw);}catch{continue;}
       if(Array.isArray(key) && key.length===2 && key[0]==='aircon-copy-v1' && value && typeof value.copied_at==='string' && typeof value.signature==='string')marks[key[1]]=value;
+      else if(Array.isArray(key) && key.length===2 && key[0]==='aircon-draft-v1' && value && typeof value.base==='string' && typeof value.text==='string' && value.text.trim() && value.text!==value.base)drafts[key[1]]={base:value.base,text:value.text};
     }
     write(day,marks);
-    if(isOpen && day===selected)render();
+    writeDraftMap(day,drafts);
+    if(isOpen && day===selected) {
+      const active=typeof document!=='undefined'?document.activeElement:null;
+      if(active?.classList?.contains?.('aircon-editor') && root?.contains?.(active)) deferredRender=true;
+      else render();
+    }
   }
-  let isOpen=false,selected='',root=null,lastSnapshot='';
-  const opened=new Set();
+  let isOpen=false,selected='',root=null,lastSnapshot='',lastWatchedDay='';
+  const draftTimers=new Map();
   const data = () => {try{return DATA;}catch{return {};}};
   const cloud = () => {try{return checkCloud;}catch{return null;}};
-  function watch(day) {
-    const c=cloud();if(!c || opened.has(day))return;
-    opened.add(day);Promise.resolve(c.open(day)).catch(()=>opened.delete(day));
+  function watch(day, force=false) {
+    const c=cloud();if(!c || !iso(day))return;
+    if(!force && lastWatchedDay===day)return;
+    lastWatchedDay=day;
+    Promise.resolve(c.open(day)).catch(()=>{if(lastWatchedDay===day)lastWatchedDay='';});
   }
-  function save(day,marks) {write(day,marks);cloud()?.observe(day);}
+  function flushDraftSync(day) {
+    const targets=day?[day]:[...draftTimers.keys()];
+    for(const d of targets) {
+      const t=draftTimers.get(d);
+      if(t!==undefined){if(typeof clearTimeout==='function')clearTimeout(t);draftTimers.delete(d);cloud()?.observe?.(d);}
+    }
+  }
+  function scheduleDraftSync(day, immediate=false) {
+    const prev=draftTimers.get(day);
+    if(prev!==undefined){if(typeof clearTimeout==='function')clearTimeout(prev);draftTimers.delete(day);}
+    if(immediate || typeof setTimeout!=='function'){cloud()?.observe?.(day);return;}
+    draftTimers.set(day,setTimeout(()=>{draftTimers.delete(day);cloud()?.observe?.(day);},500));
+  }
+  function save(day,marks) {write(day,marks);cloud()?.observe?.(day);}
+  function mutateMarks(day,fn) {
+    const c=cloud();
+    c?.remember?.(day);
+    const marks=read(day);
+    fn(marks);
+    save(day,marks);
+  }
   let openPanel=day=>{if(iso(day))selected=day;isOpen=true;};
-  let closePanel=()=>{isOpen=false;};
+  let closePanel=()=>{flushDraftSync();isOpen=false;};
   let copyDay=(day,ok,fail)=>{
     const req=buildRequest(data(),day);
     if(req.status!=='ready'){openPanel(day);return false;}
     const body=activeText(day,req);
     const done=()=>{
-      const marks=read(day);
-      marks[req.id]={signature:req.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};
-      save(day,marks);
+      mutateMarks(day,marks=>{
+        marks[req.id]={signature:req.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};
+      });
       if(isOpen && day===selected)render();
       ok?.(body);
     };
@@ -151,7 +182,7 @@
     const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'});
     const dates=[...new Set([today,shift(today,1),selected,...Object.keys(snapshot._sess||{}),...Object.keys(snapshot._aircon_schedule||{})])].filter(iso).sort();
     for(const day of dates){const o=make('option','',(day===today?'今天 · ':day===shift(today,1)?'明天 · ':'')+label(day));o.value=day;o.selected=day===selected;picker.append(o);}
-    picker.onchange=()=>{selected=picker.value;render();};heading.append(picker);root.append(heading);
+    picker.onchange=()=>{flushDraftSync(selected);selected=picker.value;watch(selected,true);render();};heading.append(picker);root.append(heading);
     root.append(make('p','aircon-hint','复制后自动收纳，可展开查看或撤销。周末申请合并周六、周日；已复制仅表示复制过申请文本。'));
     const request=buildRequest(snapshot,selected);
     if(request.status!=='ready') {
@@ -167,17 +198,31 @@
     const currentText=activeText(selected,request);
     const editor=make('textarea','aircon-editor',currentText);editor.value=currentText;editor.rows=Math.max(5,currentText.split('\n').length+1);editor.setAttribute('aria-label','空调加时申请文本');
     const resetBtn=make('button','small','恢复默认');resetBtn.type='button';resetBtn.id='aircon-reset';resetBtn.hidden=currentText===request.text;
-    const syncDraft=()=>{writeDraft(selected,request.id,request.text,editor.value);resetBtn.hidden=editor.value===request.text;};
-    editor.oninput=syncDraft;
-    resetBtn.onclick=()=>{editor.value=request.text;editor.textContent=request.text;syncDraft();};
+    const draftDay=selected;
+    let editorDirty=false;
+    const syncDraft=(immediate=false)=>{
+      cloud()?.remember?.(draftDay);
+      writeDraft(draftDay,request.id,request.text,editor.value);
+      resetBtn.hidden=editor.value===request.text;
+      scheduleDraftSync(draftDay,immediate);
+    };
+    editor.oninput=()=>{editorDirty=true;syncDraft(false);};
+    editor.onchange=()=>{if(editorDirty){editorDirty=false;syncDraft(true);}};
+    editor.onblur=()=>{
+      if(editorDirty){editorDirty=false;syncDraft(true);}
+      else flushDraftSync(draftDay);
+      if(deferredRender){deferredRender=false;if(isOpen&&selected===draftDay)render();}
+    };
+    resetBtn.onclick=()=>{editorDirty=false;editor.value=request.text;editor.textContent=request.text;syncDraft(true);};
     const button=make('button','copy',copied?'再次复制':'复制');button.type='button';button.id='aircon-copy';button.setAttribute('aria-label',copied?'再次复制空调加时申请':'复制空调加时申请');
     button.onclick=()=>{const copyTarget=selected;const payload=editor.value||request.text;copyText(payload,()=>{
       // A schedule refresh during the permission prompt must not mark a different version as copied.
-      const marks=read(copyTarget);marks[request.id]={signature:request.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};
-      save(copyTarget,marks);render();
+      flushDraftSync(copyTarget);
+      mutateMarks(copyTarget,marks=>{marks[request.id]={signature:request.text,copied_at:new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'})};});
+      render();
     },()=>{button.textContent='复制失败，请重试';feedback.textContent='复制未成功，请重试，或手动选中下方文字复制。';});};
     head.append(resetBtn,button);
-    if(copied){const undo=make('button','small','撤销');undo.type='button';undo.id='aircon-undo';undo.onclick=()=>{const marks=read(selected);delete marks[request.id];save(selected,marks);render();};head.append(undo);}
+    if(copied){const undo=make('button','small','撤销');undo.type='button';undo.id='aircon-undo';undo.onclick=()=>{mutateMarks(selected,marks=>{delete marks[request.id];});render();};head.append(undo);}
     content.append(head,editor,feedback);card.append(content);root.append(card);
     const verified=request.days.map(day=>{const c=snapshot._aircon_schedule?.[day]?.checked_at,s=snapshot._schedule_status?.[day]?.checked_at;return c&&s?(Date.parse(s)>Date.parse(c)?s:c):(c||s);}).filter(Boolean);
     if(verified.length)root.append(make('p','aircon-hint','课表核对时间：'+verified.map(t=>new Date(t).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})).join(' / ')));
@@ -186,8 +231,9 @@
     mount();
     if(iso(day))selected=day;
     else if(!iso(selected))selected=shift(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'}),1);
-    isOpen=true;document.body.dataset.airconOpen='true';if(root)root.hidden=false;
+    isOpen=true;deferredRender=false;document.body.dataset.airconOpen='true';if(root)root.hidden=false;
     const button=document.getElementById('nav-aircon');if(button){button.classList.add('on');button.setAttribute('aria-pressed','true');}
+    watch(selected,true);
     render();
   };
   function mount() {
@@ -204,6 +250,7 @@
     if(isOpen){watch(selected);if(lastSnapshot!==JSON.stringify([data()._sess,data()._schedule_status,data()._aircon_schedule]))render();}
   }
   closePanel=()=>{
+    flushDraftSync();lastWatchedDay='';deferredRender=false;
     if(!isOpen && !document.body.dataset.airconOpen)return;
     isOpen=false;if(root)root.hidden=true;delete document.body.dataset.airconOpen;
     const ac=document.getElementById('nav-aircon');ac?.classList.remove('on');ac?.setAttribute('aria-pressed','false');
@@ -215,6 +262,8 @@
       if(isOpen && nav && nav.id!=='nav-aircon')closePanel();
     },true);
     window.addEventListener?.('wayon-refresh-updated',()=>{if(isOpen)render();});
+    window.addEventListener?.('pagehide',()=>flushDraftSync());
+    document.addEventListener?.('visibilitychange',()=>{if(document.hidden)flushDraftSync();});
     new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
     new MutationObserver(()=>{
       const ds=document.body.dataset||{};
