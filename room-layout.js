@@ -799,13 +799,13 @@
           card.tabIndex = 0; card.setAttribute('role', 'button');
           const roomLabel = R[lesson.ri] || '';
           const subText = [subject, teacher].filter(Boolean).join(' · ');
-          card.setAttribute('aria-label', roomLabel + ' ' + lesson.a + '到' + lesson.b + ' ' + who + (subText ? ' ' + subText : '') + (borrowed ? '，借用教室' : '') + (bad ? '，时间冲突' : ''));
+          card.setAttribute('aria-label', roomLabel + ' ' + lesson.a + '到' + lesson.b + ' ' + who + (subText ? ' ' + subText : '') + (borrowed ? '，易赛' : '') + (bad ? '，时间冲突' : ''));
           const topRow = el('div', 'tl-ag-top');
           const subEl = el('div', 'tl-ag-sub');
           if (subject) subEl.append(el('span', 'tl-ag-subj', subject));
           if (teacher) subEl.append(el('span', 'tl-ag-teacher', (subject ? '· ' : '') + teacher));
-          if (!subject && !teacher) subEl.append(el('span', 'tl-ag-subj', borrowed ? '借用教室' : '课程'));
-          const roomPill = el('span', 'tl-ag-room', (bad ? '⚠️ 冲突 · ' : '') + roomLabel + (borrowed ? ' · 借用' : ''));
+          if (!subject && !teacher) subEl.append(el('span', 'tl-ag-subj', borrowed ? '易赛' : '课程'));
+          const roomPill = el('span', 'tl-ag-room', (bad ? '⚠️ 冲突 · ' : '') + roomLabel + (borrowed ? ' · 易赛' : ''));
           topRow.append(subEl, roomPill);
 
           const timeRow = el('div', 'tl-ag-time-row');
@@ -907,8 +907,8 @@
       const sub = [subject, teacher].filter(Boolean).join('·');
       if (sub) node.append(el('div', 's', sub));
       node.tabIndex = 0; node.setAttribute('role', 'button');
-      node.setAttribute('aria-label', R[lesson.ri] + ' ' + lesson.a + '到' + lesson.b + ' ' + who + (sub ? ' ' + sub : '') + (borrowed ? '，借用教室' : '') + (bad ? '，时间冲突' : ''));
-      node.title = who + ' ' + lesson.a + '–' + lesson.b + (sub ? '\n' + sub : '') + (borrowed ? '\n借用教室（课表外）' : '') + (bad ? '\n⚠️ 与同教室另一节课时间重叠' : '');
+      node.setAttribute('aria-label', R[lesson.ri] + ' ' + lesson.a + '到' + lesson.b + ' ' + who + (sub ? ' ' + sub : '') + (borrowed ? '，易赛' : '') + (bad ? '，时间冲突' : ''));
+      node.title = who + ' ' + lesson.a + '–' + lesson.b + (sub ? '\n' + sub : '') + (borrowed ? '\n易赛（课表外）' : '') + (bad ? '\n⚠️ 与同教室另一节课时间重叠' : '');
       node.style.width = 'calc(' + (100 / lanes) + '% - ' + (lanes > 1 ? 8 : 10) + 'px)';
       node.style.marginLeft = 'calc(' + (100 * lane / lanes) + '% + 5px)';
       place(node, lineOf(toM(lesson.a)), lineOf(toM(lesson.b)), col);
@@ -1000,7 +1000,7 @@
         }
         if (anyBorrowed && !legend.querySelector('.lg-borrowed')) {
           const item = el('span', 'lg-borrowed'), dot = el('i'); dot.style.background = 'var(--t5b)';
-          item.append(dot, document.createTextNode('借用教室')); legend.prepend(item);
+          item.append(dot, document.createTextNode('易赛')); legend.prepend(item);
         } else if (!anyBorrowed) legend.querySelector('.lg-borrowed')?.remove();
       }
       const pairs = Math.ceil(bad / 2);
