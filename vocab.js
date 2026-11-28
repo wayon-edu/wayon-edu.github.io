@@ -96,7 +96,7 @@
   const POS = '(?:\\(\\s*' + POS_CORE + '\\s*\\)|（\\s*' + POS_CORE + '\\s*）|(?<![A-Za-z])' + POS_CORE + ')';
   const GRAMMAR_TAG = '(?:\\s*(?:[\\[【(（](?:U|C|T|I|pl|sing|cn|un|C/U|U/C|可数|不可数)[\\]】)）]))*';
   const WORD_LINE = new RegExp('^\\s*(?:[-–•·*]\\s*|\\d{1,3}[.、)）]\\s*|[‘\'’]\\s*)?(?<word>[A-Za-z][A-Za-z\'‘’\\-/().=,…&?!+＋\\s^]{0,95}?)\\s*(?<pos>' + POS +
-    '(?=[\\s\\u4e00-\\u9fff,，;；(（\\[【《〈「『]|$))?' + GRAMMAR_TAG + '\\s*[,，:：]?\\s*(?<meaning>(?:[\\[【](?:U|C|T|I|pl|sing|cn|un|C/U|U/C|可数|不可数)[\\]】]\\s*)?[\\u4e00-\\u9fff（(“"…《〈「『].*)$');
+    '(?=[\\s\\u4e00-\\u9fff,，;；(（\\[【《〈「『]|$))?' + GRAMMAR_TAG + '\\s*[,，:：]?\\s*(?<meaning>(?:[\\[【](?:U|C|T|I|pl|sing|cn|un|C/U|U/C|可数|不可数)[\\]】]\\s*)?(?:[\\u4e00-\\u9fff（(“"《〈「『]|…+(?=[\\u4e00-\\u9fff（(“"《〈「『])).*)$');
   const SUB_LINE = /^\s*[-–•·]\s+/, NUMBERED = /^\s*(?:\d{1,3}[.、)）]|[一二三四五六七八九十百]+[、.．])\s*/;
   const WRONG = /❌\s*(拼写?|意思|发音|音)?/g;
   const SECTION_END = /^\s*(?:📌|📚|🙋|👨|🌟|⚠|💡|【用法】|【纠错】|【发音】|【句子|课后作业|\d️⃣|作业[:：]|📝课后)/u;
@@ -358,7 +358,7 @@
             if (lines[lines.length - 1] !== '' && lines[lines.length - 1] !== grpHead) lines.push('');
             lines.push(heading);
           }
-          previous = heading;
+          if (heading) previous = heading;
           const line = formatItemLine(it);
           const mark = marks.get(origIdx);
           lines.push(line + (mark?.result === 'wrong' ? '❌' + (short[mark.reason] || '') : mark?.result === 'right' ? '✅' : ''), ...copyNotes(it, line));
@@ -372,7 +372,7 @@
     items.forEach((it, i) => {
       const heading = entryHeading(it);
       if (heading && heading !== previous) { if (lines[lines.length - 1] !== '') lines.push(''); lines.push(heading); }
-      previous = heading;
+      if (heading) previous = heading;
       const line = formatItemLine(it);
       const mark = marks.get(i);
       lines.push(line + (mark?.result === 'wrong' ? '❌' + (short[mark.reason] || '') : mark?.result === 'right' ? '✅' : ''), ...copyNotes(it, line));
@@ -404,7 +404,7 @@
             if (lines[lines.length - 1] !== '' && lines[lines.length - 1] !== grpHead) lines.push('');
             lines.push(heading);
           }
-          previous = heading;
+          if (heading) previous = heading;
           const outLine = line(w);
           lines.push(outLine, ...copyNotes(w, outLine));
         }
@@ -415,7 +415,7 @@
     ws.forEach(w => {   // the teacher's headings (🖊词汇句子补充, 【一词多义】…) stay, with a blank line before each
       const heading = entryHeading(w);
       if (heading && heading !== previous) { if (lines[lines.length - 1] !== '') lines.push(''); lines.push(heading); }
-      previous = heading;
+      if (heading) previous = heading;
       const outLine = line(w);
       lines.push(outLine, ...copyNotes(w, outLine));
     });
@@ -539,7 +539,7 @@
     }
     return [line];
   }
-  function parseFeedback(body) {
+  function parseFeedback(body, opts = {}) {
     const cleanText = normBody(body);
     const words = []; let parent = null, inVocab = false, strictMeta = false, softMeta = false, inGrammar = false, inEntryQuiz = false;
     let section = '', heading = '', plain = 0, dashed = false;
@@ -558,6 +558,7 @@
       if (!line.trim()) continue;
       const title = feedbackHeading(line), header = feedbackSection(line, inGrammar);
       if (header) { section = header; heading = line.trim(); parent = null; inVocab = section === '词汇'; strictMeta = softMeta = inGrammar = inEntryQuiz = false; plain = 0; dashed = false; continue; }
+      if (opts?.allowPronunciation && /^(?:【|\[)?发音(?:】|\])?\s*[:：]?$/.test(line.trim())) { section = '发音'; heading = line.trim(); parent = null; inVocab = true; strictMeta = softMeta = inGrammar = inEntryQuiz = false; plain = 0; dashed = false; continue; }
       if (ENTRY_QUIZ_HEAD.test(title)) { inEntryQuiz = true; strictMeta = softMeta = false; continue; }
       if (inEntryQuiz && NUMBERED.test(line)) { inEntryQuiz = false; strictMeta = true; }
       if (STRICT_META_SECTION.test(title) || /^课后(?:作业|练习|任务)\s*[:：]?$/.test(title)) { section = ''; parent = null; inVocab = inEntryQuiz = softMeta = false; strictMeta = true; inGrammar = GRAMMAR_HEAD.test(title); continue; }
@@ -3552,7 +3553,7 @@
         if (!rawText) { ta.focus(); return; }
         go.disabled = true;
         try {
-          let parsed = parseFeedback('词汇\n' + rawText).map(w => stripSyntheticVocabMeta(w, rawText));
+          let parsed = parseFeedback('词汇\n' + rawText, {allowPronunciation: true}).map(w => stripSyntheticVocabMeta(w, rawText));
           if (!parsed.length) {
             for (const line of rawText.split('\n').map(x => x.trim()).filter(Boolean)) {
               const title = feedbackHeading(line);
@@ -3575,8 +3576,20 @@
             if (!k || next.some(x => wordKey(x.word) === k)) continue;
             if (next.length >= MAX_QUIZ_ITEMS) { capped = true; break; }
             const hit = byWord.get(k);
-            if (hit) next.push({...fromRow(hit), lesson_id: null});
-            else {
+            if (hit) {
+              const base = {...fromRow(hit), lesson_id: null};
+              const pMeta = entryMeta(p);
+              const keepPasted = Boolean(p.meaning || p.pos || pMeta?.section === '发音');
+              if (keepPasted) {
+                next.push({...base, word: capWord(p.word), pos: p.pos || '', meaning: p.meaning || '', extra: p.extra || ''});
+              } else if (pMeta?.heading) {
+                const mergedLine = [base.word, (base.pos ? normPos(base.pos) + '.' : '') + (base.meaning || '')].filter(Boolean).join(' ');
+                const mergedExtra = META_PREFIX + JSON.stringify({section: pMeta.section || '词汇', heading: pMeta.heading, line: mergedLine, word: base.word, pos: base.pos || '', meaning: base.meaning || '', notes: entryNotes(base)});
+                next.push({...base, extra: mergedExtra});
+              } else {
+                next.push(base);
+              }
+            } else {
               const it = {learner: targetLearner, word: capWord(p.word), meaning: p.meaning || '', pos: p.pos || '', extra: p.extra || '', lesson_id: null};
               next.push(it); unknown.push(it);
             }
