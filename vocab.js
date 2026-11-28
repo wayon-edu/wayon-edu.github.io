@@ -1125,8 +1125,83 @@
     else { const {error} = await client().from('wayon_lessons').update({archived_at: at}).eq('id', id); if (error) throw error; }
     index = null; bodies.delete(id);
   }
+  async function restoreLesson(id, learner, subject) {
+    if (mode === 'preview') {
+      const l = preview.lessons.find(x => x.id === id);
+      if (l) { l.archived_at = null; if (subject) l.subject = subject; l.notion_synced_at = null; }
+      if (subject) preview.words.filter(w => w.lesson_id === id).forEach(w => { w.subject = subject; });
+    } else {
+      const patch = {archived_at: null, notion_synced_at: null};
+      if (subject) patch.subject = subject;
+      const {error} = await client().from('wayon_lessons').update(patch).eq('id', id);
+      if (error) throw error;
+      if (subject && learner) {
+        const {error: e2} = await client().from('wayon_vocab').update({subject}).eq('learner', learner).eq('lesson_id', id);
+        if (e2) throw e2;
+      }
+    }
+    index = null; bodies.delete(id); if (learner) dropVocabCache(learner);
+  }
+  function resolvePasteSubject(baseSubject, firstLine, isManual) {
+    const base = subjectOf(baseSubject);
+    if (isManual || !firstLine) return base;
+    if (base === '读写') {
+      const hasRead = /阅读|reading/i.test(firstLine);
+      const hasWrite = /写作|writing/i.test(firstLine);
+      if (hasRead && !hasWrite) return '阅读';
+    }
+    return base;
+  }
   // "和 10/31 听力 L16 那节内容完全一样" — so a wrong clipboard is obvious instead of a silent "already saved".
   const dupText = e => !e ? '这段内容之前已经保存过' : '这段内容和已保存的「' + [md(e.lesson_date) + weekday(e.lesson_date), subjectOf(e.subject), lessonNo(e.title) ? 'L' + lessonNo(e.title) : ''].filter(Boolean).join(' ') + '」完全一样' + (e.archived_at ? '（那节已删除）' : '') + '，没有重复保存。请检查剪贴板里是不是这节课的反馈。';
+  function renderDupNotice(status, existing, {learner, targetSubject, onResolved, allowJump = false} = {}) {
+    status.textContent = '';
+    status.classList.add('fb-warn');
+    status.dataset.dup = '1';
+    if (!existing) { status.textContent = dupText(existing); return; }
+    const existSubj = subjectOf(existing.subject);
+    const wantSubj = targetSubject ? subjectOf(targetSubject) : '';
+    const label = [md(existing.lesson_date) + weekday(existing.lesson_date), existSubj, lessonNo(existing.title) ? 'L' + lessonNo(existing.title) : ''].filter(Boolean).join(' ');
+    if (existing.archived_at) {
+      const dest = wantSubj || existSubj;
+      status.append(make('span', '', '这段内容和已删除的「' + label + '」完全一样。'));
+      const restoreBtn = btn('fb-btn fb-dup-act pri', '恢复到「' + dest + '」', async () => {
+        restoreBtn.disabled = true;
+        try {
+          await busy('正在恢复…', async () => {
+            if (dest) await keepKind(learner, dest);
+            await restoreLesson(existing.id, learner, dest);
+          });
+          flash('已恢复到「' + dest + '」');
+          if (onResolved) await onResolved(dest);
+        } catch (e) { flash('恢复失败：' + (e.message || e), true); restoreBtn.disabled = false; }
+      });
+      status.append(restoreBtn);
+      return;
+    }
+    if (wantSubj && existSubj !== wantSubj) {
+      status.append(make('span', '', '这节课已保存在「' + existSubj + '」里（' + label + '），所以在「' + wantSubj + '」里看不到。'));
+      const moveBtn = btn('fb-btn fb-dup-act pri', '移到「' + wantSubj + '」', async () => {
+        moveBtn.disabled = true;
+        try {
+          await busy('正在移动…', async () => {
+            await keepKind(learner, wantSubj);
+            await moveLessons(learner, [existing.id], wantSubj);
+          });
+          flash('已移到「' + wantSubj + '」');
+          if (onResolved) await onResolved(wantSubj);
+        } catch (e) { flash('移动失败：' + (e.message || e), true); moveBtn.disabled = false; }
+      });
+      status.append(moveBtn);
+      if (allowJump) {
+        status.append(btn('fb-btn fb-dup-act', '去「' + existSubj + '」查看', async () => {
+          if (onResolved) await onResolved(existSubj);
+        }));
+      }
+      return;
+    }
+    status.textContent = dupText(existing);
+  }
   async function updateVocab(id, patch) {
     const clean = patch && 'word' in patch ? {...patch, word: capWord(patch.word)} : patch;
     if (mode === 'preview') { const w = preview.words.find(x => x.id === id); if (w) Object.assign(w, clean); return; }
@@ -1572,7 +1647,7 @@
     .fb-wedit{position:relative;user-select:none;-webkit-user-select:none}.fb-wedit:focus{outline:none}.fb-wedit input,.fb-wedit textarea{user-select:text;-webkit-user-select:text}
     .fb-wrow{transition:background .12s}.fb-wrow.picked{background:color-mix(in srgb,var(--accent,#0a63d8) 12%,transparent);border-radius:8px;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent,#0a63d8) 12%,transparent)}
     .fb-marquee{position:absolute;z-index:3;border:1px solid var(--accent,#0a63d8);background:color-mix(in srgb,var(--accent,#0a63d8) 10%,transparent);border-radius:3px;pointer-events:none}
-    .fb-link.danger{color:#d93036}.fb-meta.fb-warn{color:#b42318;font-weight:550;flex-basis:100%;order:-1}
+    .fb-link.danger{color:#d93036}.fb-meta.fb-warn{color:#b42318;font-weight:550;flex-basis:100%;order:-1;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.fb-dup-act{min-height:28px;height:28px;padding:0 10px;font-size:12px}
     .fb-wadd{margin-top:6px}.fb-wedit-batch{width:100%;box-sizing:border-box;font:13px/1.8 var(--mono,ui-monospace,monospace);padding:8px 10px;border:1px solid var(--accent,#0a63d8);border-radius:8px;background:var(--card);color:var(--fg);resize:vertical}
     .fb-collect{border:0.5px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
     .fb-collect.editing{border-color:var(--accent,#0a63d8)}
@@ -1996,7 +2071,7 @@
     const sSpan = normSpan(s.time);
     const own = got.filter(l => l.learner === learner);
     const timed = sSpan ? own.filter(l => normSpan(l.title) === sSpan) : [];
-    const untimed = own.filter(l => !normSpan(l.title) && subjectOf(l.subject) === subject);
+    const untimed = own.filter(l => !normSpan(l.title) && (subjectOf(l.subject) === subject || (subject === '读写' && subjectOf(l.subject) === '阅读' && /读写/.test(String(l.title || '')))));
     const peers = Array.isArray(allSessions)
       ? allSessions.filter(p => resolveLearner(p.who, learners) === learner && subjectOf(p.course) === subject)
       : [s];
@@ -2137,21 +2212,22 @@
       const first = (ta.value.split('\n').find(x => x.trim()) || ''), no = lessonNo(first), d = collectDay || today();
       return ta.value.trim() ? [no ? 'L' + no : '', md(d) + weekday(d), ed.words().length + ' 词'].filter(Boolean).join(' · ') : '';
     };
-    let timer; ta.addEventListener('input', () => { status.classList.remove('fb-warn'); if (status.textContent.includes('完全一样')) status.textContent = ''; clearTimeout(timer); timer = setTimeout(() => { ed.refresh(); onInfo && onInfo(info()); }, 150); });
+    let timer; ta.addEventListener('input', () => { status.classList.remove('fb-warn'); if (status.dataset.dup || status.textContent.includes('完全一样')) { status.textContent = ''; delete status.dataset.dup; } clearTimeout(timer); timer = setTimeout(() => { ed.refresh(); onInfo && onInfo(info()); }, 150); });
     words.addEventListener('input', () => onInfo && onInfo(info()));
     const save = btn('fb-btn pri', '保存', async () => {
-      const body = ta.value.trim(), who = keyOf(learner.value), subj = subjectOf(subject.value || s.course);
+      const body = ta.value.trim(), who = keyOf(learner.value);
       if (!body) { status.textContent = '先粘贴反馈'; ta.focus(); return; }
       if (!who) { status.textContent = '填写学生或班级'; learner.focus(); return; }
       const ws = ed.words(), firstLine = (body.split('\n').find(x => x.trim()) || '').trim().slice(0, 120), no = lessonNo(firstLine), d = collectDay || today();
+      const subj = resolvePasteSubject(subject.value || s.course, firstLine, s.manual);
       if (!await askConfirm('保存这节反馈？', [who.replace(/\//g, '、'), subj, no ? 'L' + no : '', md(d) + weekday(d)].filter(Boolean).join(' · ') + '\n识别到 ' + ws.length + ' 个生词，会加进这个学生的单词库。', '保存')) return;
-      save.disabled = true; status.textContent = '';
+      save.disabled = true; status.textContent = ''; delete status.dataset.dup;
       try {
         // The teacher's own first line (e.g. "26-11-01 雅思听力 L3") is the title, so the lesson number is the teacher's.
         const rawTitle = firstLine || (s.course || subj);
         const spanPrefix = !s.manual && normSpan(s.time) && !normSpan(rawTitle) ? normSpan(s.time) + ' ' : '';
         const r = await busy('正在保存…', () => saveLesson({learner: who, subject: subj, lesson_date: d, title: spanPrefix + rawTitle, body}, ws, ed.edited));
-        if (r.duplicate) { status.textContent = dupText(r.existing); status.classList.add('fb-warn'); save.disabled = false; ta.focus(); return; }   // keep the box open to paste the right text
+        if (r.duplicate) { renderDupNotice(status, r.existing, {learner: who, targetSubject: subj, onResolved: () => { renderPanel(); }}); save.disabled = false; ta.focus(); return; }   // keep the box open to paste the right text
         flash('已保存，新增 ' + r.added + ' 个生词'); renderPanel();
       } catch (e) { status.textContent = '保存失败：' + (e.message || e); save.disabled = false; }
     });
@@ -2428,7 +2504,7 @@
     const num = make('input'); num.type = 'number'; num.min = '1'; num.max = '999'; num.className = 'fb-search fb-no-input'; num.placeholder = '课次'; if (no) { num.value = no; num.disabled = true; }
     const status = make('span', 'fb-meta');
     let timer;
-    ta.addEventListener('input', () => { status.classList.remove('fb-warn'); if (status.textContent.includes('完全一样')) status.textContent = ''; clearTimeout(timer); timer = setTimeout(() => {
+    ta.addEventListener('input', () => { status.classList.remove('fb-warn'); if (status.dataset.dup || status.textContent.includes('完全一样')) { status.textContent = ''; delete status.dataset.dup; } clearTimeout(timer); timer = setTimeout(() => {
       ed.refresh();
       const first = (ta.value.split('\n').find(x => x.trim()) || ''); const d = findDate(first, Number(today().slice(0, 4)));
       if (d && !date.dataset.touched) date.value = d > today() ? (Number(d.slice(0, 4)) - 1) + d.slice(4) : d;
@@ -2439,12 +2515,12 @@
       const body = ta.value.trim(); if (!body) { status.textContent = '先粘贴反馈'; ta.focus(); return; }
       const n = Number(num.value) || null, ws = ed.words();
       if (!await askConfirm('保存这节反馈？', [learner.replace(/\//g, '、'), subject, n ? 'L' + n : '没有课次', date.value ? md(date.value) + weekday(date.value) : '没有日期'].join(' · ') + '\n识别到 ' + ws.length + ' 个生词，会按课次排进列表。', '保存')) return;
-      save.disabled = true; status.textContent = '保存中…';
+      save.disabled = true; status.textContent = '保存中…'; delete status.dataset.dup;
       try {
         let title = (body.split('\n').find(x => x.trim()) || '').trim().slice(0, 120);
         if (n && lessonNo(title) !== n) title = (title ? title + ' ' : subject + ' ') + 'L' + n;   // the list sorts by this number
         const r = await busy('正在保存 ' + (n ? 'L' + n : '这节') + '…', () => saveLesson({learner, subject, lesson_date: date.value || null, title, body}, ws, ed.edited));
-        if (r.duplicate) { status.textContent = dupText(r.existing); status.classList.add('fb-warn'); save.disabled = false; ta.focus(); return; }
+        if (r.duplicate) { renderDupNotice(status, r.existing, {learner, targetSubject: subject, allowJump: true, onResolved: async nextSubj => { await lessonIndex(true); if (nextSubj) learnerSubject = nextSubj; onDone && onDone(); }}); save.disabled = false; ta.focus(); return; }
         flash('已保存，新增 ' + r.added + ' 个生词'); await lessonIndex(true); onDone && onDone();
       } catch (e) { status.textContent = '保存失败：' + (e.message || e); save.disabled = false; }
     });

@@ -9,10 +9,10 @@
     style.id = STYLE_ID;
     style.textContent = `
       .wayon-workbench #targeted-deploy-open[hidden]{display:none!important}
-      .wayon-workbench .targeted-deploy-trigger{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;height:36px;padding:0 11px;border:1px solid var(--line-strong,rgba(30,30,40,.18));border-radius:10px;background:var(--card,#fff);color:var(--fg-secondary,#515156);font:550 12.5px/1 var(--sans,inherit);white-space:nowrap;cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease}
+      .wayon-workbench .targeted-deploy-trigger{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;min-height:36px;padding:0;border:1px solid var(--line,rgba(30,30,40,.09));border-radius:999px;background:var(--card,#fff);color:var(--muted,#6e6e73);cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease}
       .wayon-workbench .targeted-deploy-trigger:hover:not(:disabled){color:var(--accent,#0071e3);border-color:var(--accent,#0071e3);background:var(--accent-subtle,#eaf3ff)}
-      .wayon-workbench .targeted-deploy-trigger svg{width:15px;height:15px;flex:none;pointer-events:none}
-      body.wayon-workbench[data-mode="classroom"] #targeted-deploy-open,
+      .wayon-workbench .targeted-deploy-trigger svg{width:18px;height:18px;flex:none;pointer-events:none}
+      body.wayon-workbench:not([data-mode="plan"]):not([data-mode="done"]) #targeted-deploy-open,
       body.wayon-workbench[data-aircon-open] #targeted-deploy-open,
       body.wayon-workbench[data-memo-open] #targeted-deploy-open,
       body.wayon-workbench[data-feedback-open] #targeted-deploy-open,
@@ -52,20 +52,20 @@
       dialog#wayon-targeted-dialog progress{width:100%;height:8px}
       dialog#wayon-targeted-dialog pre#wayon-targeted-result{margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--code-bg,#f5f5f7);color:var(--fg,#1d1d1f);font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
       @media(pointer:coarse){dialog#wayon-targeted-dialog input[type="text"],dialog#wayon-targeted-dialog .td-btn{min-height:52px}}
-      @media(max-width:599px){.wayon-workbench .targeted-deploy-trigger{height:44px;padding:0 12px}}
+      @media(max-width:599px){.wayon-workbench .targeted-deploy-trigger{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}}
     `;
     (document.head || document.documentElement).append(style);
   }
 
-  const targetIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+  const targetIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
   const openBtn = document.createElement('button');
   openBtn.type = 'button';
   openBtn.id = 'targeted-deploy-open';
-  openBtn.className = 'targeted-deploy-trigger';
+  openBtn.className = 'workflow-icon targeted-deploy-trigger';
   openBtn.hidden = true;
-  openBtn.title = '管理员专属：指定学员只读预演 (~30秒) 或正式补布置';
-  openBtn.setAttribute('aria-label', '打开指定学员定向补布置');
-  openBtn.innerHTML = targetIcon + '<span>定向补发</span>';
+  openBtn.title = '定向补发（管理员专属：指定学员只读预演或正式补布置）';
+  openBtn.setAttribute('aria-label', '定向补发');
+  openBtn.innerHTML = targetIcon;
 
   const dialog = document.createElement('dialog');
   dialog.id = 'wayon-targeted-dialog';
